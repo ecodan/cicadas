@@ -280,6 +280,13 @@
       "summary": "Fix unit test coverage gaps: test_history.py, status lifecycle merge tests, signalboard/open_pr/kickoff/synthesize/orchestration improvements",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-03-23T05:22:28.204976+00:00",
+      "branch": "initiative-scope-gate",
+      "summary": "Added scope gate step to clarify.md that detects when an initiative should be a tweak and offers to switch paths",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
