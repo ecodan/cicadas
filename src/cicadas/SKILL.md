@@ -294,7 +294,7 @@ Cicadas manages the full lifecycle of Agent Skills — portable instruction modu
 **Triggers**: "create a skill", "start a skill", "build a skill for X", "I need a skill that…"
 
 **The Workflow**:
-1. **Emergence**: Run `skill-create.md` — dialogue-driven authoring of `SKILL.md` + optional bundled files + `eval_queries.json`. Includes the standard start flow (name, draft folder, Building on AI?, publish destination, PR preference).
+1. **Emergence**: Run `skill-create.md` — dialogue-driven authoring of `SKILL.md` + optional bundled files + `eval_queries.json`. Includes the standard start flow (name, draft folder, LLMs and Evals?, publish destination, PR preference).
 2. **Kickoff**: `python {cicadas-dir}/scripts/kickoff.py skill-{slug} --intent "..."`. Promotes `drafts/skill-{slug}/` to `active/skill-{slug}/`.
 3. **Branch**: `python {cicadas-dir}/scripts/branch.py skill/{slug} --intent "..." --initiative skill-{slug}`. Forks from `main`.
 4. **Validate**: `python {cicadas-dir}/scripts/validate_skill.py {slug}`. Check spec compliance before publishing.
@@ -411,7 +411,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 - **"Prune {name}"** → Runs `prune.py`. Rollback and restore to drafts.
 - **"Abort"** → Runs `abort.py`. Context-aware escape hatch: detects the current branch type, rolls back the branch(es), deregisters from registry, and prompts whether to move active specs to drafts or delete them.
 - **"Project history"** or **"Generate history"** → Runs `history.py`. Generates `.cicadas/canon/history.html` timeline from archive and index.
-- **"Create skill {name}"** or **"Build a skill for X"** → Reads `skill-create.md`. Runs start flow (name, draft folder, Building on AI?, publish destination, PR preference), then dialogue-driven SKILL.md authoring, kickoff, branch, validate.
+- **"Create skill {name}"** or **"Build a skill for X"** → Reads `skill-create.md`. Runs start flow (name, draft folder, LLMs and Evals?, publish destination, PR preference), then dialogue-driven SKILL.md authoring, kickoff, branch, validate.
 - **"Edit skill {name}"** → Reads `skill-edit.md`. One diagnostic question, targeted minimum change, validate.
 - **"Validate skill {name}"** → Runs `validate_skill.py {slug}`. Reports spec compliance errors or confirms valid.
 - **"Complete skill {name}"** or **"Publish skill {name}"** → Merges `skill/{slug}` to `main`, runs `skill_publish.py {slug}`, archives initiative.
