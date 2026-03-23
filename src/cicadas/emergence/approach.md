@@ -47,7 +47,9 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     -   **Other requirements or prohibitions**
         - Do NOT include estimated effort or timeframes for phases or tasks.
 5.  **Draft**: Create `.cicadas/drafts/{initiative}/approach.md` (or update `.cicadas/active/{initiative}/approach.md` if post-kickoff). Include the Eval step from step 3 when applicable.
-6.  **Refine**: Builder review.
+6.  **Refine**:
+    - **If pace is `"doc"` or `"section"`**: STOP and present the complete approach for Builder review.
+    - **If pace is `"all"`**: Continue directly to the next module (Tasks) without stopping.
 
 ## Output Artifacts
 

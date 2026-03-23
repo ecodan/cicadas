@@ -23,12 +23,15 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 4. **Iterative Drafting**: Build the tech design section-by-section in **Progress checklist** order. For each section:
     - **Draft**: Write the section content.
     - **Present**: Show the drafted section to the user.
-    - **Halt & Elicit**: Present the **Balanced Elicitation Menu** and STOP for input:
+    - **Halt & Elicit** (only if pace is `"section"`): Present the **Balanced Elicitation Menu** and STOP for input:
         - `[D] Deep Dive`: Ask 1–2 probing questions to stress-test the design decision.
         - `[R] Review`: Adopt a critical persona — Security Auditor, Skeptic, or Future Maintainer.
         - `[C] Continue`: Mark section complete and move on.
+    - If pace is `"doc"` or `"all"`, skip the menu and mark the section complete automatically.
 
-5. **Finalize**: Once all sections are approved, confirm the tech design is ready to hand off to the Approach/Tasks instruction modules.
+5. **Finalize**: Once all sections are complete:
+    - **If pace is `"doc"` or `"section"`**: STOP and present the complete tech design for Builder review. Confirm it is ready to hand off to Approach.
+    - **If pace is `"all"`**: Continue directly to the next module (Approach) without stopping.
 
 ## Section-Specific Guidance
 

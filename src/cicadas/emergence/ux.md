@@ -25,12 +25,15 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 5. **Iterative Drafting**: Build the UX design section-by-section in **Progress checklist** order. For each section:
     - **Draft**: Write the section content.
     - **Present**: Show the drafted section to the user.
-    - **Halt & Elicit**: Present the **Balanced Elicitation Menu** and STOP for input:
+    - **Halt & Elicit** (only if pace is `"section"`): Present the **Balanced Elicitation Menu** and STOP for input:
         - `[D] Deep Dive`: Ask 1–2 probing questions to uncover edge cases or hidden complexity.
         - `[R] Review`: Adopt a critical persona — Skeptic, End-User, or Accessibility Auditor.
         - `[C] Continue`: Mark section complete and move on.
+    - If pace is `"doc"` or `"all"`, skip the menu and mark the section complete automatically.
 
-6. **Finalize**: Once all sections are approved, confirm the UX design is ready to hand off to the Tech Design sub-skill.
+6. **Finalize**: Once all sections are complete:
+    - **If pace is `"doc"` or `"section"`**: STOP and present the complete UX design for Builder review. Confirm it is ready to hand off to Tech Design.
+    - **If pace is `"all"`**: Continue directly to the next module (Tech Design) without stopping.
 
 ## Section-Specific Guidance
 

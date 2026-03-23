@@ -1,5 +1,20 @@
 {
   "schema_version": "2.0",
-  "initiatives": {},
-  "branches": {}
+  "initiatives": {
+    "pacing-bug": {
+      "intent": "Fix pacing mode behavior where 'All' pauses like 'Section'",
+      "owner": "unknown",
+      "signals": [],
+      "created_at": "2026-03-23T19:20:05.293648+00:00"
+    }
+  },
+  "branches": {
+    "fix/pacing-bug": {
+      "intent": "Fix pacing mode behavior",
+      "modules": [],
+      "owner": "unknown",
+      "created_at": "2026-03-23T19:20:13.506862+00:00",
+      "initiative": "pacing-bug"
+    }
+  }
 }

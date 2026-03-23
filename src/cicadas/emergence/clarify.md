@@ -51,17 +51,20 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 5. **Iterative Drafting**: Build the PRD section-by-section in **Progress checklist** order. For each section:
     - **Draft**: Write the section content.
     - **Present**: Show the drafted section to the user.
-    - **Halt & Elicit**: Present the **Balanced Elicitation Menu** and STOP for input:
+    - **Halt & Elicit** (only if pace is `"section"`): Present the **Balanced Elicitation Menu** and STOP for input:
         - `[D] Deep Dive`: Ask 1–2 probing questions to refine this section.
         - `[R] Review`: Adopt a critical persona to highlight risks or gaps.
         - `[C] Continue`: Mark the section complete in `steps_completed` and move on.
+    - If pace is `"doc"` or `"all"`, skip the menu and mark the section complete automatically.
 
-5. **Finalize**: Once all sections are complete, present a summary and confirm the PRD is ready to hand off to the UX instruction module. Remind the Builder of the remaining spec steps:
-    ```
-    Remaining spec steps:   UX → Tech Design → Approach → Tasks → [Your review after each]
-    Then:                   Kickoff → Feature branch(es) → Task branches → Reflect → PR per task
-                            → Merge feature(s) → Merge initiative → Synthesize canon → Archive
-    ```
+5. **Finalize**: Once all sections are complete, present a summary and confirm the PRD is ready to hand off to the UX instruction module.
+    - **If pace is `"doc"` or `"section"`**: STOP and wait for Builder review. Remind the Builder of the remaining spec steps:
+        ```
+        Remaining spec steps:   UX → Tech Design → Approach → Tasks → [Your review after each]
+        Then:                   Kickoff → Feature branch(es) → Task branches → Reflect → PR per task
+                                → Merge feature(s) → Merge initiative → Synthesize canon → Archive
+        ```
+    - **If pace is `"all"`**: Continue directly to the next module (UX) without stopping.
 
 ## Section-Specific Guidance
 
