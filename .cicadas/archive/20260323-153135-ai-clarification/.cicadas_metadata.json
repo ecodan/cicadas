@@ -1,0 +1,20 @@
+{
+  "name": "ai-clarification",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Update 'building on ai' phrase to be more descriptive.",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-03-23T15:06:13.734276+00:00"
+  },
+  "timestamp": "20260323-153135",
+  "associated_branches": {
+    "tweak/ai-clarification": {
+      "intent": "Update 'building on ai' phrase to be more descriptive.",
+      "modules": [],
+      "owner": "unknown",
+      "created_at": "2026-03-23T15:06:23.769074+00:00",
+      "initiative": "ai-clarification"
+    }
+  }
+}

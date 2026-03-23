@@ -150,9 +150,9 @@ Progressive spec authoring in `.cicadas/drafts/{initiative-name}/`, using instru
 
 > **Inline instruction modules**: Each emergence file is an inline role — the orchestrator reads the file and follows it in the current context window. No separate agent process is spawned; `allowed-tools` does not need to include `Agent` for emergence.
 
-**Standard start flow**: When the Builder says "start an initiative", "start a tweak", or "start a bug", the agent MUST run the standard start flow first: see `{cicadas-dir}/emergence/start-flow.md`. All three entry points (Clarify, Tweak, Bug Fix instruction modules) embed this flow; do not skip it or reorder steps. The start flow includes a **Building on AI?** step (after draft folder): ask "Is this project building on AI? (yes / no)"; if yes, ask eval status (already have / will do) and write `building_on_ai` and `eval_status` to `.cicadas/drafts/{name}/emergence-config.json` (merge with existing keys).
+**Standard start flow**: When the Builder says "start an initiative", "start a tweak", or "start a bug", the agent MUST run the standard start flow first: see `{cicadas-dir}/emergence/start-flow.md`. All three entry points (Clarify, Tweak, Bug Fix instruction modules) embed this flow; do not skip it or reorder steps. The start flow includes an **LLMs and Evals?** step (after draft folder): ask "Will this feature or change be powered by LLMs and may require ML evals to ensure quality? (yes / no)"; if yes, ask eval status (already have / will do) and write `building_on_ai` and `eval_status` to `.cicadas/drafts/{name}/emergence-config.json` (merge with existing keys).
 
-**Building on AI**: When work involves AI (initiatives, tweaks, or bug fixes that leverage AI), the flow surfaces this and asks about evals. **Initiatives** with "will do" evals: after PRD, UX, and Tech the agent may offer to create an **eval spec** (template + LLMOps Experimentation playbook) → `.cicadas/drafts/{initiative}/eval-spec.md`; during Approach the agent asks whether to place the eval step **before build** or **in parallel** (with a warning if parallel). **Tweaks and bug fixes** with "will do" evals/benchmarks: the agent offers to add an **eval/benchmark reminder** (one task or section) to the tweaklet or buglet; no full eval spec and no placement question. Cicadas does **not** run or host evals; it only prompts, stores choices, and guides spec authoring.
+**LLMs and Evals**: When work involves LLMs (initiatives, tweaks, or bug fixes that leverage LLMs), the flow surfaces this and asks about evals. **Initiatives** with "will do" evals: after PRD, UX, and Tech the agent may offer to create an **eval spec** (template + LLMOps Experimentation playbook) → `.cicadas/drafts/{initiative}/eval-spec.md`; during Approach the agent asks whether to place the eval step **before build** or **in parallel** (with a warning if parallel). **Tweaks and bug fixes** with "will do" evals/benchmarks: the agent offers to add an **eval/benchmark reminder** (one task or section) to the tweaklet or buglet; no full eval spec and no placement question. Cicadas does **not** run or host evals; it only prompts, stores choices, and guides spec authoring.
 
 | Step | Artifact | Focus |
 |------|----------|-------|
@@ -273,9 +273,17 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 2. **Kickoff**: `python {cicadas-dir}/scripts/kickoff.py {name}`. Promotes the single spec to `active/`.
 3. **Branch**: `python {cicadas-dir}/scripts/branch.py {fix|tweak}/{name} --initiative {name}`. Forks directly from `main`.
 4. **Implement**: Work directly on the fix/tweak branch.
-5. **Significance Check**: Before completion, the Agent evaluates if the change warrants a Canon update.
-6. **Complete**: Merge to `main`, optionally Reflect/Synthesize to Canon, and Archive.
-7. **Branch cleanup**: Offer to delete the fix/tweak branch locally and on remote:
+5. **Reflect**: Update `active/{name}/tweaklet.md` (or `buglet.md`) to mark tasks complete and note any implementation divergence.
+6. **Significance Check**: Evaluate if the change warrants a Canon update. If yes, synthesize and commit canon before proceeding.
+7. **Archive** *(on the fix/tweak branch — before opening the PR)*:
+   ```
+   python {cicadas-dir}/scripts/archive.py {name} --type initiative
+   python {cicadas-dir}/scripts/update_index.py --branch {fix|tweak}/{name} --summary "..."
+   git add .cicadas/ && git commit -m "chore(cicadas): archive {name}"
+   ```
+8. **Open PR**: `python {cicadas-dir}/scripts/open_pr.py --base main` — the PR now contains both the implementation *and* the archive in one changeset (1-PR flow).
+9. **Builder merges the PR**.
+10. **Branch cleanup**: Offer to delete the fix/tweak branch locally and on remote:
    ```
    git branch -d {fix|tweak}/{name}
    git push origin --delete {fix|tweak}/{name}
@@ -294,7 +302,7 @@ Cicadas manages the full lifecycle of Agent Skills — portable instruction modu
 **Triggers**: "create a skill", "start a skill", "build a skill for X", "I need a skill that…"
 
 **The Workflow**:
-1. **Emergence**: Run `skill-create.md` — dialogue-driven authoring of `SKILL.md` + optional bundled files + `eval_queries.json`. Includes the standard start flow (name, draft folder, Building on AI?, publish destination, PR preference).
+1. **Emergence**: Run `skill-create.md` — dialogue-driven authoring of `SKILL.md` + optional bundled files + `eval_queries.json`. Includes the standard start flow (name, draft folder, LLMs and Evals?, publish destination, PR preference).
 2. **Kickoff**: `python {cicadas-dir}/scripts/kickoff.py skill-{slug} --intent "..."`. Promotes `drafts/skill-{slug}/` to `active/skill-{slug}/`.
 3. **Branch**: `python {cicadas-dir}/scripts/branch.py skill/{slug} --intent "..." --initiative skill-{slug}`. Forks from `main`.
 4. **Validate**: `python {cicadas-dir}/scripts/validate_skill.py {slug}`. Check spec compliance before publishing.
@@ -411,7 +419,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 - **"Prune {name}"** → Runs `prune.py`. Rollback and restore to drafts.
 - **"Abort"** → Runs `abort.py`. Context-aware escape hatch: detects the current branch type, rolls back the branch(es), deregisters from registry, and prompts whether to move active specs to drafts or delete them.
 - **"Project history"** or **"Generate history"** → Runs `history.py`. Generates `.cicadas/canon/history.html` timeline from archive and index.
-- **"Create skill {name}"** or **"Build a skill for X"** → Reads `skill-create.md`. Runs start flow (name, draft folder, Building on AI?, publish destination, PR preference), then dialogue-driven SKILL.md authoring, kickoff, branch, validate.
+- **"Create skill {name}"** or **"Build a skill for X"** → Reads `skill-create.md`. Runs start flow (name, draft folder, LLMs and Evals?, publish destination, PR preference), then dialogue-driven SKILL.md authoring, kickoff, branch, validate.
 - **"Edit skill {name}"** → Reads `skill-edit.md`. One diagnostic question, targeted minimum change, validate.
 - **"Validate skill {name}"** → Runs `validate_skill.py {slug}`. Reports spec compliance errors or confirms valid.
 - **"Complete skill {name}"** or **"Publish skill {name}"** → Merges `skill/{slug}` to `main`, runs `skill_publish.py {slug}`, archives initiative.

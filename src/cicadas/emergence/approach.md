@@ -27,7 +27,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - Option 3 (full, default): `python {cicadas-dir}/scripts/create_lifecycle.py {initiative}`
 
 2.  **Ingest**: Read `prd.md`, `ux.md`, and `tech-design.md` from `.cicadas/drafts/{initiative}/` (or `.cicadas/active/{initiative}/` if the initiative was already kicked off).
-3.  **Building on AI — Eval spec offer and placement** (initiatives only): Read `emergence-config.json` from `.cicadas/drafts/{initiative}/` or `.cicadas/active/{initiative}/`. If `building_on_ai` is true and `eval_status` is `"will_do"`:
+3.  **LLMs and Evals — Eval spec offer and placement** (initiatives only): Read `emergence-config.json` from `.cicadas/drafts/{initiative}/` or `.cicadas/active/{initiative}/`. If `building_on_ai` is true and `eval_status` is `"will_do"`:
     - **Eval spec offer**: If `eval-spec.md` does not yet exist in drafts or active for this initiative, ask: *"Would you like help creating the eval spec now? I'll walk you through the template using the LLMOps Experimentation playbook (define success, dataset, rubrics, harness, experiment, wrap-up). (yes / no)"* If yes, run the **[Eval Spec](./eval-spec.md)** instruction module, then continue with the placement question below. If no or if eval-spec.md already exists, skip to the placement question.
     - **Eval placement**: Ask the Builder: *"Do you want to insert the (manual) eval step before starting the build, or run evals in parallel with the build? (before / parallel)"*.
     - If the user chooses **parallel**, show: *"Heads up: if evals run in parallel, their results may materially affect requirements and design. We suggest waiting for eval results before locking the build plan. You can still proceed now if you prefer."*

@@ -305,6 +305,18 @@ Each returns an opinion, reasoning, and confidence.
 
 ---
 
+### 13. Eval Sample Collection
+
+**FR-13.1:** After every resolved interrupt, chorus appends an eval sample to `supervisor/eval-samples/{session_id}.jsonl` (JSONL, one object per line). Writing is best-effort — a write failure logs a warning and does not interrupt the supervisor loop.
+
+**FR-13.2:** Each sample captures: `sample_id` (UUID), `captured_at` (ISO-8601 UTC), `initiative`, `question`, `context`, `resolution_path`, `classifier_output` (confidence + tier), `party_outputs` (reviewer texts, synthesis, consensus — null on shallow path), `final_answer`, and `label` (always `null` at capture; intended for human annotation).
+
+**FR-13.3:** Eval logging is enabled by default. A `--no-eval-log` CLI flag disables it for a session.
+
+**FR-13.4:** Eval samples accumulate across sessions within the same initiative. Each session writes its own JSONL file; the directory acts as the dataset. No rotation or cleanup is performed by chorus.
+
+---
+
 ## Non-Functional Requirements
 
 - **Performance:** Shallow interrupt resolution <5s. Deep interrupt resolution <30s worst case (parallel reviewer calls + synthesis + consensus + one retry). Intent summary synthesis at session start <15s. Soft targets — correctness takes priority over speed.
