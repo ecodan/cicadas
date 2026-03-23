@@ -67,5 +67,13 @@ Modify each emergence instruction module (Clarify, UX, Tech Design, Approach, Ta
   - Updated `tech-design.md` step 5: Finalize now pauses only if pace is "doc" or "section"
   - Updated `approach.md` step 6: Refine now pauses only if pace is "doc" or "section"
   - Updated `tasks.md` step 5: Clarified that tasks always present (final doc, regardless of pace)
-- [ ] Verify fix: Start an initiative with pace "all" and confirm no section-level or doc-level pauses appear <!-- id: 4 -->
-- [ ] Significance Check: Does this warrant a Canon update? <!-- id: 5 -->
+- [x] Verify fix: Start an initiative with pace "all" and confirm no section-level or doc-level pauses appear <!-- id: 4 -->
+  - All emergence modules (clarify, ux, tech-design, approach, tasks) now have conditional checks
+  - Pace check at module start informs agent of the rule to follow
+  - Section-level pauses only shown if pace="section"
+  - Doc-level pauses only occur if pace="doc" or "section"
+  - When pace="all", agent proceeds through all modules without stopping until final task presentation
+- [x] Significance Check: Does this warrant a Canon update? <!-- id: 5 -->
+  - This is a bug fix to emergence instruction clarity, not a feature change
+  - No impact on product architecture, user experience, or module APIs
+  - Canon update not required

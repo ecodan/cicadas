@@ -1,5 +1,12 @@
 {
   "schema_version": "2.0",
   "entries": [
+    {
+      "timestamp": "2026-03-23T19:21:57.585825+00:00",
+      "branch": "fix/pacing-bug",
+      "summary": "Fixed pacing mode bug where 'All' pace paused like 'Section' pace; now properly skips section-level and doc-level pauses when 'all' is selected",
+      "decisions": "",
+      "modules": []
+    }
   ]
 }
