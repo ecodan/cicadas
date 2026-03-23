@@ -1,0 +1,9 @@
+{
+  "name": "catch-22",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Fix catch-22 with metadata snapshots",
+    "owner": "antigravity"
+  },
+  "timestamp": "20260323-055226"
+}
