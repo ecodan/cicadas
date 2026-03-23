@@ -28,7 +28,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 3.  **Group by Partition**: Tasks MUST be organized under the partitions defined in `approach.md`. Each partition's tasks map to a Feature Branch.
 4.  **Draft**: Create `.cicadas/drafts/{initiative}/tasks.md`.
     -   Use the format `- [ ] Task Description <!-- id: N -->`
-5.  **Refine**: Builder review.
+5.  **Refine**: **Always present to the Builder for review.** Tasks is the final spec doc — it is always presented regardless of pace setting.
 6.  **Consistency Check**: Once the Builder approves `tasks.md`, run the
     `emergence/consistency-check` instruction module. It reads all five draft docs and surfaces any
     cross-phase contradictions as questions for the Builder. Resolve any flagged issues before

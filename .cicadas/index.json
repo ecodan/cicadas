@@ -2,9 +2,9 @@
   "schema_version": "2.0",
   "entries": [
     {
-      "timestamp": "2026-03-23T15:26:37.716039+00:00",
-      "branch": "tweak/ai-clarification",
-      "summary": "Replaced 'building on ai' user-facing phrase with 'will this feature/change be powered by LLMs and may require ML evals to ensure quality?' across all emergence modules and docs. Internal building_on_ai key unchanged.",
+      "timestamp": "2026-03-23T19:21:57.585825+00:00",
+      "branch": "fix/pacing-bug",
+      "summary": "Fixed pacing mode bug where 'All' pace paused like 'Section' pace; now properly skips section-level and doc-level pauses when 'all' is selected",
       "decisions": "",
       "modules": []
     }
