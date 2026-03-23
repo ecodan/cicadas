@@ -58,6 +58,7 @@ python src/cicadas/scripts/abort.py
 python src/cicadas/scripts/history.py [--output path]
 python src/cicadas/scripts/validate_skill.py {slug-or-path}
 python src/cicadas/scripts/skill_publish.py {slug} [--publish-dir DIR] [--symlink] [--force]
+python src/cicadas/scripts/unarchive.py {name}
 ```
 
 ## Architecture
@@ -69,7 +70,7 @@ Cicadas is a **spec-driven development methodology toolset** for human-AI teams.
 
 ### `src/cicadas/` Structure
 
-- `scripts/` — CLI tools for the full initiative lifecycle. All share `utils.py` for root detection (`get_project_root()`), branch detection (`get_default_branch()`), and JSON I/O (`load_json`/`save_json`). `tokens.py` provides the append-only token usage log API (`init_log`, `append_entry`, `load_log`) used by `kickoff.py` and `branch.py`. `review.py` reads `review.md` verdict and returns exit codes; imported by `open_pr.py` for the merge gate check. `validate_skill.py` checks an Agent Skill directory against the spec (name charset/length/dir-match, description ≤1024 chars, frontmatter delimiters) using stdlib regex. `skill_publish.py` copies or symlinks an active skill to its `publish_dir` with a pre-publish validation gate.
+- `scripts/` — CLI tools for the full initiative lifecycle. All share `utils.py` for root detection (`get_project_root()`), branch detection (`get_default_branch()`), and JSON I/O (`load_json`/`save_json`). `tokens.py` provides the append-only token usage log API (`init_log`, `append_entry`, `load_log`) used by `kickoff.py` and `branch.py`. `review.py` reads `review.md` verdict and returns exit codes; imported by `open_pr.py` for the merge gate check. `validate_skill.py` checks an Agent Skill directory against the spec (name charset/length/dir-match, description ≤1024 chars, frontmatter delimiters) using stdlib regex. `skill_publish.py` copies or symlinks an active skill to its `publish_dir` with a pre-publish validation gate. `unarchive.py` restores archived state from metadata snapshots.
 - `emergence/` — Markdown instruction modules (Clarify, UX, Tech, Approach, Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec, Code Review, Skill Create, Skill Edit) — inline role files read in the current context window; no separate agent process is spawned. **start-flow.md** defines the standard start flow (name → draft folder → **Building on AI?** → requirements source/pace → publish destination for skills → PR preference) run first for initiative, tweak, bug, or skill. Building on AI and eval status are stored in `emergence-config.json` (skills skip the eval-status follow-up — Post-MVP). **skill-create.md** drives dialogue-driven Agent Skill authoring: clarifying dialogue, SKILL.md + bundled files generation, `eval_queries.json` draft, kickoff + validate. **skill-edit.md** handles targeted edits: one diagnostic question, minimum-change before/after proposal, validate. For initiatives building on AI with "will do" evals, **eval-spec.md** guides creation of `eval-spec.md` in drafts/active after PRD/UX/Tech; Approach asks eval placement (before build / in parallel). For tweaks/bugs, a light-touch reminder can be added to the tweaklet/buglet. Cicadas does not run evals. Clarify supports intake via Q&A, a requirements doc (`drafts/{initiative}/requirements.md`), or a Loom transcript (`drafts/{initiative}/loom.md`). These are **agent prompts**, not code.
 - `templates/` — Markdown templates for specs (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`, `buglet.md`, `tweaklet.md`, `eval-spec.md`, `review.md`, `skill-SKILL.md`) and Canon docs (`product-overview.md`, `ux-overview.md`, `tech-overview.md`, `module-snapshot.md`, `canon-summary.md`).
 - `SKILL.md` — The master agent skill definition (read this for full operational detail).
@@ -104,7 +105,7 @@ Cicadas is a **spec-driven development methodology toolset** for human-AI teams.
 2. **Kickoff** — `kickoff.py` promotes drafts → `active/`, registers in `registry.json`, creates `initiative/{name}` branch.
 3. **Feature Branches** — `branch.py` creates `feat/{name}`, declares module scope to detect overlaps.
 4. **Inner Loop** — Task branches → Reflect (update active specs to match code) → PR to feature branch (if lifecycle has PR at tasks).
-5. **Complete Initiative** — Merge initiative → `master` (open PR if lifecycle has PR at initiatives), Synthesize Canon on `master`, Archive specs.
+5. **Complete Initiative** — Synthesize Canon on `master`, Archive specs (move to `archive/` and deregister), and then merge initiative → `master` (open PR if lifecycle has PR at initiatives).
 6. **Lifecycle** — Per-initiative `lifecycle.json` (drafts/active) sets PR boundaries and steps; `status.py` reports Merged/Next (git-based).
 
 ### Key Invariants (Guardrails)

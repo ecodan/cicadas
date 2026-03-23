@@ -166,6 +166,7 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 2.  **Kickoff**: Promotes the single spec to active.
 3.  **Branch**: Forks directly from `main`.
 4.  **Complete**: Merge to `main`, optionally update Canon, and Archive.
+    - **Note**: You can run `archive` and include the spec move in your PR to `main`. Use `unarchive` if you need to revert and make further changes.
 
 **Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent runs `abort.py` from the current branch, rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
 

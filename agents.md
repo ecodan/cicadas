@@ -9,7 +9,7 @@ Cicadas is both the **product** and the **process**. We use the Cicadas methodol
 
 ### Source & Code
 - **[src/](src/)**: The main source directory.
-  - **[src/cicadas/](src/cicadas/)**: Contains the core logic of the orchestrator, including lifecycle scripts (kickoff, branch, status, create_lifecycle, open_pr, review, validate_skill, skill_publish), emergence instruction modules (the **standard start flow** in `emergence/start-flow.md` for initiative/tweak/bug/skill, **skill-create.md** and **skill-edit.md** for dialogue-driven Agent Skill authoring, plus **Building on AI** — gate and eval status in start flow, optional eval spec for initiatives, eval/benchmark reminder for tweaks/bugs), and spec templates (including `skill-SKILL.md` scaffold).
+  - **[src/cicadas/](src/cicadas/)**: Contains the core logic of the orchestrator, including lifecycle scripts (kickoff, branch, status, create_lifecycle, open_pr, review, validate_skill, skill_publish, unarchive), emergence instruction modules (the **standard start flow** in `emergence/start-flow.md` for initiative/tweak/bug/skill, **skill-create.md** and **skill-edit.md** for dialogue-driven Agent Skill authoring, plus **Building on AI** — gate and eval status in start flow, optional eval spec for initiatives, eval/benchmark reminder for tweaks/bugs), and spec templates (including `skill-SKILL.md` scaffold).
 - **[tests/](tests/)**: A comprehensive suite of unit and integration tests ensuring the reliability of the CLI scripts and orchestration logic.
 
 ### Agent & Methodology Memory

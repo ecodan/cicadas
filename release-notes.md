@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 0.6.2
+
+- **1-PR Archive Flow**: `archive.py` now snapshots the initiative's registry metadata into a `.cicadas_metadata.json` file within the archive folder. This allows you to include the archive move and registry cleanup in your main PR for a single-commit finalization.
+- **Unarchive Script**: New `unarchive.py` tool. If a PR needs rework after being archived, run `cicadas unarchive {name}` to instantly restore the registry state and move files back to `active/`.
+- **Integrated Guidance**: `open_pr.py` now detects initiative branches and recommends the 1-PR flow. `lifecycle-default.json` updated to prioritize Synthesize → Archive → Open PR sequence.
+- **Tests**: New `tests/test_unarchive.py` validates metadata snapshotting and state restoration.
+
 ## Version 0.6.1
 
 - **Agent Skill Authoring**: New `skill/` branch prefix and full skill lifecycle. `skill-create.md` — dialogue-driven authoring: start flow → 4-question clarifying dialogue → complete SKILL.md + optional bundled files (`scripts/`, `references/`, `assets/`) + `eval_queries.json` draft → kickoff + branch + validate. `skill-edit.md` — one diagnostic question, minimum-change before/after proposal, validate on apply. `validate_skill.py` — spec-compliance validator (name charset/length/dir-match, description ≤1024 chars, frontmatter delimiters; stdlib regex, handles single-line, folded, and block YAML scalars). `skill_publish.py` — copy or symlink active skill to `publish_dir` with pre-publish validation gate; reads destination from `emergence-config.json`. `skill-SKILL.md` scaffold template. `skill/` added to `branch.py`, `abort.py`, `archive.py`, `status.py` (new "Active Skills" display section). `start-flow.md` updated: new Publish destination step (skills only), skill column in scoping table, Building on AI? skips eval-status follow-up for skills. `SKILL.md` updated: branch hierarchy, Skills Operations section, Builder commands, CLI entries. 22 new tests (14 for validate_skill, 8 for skill_publish) plus skill/ regression assertions across 4 existing test files. 174 tests total.

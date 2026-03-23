@@ -91,7 +91,7 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
 When all features are merged into the initiative branch, we merge to `main` and then:
 1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/` (including `canon/summary.md` — a 300–500 token snapshot used to inject context at branch start).
 2.  **Archive**: Active specs are moved to `.cicadas/archive/`.
-
+    - **1-PR Flow**: You can include the `archive` move and registry cleanup in your main PR for a single-commit finalization. If rework is needed, use `unarchive` to restore the state instantly.
 
 
 ### Quick Command Reference
@@ -108,7 +108,8 @@ All scripts are in `src/cicadas/scripts/`.
 | **Lifecycle** | `python src/cicadas/scripts/create_lifecycle.py {name}` (PR boundaries + steps in drafts/active) |
 | **Open PR** | `python src/cicadas/scripts/open_pr.py [--base branch]` (gh/glab/Bitbucket/fallback; blocks on BLOCK verdict) |
 | **Check Review** | `python src/cicadas/scripts/review.py [--initiative name]` (read verdict from review.md) |
-| **Archive** | `python src/cicadas/scripts/archive.py {name}` |
+| **Archive** | `python src/cicadas/scripts/archive.py {name} [--type initiative]` (now snapshots metadata) |
+| **Unarchive** | `python src/cicadas/scripts/unarchive.py {name}` |
 | **Abort** | `python src/cicadas/scripts/abort.py` |
 | **Project History** | `python src/cicadas/scripts/history.py` |
 | **Validate Skill** | `python src/cicadas/scripts/validate_skill.py {slug}` |
