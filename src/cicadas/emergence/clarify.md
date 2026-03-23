@@ -9,7 +9,7 @@
 
 FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
-0. **Standard Start Flow**: Run the full **[Standard Start Flow](./start-flow.md)** (Name → Draft folder → Building on AI? → Requirements source → Pace → PR preference) before doing anything else. `start-flow.md` is the canonical definition; the initiative-specific expansions below apply after that flow completes.
+0. **Standard Start Flow**: Run the full **[Standard Start Flow](./start-flow.md)** (Name → Draft folder → LLMs and Evals? → Requirements source → Pace → PR preference) before doing anything else. `start-flow.md` is the canonical definition; the initiative-specific expansions below apply after that flow completes.
 
     > **Process preview** (show to Builder before starting):
     > ```

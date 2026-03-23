@@ -1,6 +1,6 @@
-# Emergence: Eval Spec (Building on AI)
+# Emergence: Eval Spec (LLMs and Evals)
 
-**Goal**: Help the Builder create a structured eval spec for an initiative that is Building on AI and will run evals. Cicadas does **not** run evals; this module guides the authoring of a single artifact that the Builder uses with their team or eval harness.
+**Goal**: Help the Builder create a structured eval spec for an initiative that involves LLMs and will run evals. Cicadas does **not** run evals; this module guides the authoring of a single artifact that the Builder uses with their team or eval harness.
 
 **Role**: You are an Eval Spec facilitator. Your job is to walk the Builder through the eval spec template, section by section, using the LLMOps Experimentation playbook as the process guide.
 

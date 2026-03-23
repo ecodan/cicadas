@@ -21,7 +21,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
         *"What is the slug for this skill? 1. {their-name}, 2. Other (enter the name)"*
         Slugs become the directory name (`skill-{slug}`) and the `name` field in `SKILL.md`.
     0c. **Create draft folder**: Ensure `.cicadas/drafts/skill-{slug}/` exists (create it if needed).
-    0d. **Building on AI?**: Ask *"Is this skill building on AI? (yes / no)"*. Write `building_on_ai` to `.cicadas/drafts/skill-{slug}/emergence-config.json` (merge with existing keys). Building-on-AI evals for skills are Post-MVP; skip the eval-status follow-up.
+    0d. **LLMs and Evals?**: Ask *"Is this skill powered by LLMs and may require ML evals to ensure quality? (yes / no)"*. Write `building_on_ai` to `.cicadas/drafts/skill-{slug}/emergence-config.json` (merge with existing keys). Building-on-AI evals for skills are Post-MVP; skip the eval-status follow-up.
     0e. **Publish destination**: Detect common agent skill directories in the project root (in order: check `config.json skill_publish_dir` key → `.agents/skills/` → `.claude/skills/` → `src/` → `skills/`). Ask:
         *"Where should the finished skill be published when the branch is merged?*
         *  1. {detected-path}/{slug}   ← detected*

@@ -18,7 +18,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
         ```
     0b. **Name**: Get or confirm the tweak name. If the user already gave a name (e.g. "Start a tweak called XYZ"), still ask: *"What is the name of this tweak? 1. XYZ, 2. Other (enter the name)"*.
     0c. **Create draft folder**: Ensure `.cicadas/drafts/{name}/` exists (create it if needed).
-    0d. **Building on AI?**: Ask *"Is this project building on AI? (yes / no)"*. If **yes**, ask *"This project involves Building on AI. Experimentation and evals may be required. Does this project already have completed evals, or will you be doing evals? (already have / will do)"*. Write `building_on_ai` and `eval_status` to `.cicadas/drafts/{name}/emergence-config.json` (merge with existing keys). If **no**, write `building_on_ai: false` and continue.
+    0d. **LLMs and Evals?**: Ask *"Will this feature or change be powered by LLMs and may require ML evals to ensure quality? (yes / no)"*. If **yes**, ask *"This change involves LLMs. Experimentation and evals may be required. Does this project already have completed evals, or will you be doing evals? (already have / will do)"*. Write `building_on_ai` and `eval_status` to `.cicadas/drafts/{name}/emergence-config.json` (merge with existing keys). If **no**, write `building_on_ai: false` and continue.
     0e. **PR preference**: Ask *"Do you want to open a PR when merging this tweak to master? (yes / no)"*, then run `create_lifecycle.py`:
         - **Yes** (default): `python {cicadas-dir}/scripts/create_lifecycle.py {name} --no-pr-features`
         - **No**: `python {cicadas-dir}/scripts/create_lifecycle.py {name} --no-pr-initiatives --no-pr-features`
@@ -29,7 +29,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - Clearly state the intent.
     - Outline the specific code or UI changes.
     - Ensure the change is supported with automated tests.
-    - **Building on AI reminder**: If `emergence-config.json` has `building_on_ai: true` and `eval_status: "will_do"`, before finalizing the tweaklet ask: *"This work touches AI and you said you'll run evals/benchmarks. I can add a reminder to your tweaklet — e.g. a task 'Run existing eval or benchmark; document result.' Add it? (yes / no)"*. If yes, add one checklist task or a short "Eval / benchmark" section. Do **not** offer the full eval-spec authoring flow (that is for initiatives only).
+    - **LLM and Eval reminder**: If `emergence-config.json` has `building_on_ai: true` and `eval_status: "will_do"`, before finalizing the tweaklet ask: *"This work involves LLMs and you said you'll run evals/benchmarks. I can add a reminder to your tweaklet — e.g. a task 'Run existing eval or benchmark; document result.' Add it? (yes / no)"*. If yes, add one checklist task or a short "Eval / benchmark" section. Do **not** offer the full eval-spec authoring flow (that is for initiatives only).
 4.  **Review**: Present the `tweaklet.md` to the Builder for approval. Once approved, show the implementation path:
     ```
     Next steps:   Kickoff → Branch (tweak/{name}) → Implement → Significance check → Merge to master → Archive → Branch cleanup
