@@ -1,8 +1,8 @@
 {
   "pr_boundaries": {
     "specs": false,
-    "initiatives": true,
-    "features": true,
+    "initiatives": false,
+    "features": false,
     "tasks": false
   },
   "steps": [
@@ -19,7 +19,7 @@
     {
       "id": "feature_work",
       "name": "Feature work (per feature)",
-      "description": "Task branches → implement → test → reflect → commit → push → PR (if enabled) → merge to feature"
+      "description": "Task branches \u2192 implement \u2192 test \u2192 reflect \u2192 commit \u2192 push \u2192 PR (if enabled) \u2192 merge to feature"
     },
     {
       "id": "complete_feature",
@@ -29,7 +29,8 @@
     {
       "id": "complete_initiative",
       "name": "Complete initiative",
-      "description": "Synthesize canon, archive (registry cleanup), open PR, merge"
+      "description": "Open PR to main (if enabled), merge, synthesize canon, archive"
     }
-  ]
+  ],
+  "initiative": "catch-22"
 }

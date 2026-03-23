@@ -41,6 +41,24 @@ def archive(name, type_="branch", force=False):
     husk = cicadas / "archive" / f"{ts}-{name}"
 
     if active.exists():
+        # Save metadata snapshot for unarchive
+        metadata = {
+            "name": name,
+            "type": type_,
+            "registry_entry": registry[registry_key][name],
+            "timestamp": ts,
+        }
+        # If initiative, also snapshot associated branches that are about to be deregistered
+        if type_ == "initiative":
+            orphaned_branches = {
+                b: info for b, info in registry.get("branches", {}).items() 
+                if info.get("initiative") == name
+            }
+            if orphaned_branches:
+                metadata["associated_branches"] = orphaned_branches
+
+        save_json(active / ".cicadas_metadata.json", metadata)
+
         if name.startswith("fix/") or name.startswith("tweak/") or name.startswith("skill/"):
             print("!!! LIGHTWEIGHT PATH SIGNIFICANCE CHECK !!!")
             print(f"Agent: Before archiving {name}, have you verified if this change warrants a Canon update?")

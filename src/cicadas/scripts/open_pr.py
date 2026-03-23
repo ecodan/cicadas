@@ -89,6 +89,18 @@ def open_pr(base_branch: str | None = None, body_file: str | None = None) -> int
     if _check_review_verdict(root, current) != 0:
         return 1
 
+    # Check if this is an initiative branch and suggest archiving first for 1-PR flow
+    if current.startswith("initiative/"):
+        name = current.split("/", 1)[1]
+        active_dir = root / ".cicadas" / "active" / name
+        if active_dir.exists():
+            print(f"[TIP]  To include finalization in this PR (1-PR flow):")
+            print(f"       1. Run 'cicadas synthesize {name} --initiative'")
+            print(f"       2. Run 'cicadas archive {name} --type initiative'")
+            print(f"       3. Commit and push the archive move and registry deletion.")
+            print(f"       (You can always undo with 'cicadas unarchive {name}' if rework is needed.)")
+            print("-" * 40)
+
     body_path: Path | None = (root / body_file) if body_file else None
 
     # 1) GitHub CLI

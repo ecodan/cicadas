@@ -1,0 +1,11 @@
+{
+  "name": "manual-test",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Manual verification of unarchive",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-03-23T05:50:13.056532+00:00"
+  },
+  "timestamp": "20260323-055032"
+}
