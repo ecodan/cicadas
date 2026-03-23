@@ -1,5 +1,22 @@
 {
   "schema_version": "2.0",
-  "initiatives": {},
-  "branches": {}
+  "initiatives": {
+    "initiative-scope-gate": {
+      "intent": "Add scope gate to clarify.md that detects when an initiative should be a tweak and offers to switch paths",
+      "owner": "unknown",
+      "signals": [],
+      "created_at": "2026-03-23T05:00:33.326098+00:00"
+    }
+  },
+  "branches": {
+    "tweak/initiative-scope-gate": {
+      "intent": "Add scope gate step to clarify.md",
+      "modules": [
+        "emergence"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-23T05:00:40.770531+00:00",
+      "initiative": "initiative-scope-gate"
+    }
+  }
 }

@@ -40,13 +40,15 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
         - **[I]**: `python {cicadas-dir}/scripts/create_lifecycle.py {name} --no-pr-features`
         - **[N]**: `python {cicadas-dir}/scripts/create_lifecycle.py {name} --no-pr-initiatives --no-pr-features`
 
-1. **Ingest**: Read the initial request and identify the initiative name. _(Only when intake is [Q] Q&A.)_
+1. **Scope Gate**: Before proceeding with the full initiative spec process, briefly assess whether the Builder's described work fits the tweak criteria: fewer than ~100 lines of code, no new dependencies, and no architectural impact. If it does, ask: *"Based on what you've described, this sounds like it could be handled as a lightweight tweak rather than a full initiative — which would mean less documentation and a faster path to implementation. Would you like to switch to the tweak path instead? (yes / no)"*. If the Builder says **yes**, switch to the tweak flow ([tweak.md](./tweak.md)) — reuse the draft folder and `emergence-config.json` already created by the start flow. If **no**, continue with the full initiative.
 
-2. **Canon Check**: On brownfield projects, read existing canon (`product-overview.md`, `ux-overview.md`, `tech-overview.md`) to understand what the system already does. Use this to ask sharper, more targeted questions and to avoid re-specifying existing behavior.
+2. **Ingest**: Read the initial request and identify the initiative name. _(Only when intake is [Q] Q&A.)_
 
-3. **Initialize**: Create `.cicadas/drafts/{initiative}/prd.md` using the template at `{cicadas-dir}/templates/prd.md`. The template contains a **Progress** checklist — use this as your working checklist, ticking each item (`- [ ]` → `- [x]`) when a section is approved.
+3. **Canon Check**: On brownfield projects, read existing canon (`product-overview.md`, `ux-overview.md`, `tech-overview.md`) to understand what the system already does. Use this to ask sharper, more targeted questions and to avoid re-specifying existing behavior.
 
-4. **Iterative Drafting**: Build the PRD section-by-section in **Progress checklist** order. For each section:
+4. **Initialize**: Create `.cicadas/drafts/{initiative}/prd.md` using the template at `{cicadas-dir}/templates/prd.md`. The template contains a **Progress** checklist — use this as your working checklist, ticking each item (`- [ ]` → `- [x]`) when a section is approved.
+
+5. **Iterative Drafting**: Build the PRD section-by-section in **Progress checklist** order. For each section:
     - **Draft**: Write the section content.
     - **Present**: Show the drafted section to the user.
     - **Halt & Elicit**: Present the **Balanced Elicitation Menu** and STOP for input:
