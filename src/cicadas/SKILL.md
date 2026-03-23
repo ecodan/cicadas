@@ -273,9 +273,17 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 2. **Kickoff**: `python {cicadas-dir}/scripts/kickoff.py {name}`. Promotes the single spec to `active/`.
 3. **Branch**: `python {cicadas-dir}/scripts/branch.py {fix|tweak}/{name} --initiative {name}`. Forks directly from `main`.
 4. **Implement**: Work directly on the fix/tweak branch.
-5. **Significance Check**: Before completion, the Agent evaluates if the change warrants a Canon update.
-6. **Complete**: Merge to `main`, optionally Reflect/Synthesize to Canon, and Archive.
-7. **Branch cleanup**: Offer to delete the fix/tweak branch locally and on remote:
+5. **Reflect**: Update `active/{name}/tweaklet.md` (or `buglet.md`) to mark tasks complete and note any implementation divergence.
+6. **Significance Check**: Evaluate if the change warrants a Canon update. If yes, synthesize and commit canon before proceeding.
+7. **Archive** *(on the fix/tweak branch — before opening the PR)*:
+   ```
+   python {cicadas-dir}/scripts/archive.py {name} --type initiative
+   python {cicadas-dir}/scripts/update_index.py --branch {fix|tweak}/{name} --summary "..."
+   git add .cicadas/ && git commit -m "chore(cicadas): archive {name}"
+   ```
+8. **Open PR**: `python {cicadas-dir}/scripts/open_pr.py --base main` — the PR now contains both the implementation *and* the archive in one changeset (1-PR flow).
+9. **Builder merges the PR**.
+10. **Branch cleanup**: Offer to delete the fix/tweak branch locally and on remote:
    ```
    git branch -d {fix|tweak}/{name}
    git push origin --delete {fix|tweak}/{name}
