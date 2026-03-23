@@ -1,4 +1,12 @@
 {
   "schema_version": "2.0",
-  "entries": []
+  "entries": [
+    {
+      "timestamp": "2026-03-23T15:26:37.716039+00:00",
+      "branch": "tweak/ai-clarification",
+      "summary": "Replaced 'building on ai' user-facing phrase with 'will this feature/change be powered by LLMs and may require ML evals to ensure quality?' across all emergence modules and docs. Internal building_on_ai key unchanged.",
+      "decisions": "",
+      "modules": []
+    }
+  ]
 }
