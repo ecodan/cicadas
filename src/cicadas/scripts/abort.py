@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from utils import WorktreeDirtyError, get_default_branch, get_project_root, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, get_default_branch, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 LIGHTWEIGHT_PREFIXES = ("tweak/", "fix/", "skill/")
 
@@ -75,7 +75,7 @@ def abort_lightweight(branch_name, initiative_name, root, cicadas, registry, for
     delete_branch(initiative_branch, root)
     registry.setdefault("initiatives", {}).pop(initiative_name, None)
 
-    save_json(cicadas / "registry.json", registry)
+    save_json(get_registry_dir() / "registry.json", registry)
     handle_docs(initiative_name, cicadas)
     print(f"\nAborted: {branch_name}")
 
@@ -102,14 +102,14 @@ def abort_feature(branch_name, initiative_name, root, cicadas, registry, force=F
 
     delete_branch(branch_name, root)
     registry.setdefault("branches", {}).pop(branch_name, None)
-    save_json(cicadas / "registry.json", registry)
+    save_json(get_registry_dir() / "registry.json", registry)
 
     if choice == "I":
         print(f"\nAlso aborting initiative '{initiative_name}'...")
         initiative_branch = f"initiative/{initiative_name}"
         delete_branch(initiative_branch, root)
         registry.setdefault("initiatives", {}).pop(initiative_name, None)
-        save_json(cicadas / "registry.json", registry)
+        save_json(get_registry_dir() / "registry.json", registry)
         handle_docs(initiative_name, cicadas)
         print(f"\nAborted: {branch_name} + initiative/{initiative_name}")
     else:
@@ -133,7 +133,7 @@ def main():
         print("Error: Could not determine current git branch.")
         sys.exit(1)
 
-    registry = load_json(cicadas / "registry.json")
+    registry = load_json(get_registry_dir() / "registry.json")
     force = "--force" in sys.argv
 
     if any(branch_name.startswith(p) for p in LIGHTWEIGHT_PREFIXES):
@@ -152,7 +152,7 @@ def main():
         print(f"\nAborting initiative '{initiative_name}'...")
         delete_branch(branch_name, root)
         registry.setdefault("initiatives", {}).pop(initiative_name, None)
-        save_json(cicadas / "registry.json", registry)
+        save_json(get_registry_dir() / "registry.json", registry)
         handle_docs(initiative_name, cicadas)
         print(f"\nAborted: {branch_name}")
 

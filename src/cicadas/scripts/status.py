@@ -4,7 +4,7 @@
 import subprocess
 from pathlib import Path
 
-from utils import get_default_branch, get_project_root, load_json
+from utils import get_default_branch, get_project_root, get_registry_dir, load_json
 
 
 def _is_merged_into(root: Path, source_ref: str, target_ref: str) -> bool:
@@ -80,7 +80,7 @@ def _lifecycle_merge_status(
 def show_status() -> None:
     root: Path = get_project_root()
     cicadas: Path = root / ".cicadas"
-    registry: dict = load_json(cicadas / "registry.json")
+    registry: dict = load_json(get_registry_dir() / "registry.json")
 
     print(f"Project: {root.name}\n")
 

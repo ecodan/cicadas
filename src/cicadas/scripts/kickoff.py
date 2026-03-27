@@ -7,13 +7,13 @@ import subprocess
 from datetime import UTC, datetime
 
 from tokens import append_entry
-from utils import get_project_root, load_json, parse_partitions_dag, save_json
+from utils import create_worktree, get_project_root, get_registry_dir, load_json, parse_partitions_dag, save_json, worktree_path
 
 
 def kickoff(name, intent, owner="unknown"):
     root = get_project_root()
     cicadas = root / ".cicadas"
-    registry = load_json(cicadas / "registry.json")
+    registry = load_json(get_registry_dir() / "registry.json")
 
     if name in registry.get("initiatives", {}):
         print(f"[ERR]  Initiative {name} already exists.")
@@ -39,7 +39,7 @@ def kickoff(name, intent, owner="unknown"):
 
     # Register
     registry.setdefault("initiatives", {})[name] = {"intent": intent, "owner": owner, "signals": [], "created_at": datetime.now(UTC).isoformat()}
-    save_json(cicadas / "registry.json", registry)
+    save_json(get_registry_dir() / "registry.json", registry)
 
     # Write lifecycle/kickoff token boundary entry
     append_entry(active_dir / "tokens.json", initiative=name, phase="lifecycle", subphase="kickoff", source="unavailable")
@@ -58,10 +58,10 @@ def kickoff(name, intent, owner="unknown"):
         else:
             print(f"[OK]   No module conflicts detected.")
 
-    # Create initiative branch and push to remote
+    # Create initiative branch without switching (stay on current branch)
     branch_name = f"initiative/{name}"
     try:
-        subprocess.run(["git", "checkout", "-b", branch_name], check=True, cwd=root)
+        subprocess.run(["git", "branch", branch_name], check=True, cwd=root)
         print(f"[OK]   Created initiative branch: {branch_name}")
     except subprocess.CalledProcessError:
         print(f"[WARN] Could not create git branch {branch_name}")
@@ -71,6 +71,17 @@ def kickoff(name, intent, owner="unknown"):
         print(f"[INFO] Pushed {branch_name} to remote.")
     except subprocess.CalledProcessError:
         print(f"[WARN] Could not push {branch_name} to remote. Push manually: git push -u origin {branch_name}")
+
+    # Create a linked worktree so this and other work streams stay independent
+    wt_dir = worktree_path(root, branch_name)
+    try:
+        created = create_worktree(root, branch_name, wt_dir)
+        registry["initiatives"][name]["worktree_path"] = str(created)
+        save_json(get_registry_dir() / "registry.json", registry)
+        print(f"[OK]   Worktree created: {created}")
+        print(f"[INFO] Work on this initiative in: {created}")
+    except Exception as e:
+        print(f"[WARN] Could not create worktree: {e}")
 
     print(f"[OK]   Initiative kicked off: {name}")
 

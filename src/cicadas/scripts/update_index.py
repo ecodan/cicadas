@@ -4,12 +4,11 @@
 import argparse
 from datetime import UTC, datetime
 
-from utils import get_project_root, load_json, save_json
+from utils import get_registry_dir, load_json, save_json
 
 
 def update_index(branch, summary, decisions="", modules=""):
-    root = get_project_root()
-    index_path = root / ".cicadas" / "index.json"
+    index_path = get_registry_dir() / "index.json"
     index = load_json(index_path)
 
     if isinstance(modules, str):

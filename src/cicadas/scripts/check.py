@@ -4,7 +4,7 @@
 import subprocess
 from pathlib import Path
 
-from utils import get_default_branch, get_project_root, load_json
+from utils import get_default_branch, get_project_root, get_registry_dir, load_json
 
 
 def check_conflicts(initiative_name: str | None = None) -> bool:
@@ -21,7 +21,7 @@ def check_conflicts(initiative_name: str | None = None) -> bool:
     """
     root = get_project_root()
     cicadas = root / ".cicadas"
-    registry = load_json(cicadas / "registry.json")
+    registry = load_json(get_registry_dir() / "registry.json")
     default_branch = get_default_branch()
     has_conflicts = False
 

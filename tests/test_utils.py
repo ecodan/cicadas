@@ -33,6 +33,30 @@ class TestUtils(CicadasTest):
         self.assertEqual(utils.get_default_branch(), expected)
 
 
+class TestGetRegistryRoot(CicadasTest):
+    def test_primary_worktree_returns_self(self):
+        self.init_git()
+        self.assertEqual(utils.get_registry_root().resolve(), self.root.resolve())
+
+    def test_linked_worktree_returns_primary(self):
+        self.init_git()
+        subprocess.run(["git", "checkout", "-b", "feat/rr-branch"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", "master"], cwd=self.root, check=True, capture_output=True)
+        wt_dir = self.root.parent / f"{self.root.name}-feat-rr-branch"
+        subprocess.run(["git", "worktree", "add", str(wt_dir), "feat/rr-branch"], cwd=self.root, check=True, capture_output=True)
+        try:
+            os.chdir(wt_dir)
+            result = utils.get_registry_root()
+            self.assertEqual(result.resolve(), self.root.resolve())
+        finally:
+            os.chdir(self.root)
+
+    def test_get_registry_dir_returns_cicadas_subdir(self):
+        self.init_git()
+        result = utils.get_registry_dir()
+        self.assertEqual(result.resolve(), (self.root / ".cicadas").resolve())
+
+
 class TestGitVersionCheck(unittest.TestCase):
     def test_passes_on_current_git(self):
         # Should not raise on any modern git installation

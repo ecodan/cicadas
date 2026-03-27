@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import subprocess
 import unittest
 
 import kickoff
@@ -102,6 +103,30 @@ class TestKickoff(CicadasTest):
         self.assertTrue(tokens_path.exists())
         data = json.loads(tokens_path.read_text())
         self.assertIn("entries", data)
+
+    def test_kickoff_creates_worktree(self):
+        """kickoff creates a linked worktree and stays on the original branch."""
+        self.init_git()
+        original_branch = subprocess.check_output(
+            ["git", "branch", "--show-current"], cwd=self.root
+        ).decode().strip()
+
+        kickoff.kickoff("wt-test", "worktree test")
+
+        # Main worktree stays on original branch
+        current = subprocess.check_output(
+            ["git", "branch", "--show-current"], cwd=self.root
+        ).decode().strip()
+        self.assertEqual(current, original_branch)
+
+        # Worktree directory was created
+        expected_wt = self.root.parent / f"{self.root.name}-initiative-wt-test"
+        self.assertTrue(expected_wt.exists())
+
+        # Registry records the worktree path
+        with open(self.cicadas_dir / "registry.json") as f:
+            registry = json.load(f)
+        self.assertIn("worktree_path", registry["initiatives"]["wt-test"])
 
     def test_kickoff_existing(self):
         self.init_git()

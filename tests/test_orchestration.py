@@ -42,8 +42,7 @@ class TestOrchestration(CicadasTest):
         self.assertIn(init_name, reg["initiatives"])
         self.assertTrue((self.cicadas_dir / "active" / init_name / "prd.md").exists())
 
-        # 2. Register a feature branch
-        subprocess.run(["git", "checkout", f"initiative/{init_name}"], cwd=self.root, check=True, capture_output=True)
+        # 2. Register a feature branch (initiative branch is in a worktree; create feat from master)
         subprocess.run(["git", "checkout", "-b", feat_name], cwd=self.root, check=True, capture_output=True)
         with open(self.cicadas_dir / "registry.json", "r+") as f:
             reg = json.load(f)

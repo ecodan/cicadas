@@ -7,13 +7,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-from utils import WorktreeDirtyError, get_default_branch, get_project_root, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, get_default_branch, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 
 def prune(name, type_, force=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
-    registry = load_json(cicadas / "registry.json")
+    registry = load_json(get_registry_dir() / "registry.json")
     default_branch = get_default_branch()
 
     if type_ == "branch":
@@ -48,7 +48,7 @@ def prune(name, type_, force=False):
             print(f"[WARN] Could not delete git branch {name}")
 
         del registry["branches"][name]
-        save_json(cicadas / "registry.json", registry)
+        save_json(get_registry_dir() / "registry.json", registry)
         print(f"[OK]   Pruned branch: {name}")
 
     elif type_ == "initiative":
@@ -84,7 +84,7 @@ def prune(name, type_, force=False):
             print(f"[WARN] Could not delete git branch {branch_name}")
 
         del registry["initiatives"][name]
-        save_json(cicadas / "registry.json", registry)
+        save_json(get_registry_dir() / "registry.json", registry)
         print(f"[OK]   Pruned initiative: {name}")
 
 

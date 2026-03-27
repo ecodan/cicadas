@@ -39,6 +39,24 @@ class CicadasTest(unittest.TestCase):
 
     def tearDown(self):
         os.chdir(self.old_cwd)
+        # Remove any linked worktrees before deleting the repo directory
+        git_dir = self.root / ".git"
+        if git_dir.is_dir():
+            try:
+                out = subprocess.check_output(
+                    ["git", "worktree", "list", "--porcelain"],
+                    cwd=self.root, stderr=subprocess.DEVNULL,
+                ).decode()
+                for line in out.splitlines():
+                    if line.startswith("worktree "):
+                        wt_path = Path(line[len("worktree "):].strip())
+                        if wt_path != self.root and wt_path.exists():
+                            subprocess.run(
+                                ["git", "worktree", "remove", "--force", str(wt_path)],
+                                cwd=self.root, capture_output=True,
+                            )
+            except Exception:
+                pass
         shutil.rmtree(self.test_dir)
 
     def init_git(self):

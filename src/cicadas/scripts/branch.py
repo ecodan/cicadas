@@ -13,6 +13,7 @@ from utils import (
     create_worktree,
     get_default_branch,
     get_project_root,
+    get_registry_dir,
     load_json,
     parse_partitions_dag,
     save_json,
@@ -58,7 +59,7 @@ def _write_context_md(worktree_dir: Path, cicadas: Path, modules: list[str], ini
 def create_branch(name, intent, modules, initiative=None, from_branch=None, owner="unknown", worktree_dir_override=None, no_worktree=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
-    registry = load_json(cicadas / "registry.json")
+    registry = load_json(get_registry_dir() / "registry.json")
     default_branch = get_default_branch()
 
     if name in registry.get("branches", {}):
@@ -94,16 +95,21 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
     use_worktree = False
     worktree_target = None
     wt_path_str = None
-    if not no_worktree and initiative:
-        approach_path = cicadas / "active" / initiative / "approach.md"
-        partitions = parse_partitions_dag(approach_path)
-        partition = next((p for p in partitions if p["name"] == name), None)
-
-        if partition is None and partitions:
-            print(f"[WARN] Partition '{name}' not found in approach.md partitions block — treating as sequential")
-        elif partition and partition.get("depends_on") == []:
+    if not no_worktree:
+        is_lightweight = name.startswith(("fix/", "tweak/", "skill/"))
+        if is_lightweight:
             use_worktree = True
             worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
+        elif initiative:
+            approach_path = cicadas / "active" / initiative / "approach.md"
+            partitions = parse_partitions_dag(approach_path)
+            partition = next((p for p in partitions if p["name"] == name), None)
+
+            if partition is None and partitions:
+                print(f"[WARN] Partition '{name}' not found in approach.md partitions block — treating as sequential")
+            elif partition and partition.get("depends_on") == []:
+                use_worktree = True
+                worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
 
     if use_worktree:
         # For parallel partitions: create branch WITHOUT switching (stay on parent)
@@ -152,7 +158,7 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
             branch_info["initiative"] = initiative
 
     registry.setdefault("branches", {})[name] = branch_info
-    save_json(cicadas / "registry.json", registry)
+    save_json(get_registry_dir() / "registry.json", registry)
 
     # Active dir is keyed by initiative name, not branch name.
     if initiative:

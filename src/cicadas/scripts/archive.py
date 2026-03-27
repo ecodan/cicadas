@@ -7,13 +7,13 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from utils import WorktreeDirtyError, get_project_root, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 
 def archive(name, type_="branch", force=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
-    registry = load_json(cicadas / "registry.json")
+    registry = load_json(get_registry_dir() / "registry.json")
 
     registry_key = "initiatives" if type_ == "initiative" else "branches"
 
@@ -21,7 +21,19 @@ def archive(name, type_="branch", force=False):
         print(f"[ERR]  {type_.capitalize()} {name} not found in registry.")
         return
 
-    # Worktree teardown (branch only — initiatives don't get worktrees directly)
+    # Worktree teardown
+    if type_ == "initiative":
+        wt = registry[registry_key][name].get("worktree_path")
+        if wt:
+            try:
+                remove_worktree(root, Path(wt), force=force)
+                print(f"[OK]   Worktree removed: {wt}")
+                registry[registry_key][name].pop("worktree_path", None)
+            except WorktreeDirtyError:
+                print(f"[WARN] Worktree has uncommitted changes: {wt}")
+                print("[WARN] Use --force to remove anyway, or commit/stash changes first.")
+                sys.exit(1)
+
     if type_ == "branch":
         wt = registry[registry_key][name].get("worktree_path")
         if wt:
@@ -85,7 +97,7 @@ def archive(name, type_="branch", force=False):
             del registry["branches"][b]
             print(f"[OK]   Deregistered associated branch: {b}")
 
-    save_json(cicadas / "registry.json", registry)
+    save_json(get_registry_dir() / "registry.json", registry)
     print(f"[OK]   Deregistered {type_}: {name}")
 
 

@@ -46,11 +46,11 @@ class TestBranch(CicadasTest):
         branch_name = "fix/my-bug"
         branch.create_branch(branch_name, "bug intent", "src/bar.py")
 
-        # Should branch from master/main
+        # Main worktree stays on default branch (worktree created instead)
         curr = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.root).decode().strip()
-        self.assertEqual(curr, branch_name)
+        self.assertEqual(curr, self.default_branch)
 
-        # Verify parent was master/main
+        # Branch was created and points to the same commit as default branch
         branch_hash = subprocess.check_output(["git", "rev-parse", branch_name], cwd=self.root).decode().strip()
         default_hash = subprocess.check_output(["git", "rev-parse", self.default_branch], cwd=self.root).decode().strip()
         self.assertEqual(branch_hash, default_hash)
@@ -68,11 +68,11 @@ class TestBranch(CicadasTest):
         branch_name = "skill/my-skill"
         branch.create_branch(branch_name, "skill intent", "", initiative=init_name)
 
-        # Should be on skill/ branch
+        # Main worktree stays on default branch (worktree created instead)
         curr = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.root).decode().strip()
-        self.assertEqual(curr, branch_name)
+        self.assertEqual(curr, self.default_branch)
 
-        # Parent must be default branch (not initiative/my-skill)
+        # Branch was created from default branch
         branch_hash = subprocess.check_output(["git", "rev-parse", branch_name], cwd=self.root).decode().strip()
         default_hash = subprocess.check_output(["git", "rev-parse", self.default_branch], cwd=self.root).decode().strip()
         self.assertEqual(branch_hash, default_hash)

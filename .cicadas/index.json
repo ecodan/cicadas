@@ -7,6 +7,13 @@
       "summary": "Fixed pacing mode bug where 'All' pace paused like 'Section' pace; now properly skips section-level and doc-level pauses when 'all' is selected",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-03-27T13:51:53.917221+00:00",
+      "branch": "tweak/worktree-support",
+      "summary": "Add git worktree support to kickoff and branch scripts: every kickoff/branch now creates a linked worktree so parallel workstreams don't stomp on each other's checked-out branch. Added get_registry_root/get_registry_dir to route registry I/O to the primary worktree.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
