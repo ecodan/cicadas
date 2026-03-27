@@ -1,6 +1,0 @@
-{
-  "building_on_ai": true,
-  "eval_status": "will_do",
-  "eval_deferred": "post-v1 — eval dataset requires real session data; synthetic benchmarks not productive pre-launch",
-  "pace": "section"
-}
