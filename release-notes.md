@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 0.6.3
+
+- **Worktree Support**: `kickoff.py` now creates a linked git worktree (`../{repo}-initiative-{name}`) instead of switching the main worktree to the new branch. `branch.py` extended to also create worktrees for `fix/`, `tweak/`, and `skill/` branches (previously only parallel `feat/` partitions used worktrees). Multiple Cicadas workstreams can now run simultaneously without branch-stomping.
+- **Registry Root Detection**: New `get_registry_root()` and `get_registry_dir()` in `utils.py`. Detects linked worktrees via `.git` file vs directory and routes `registry.json`/`index.json` I/O to the primary worktree, keeping shared state authoritative across all linked worktrees.
+- **archive.py**: Added initiative-level worktree removal on archive (branch worktrees already worked; initiatives now cleaned up too).
+- **Tests**: `CicadasTest.tearDown` now cleans up linked worktrees before deleting temp repos. New tests for `get_registry_root()`, `get_registry_dir()`, and kickoff worktree behavior. Updated branch and orchestration tests to reflect new worktree-first behavior (main worktree stays on default branch).
+
 ## Version 0.6.2
 
 - **1-PR Archive Flow**: `archive.py` now snapshots the initiative's registry metadata into a `.cicadas_metadata.json` file within the archive folder. This allows you to include the archive move and registry cleanup in your main PR for a single-commit finalization.

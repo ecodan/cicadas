@@ -77,7 +77,7 @@ When you start an initiative, tweak, bug, or skill, the agent runs a **standard 
 ### Phase 2: Kickoff
 We promote drafts to **Active Specs** and register the initiative.
 *   **Command**: `python src/cicadas/scripts/kickoff.py {name} --intent "..."`
-*   **Result**: Creates `initiative/{name}` branch and `.cicadas/active/{name}/`.
+*   **Result**: Creates `initiative/{name}` branch and `.cicadas/active/{name}/`. A linked git worktree is created at `../{repo}-initiative-{name}` so the main worktree stays on its current branch — multiple workstreams can run in parallel.
 
 ### Phase 3: Execution (The Dual Loop)
 Work happens in **Feature Branches** (registered) and **Task Branches** (ephemeral).
