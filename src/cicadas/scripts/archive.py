@@ -10,6 +10,15 @@ from pathlib import Path
 from utils import WorktreeDirtyError, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 
+def _emit(initiative: str, event_type: str, data: dict | None = None) -> None:
+    """Emit an event; failure is non-fatal."""
+    try:
+        from emit_event import emit_event
+        emit_event(initiative, event_type, data or {})
+    except Exception:
+        pass
+
+
 def archive(name, type_="branch", force=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
@@ -77,6 +86,7 @@ def archive(name, type_="branch", force=False):
             print("If yes, perform a 'Reflect' operation to update .cicadas/canon/ before proceeding.")
             print("-" * 40)
 
+        _emit(name, "specs.archived", {"archive_name": husk.name, "type": type_})
         shutil.move(str(active), str(husk))
         print(f"[OK]   Archived active specs to {husk.name}")
 

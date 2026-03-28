@@ -10,6 +10,15 @@ from tokens import append_entry
 from utils import create_worktree, get_project_root, get_registry_dir, load_json, parse_partitions_dag, save_json, worktree_path
 
 
+def _emit(initiative: str, event_type: str, data: dict | None = None) -> None:
+    """Emit an event; failure is non-fatal."""
+    try:
+        from emit_event import emit_event
+        emit_event(initiative, event_type, data or {})
+    except Exception:
+        pass
+
+
 def kickoff(name, intent, owner="unknown"):
     root = get_project_root()
     cicadas = root / ".cicadas"
@@ -40,6 +49,7 @@ def kickoff(name, intent, owner="unknown"):
     # Register
     registry.setdefault("initiatives", {})[name] = {"intent": intent, "owner": owner, "signals": [], "created_at": datetime.now(UTC).isoformat()}
     save_json(get_registry_dir() / "registry.json", registry)
+    _emit(name, "initiative.kicked_off", {"intent": intent})
 
     # Write lifecycle/kickoff token boundary entry
     append_entry(active_dir / "tokens.json", initiative=name, phase="lifecycle", subphase="kickoff", source="unavailable")

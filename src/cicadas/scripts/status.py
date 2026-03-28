@@ -7,6 +7,15 @@ from pathlib import Path
 from utils import get_default_branch, get_project_root, get_registry_dir, load_json
 
 
+def _recent_events(initiative: str, n: int = 5) -> list[dict]:
+    """Return up to n most recent events for an initiative; empty list if unavailable."""
+    try:
+        from get_events import get_events
+        return get_events(initiative, last=n)
+    except Exception:
+        return []
+
+
 def _is_merged_into(root: Path, source_ref: str, target_ref: str) -> bool:
     """Return True if source is merged into target (source's tip is ancestor of target's tip)."""
     try:
@@ -93,6 +102,12 @@ def show_status() -> None:
             print(f"    Signals ({len(signals)}):")
             for s in signals[-3:]:  # Show last 3
                 print(f"      [{s['timestamp']}] ({s.get('from_branch', '?')}): {s['message']}")
+        recent: list[dict] = _recent_events(name)
+        if recent:
+            print(f"    Recent events ({len(recent)}):")
+            for ev in recent:
+                ts: str = ev.get("timestamp", "")[:19].replace("T", " ")
+                print(f"      [{ts}] {ev.get('type', '?')} (branch: {ev.get('branch', '?')})")
 
     branches: dict = registry.get("branches", {})
     features: dict = {n: i for n, i in branches.items() if not (n.startswith("fix/") or n.startswith("tweak/") or n.startswith("skill/"))}
