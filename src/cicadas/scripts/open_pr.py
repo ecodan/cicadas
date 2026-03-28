@@ -17,16 +17,7 @@ import subprocess
 from pathlib import Path
 
 from review import parse_verdict
-from utils import get_default_branch, get_project_root, load_json
-
-
-def _emit(initiative: str, event_type: str, data: dict | None = None) -> None:
-    """Emit an event; failure is non-fatal."""
-    try:
-        from emit_event import emit_event
-        emit_event(initiative, event_type, data or {})
-    except Exception:
-        pass
+from utils import emit, get_default_branch, get_project_root, load_json
 
 
 def _initiative_for_branch(root: "Path", branch: str) -> str:
@@ -83,7 +74,7 @@ def _check_review_verdict(root: Path, current_branch: str) -> int:
         print(f"[BLOCK] Code review verdict for '{initiative}' is BLOCK.")
         print("  Resolve all Blocking findings before opening a PR.")
         print(f"  See: {review_path}")
-        _emit(initiative, "pr.blocked", {"reason": "BLOCK verdict from code review", "branch": current_branch})
+        emit(initiative, "pr.blocked", {"reason": "BLOCK verdict from code review", "branch": current_branch})
         return 1
     if verdict == "PASS WITH NOTES":
         print(f"[NOTE] Code review verdict for '{initiative}' is PASS WITH NOTES.")
@@ -128,7 +119,7 @@ def open_pr(base_branch: str | None = None, body_file: str | None = None) -> int
             cmd.extend(["--body-file", str(body_path)])
         try:
             subprocess.run(cmd, cwd=root, check=True)
-            _emit(initiative, "pr.opened", {"base": base, "head": current})
+            emit(initiative, "pr.opened", {"base": base, "head": current})
             return 0
         except subprocess.CalledProcessError:
             pass
@@ -141,7 +132,7 @@ def open_pr(base_branch: str | None = None, body_file: str | None = None) -> int
             cmd.extend(["--description-file", str(body_path)])
         try:
             subprocess.run(cmd, cwd=root, check=True)
-            _emit(initiative, "pr.opened", {"base": base, "head": current})
+            emit(initiative, "pr.opened", {"base": base, "head": current})
             return 0
         except subprocess.CalledProcessError:
             pass

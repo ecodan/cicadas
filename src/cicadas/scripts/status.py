@@ -10,7 +10,7 @@ from utils import get_default_branch, get_project_root, get_registry_dir, load_j
 def _recent_events(initiative: str, n: int = 5) -> list[dict]:
     """Return up to n most recent events for an initiative; empty list if unavailable."""
     try:
-        from get_events import get_events
+        from get_events import get_events  # lazy import — get_events.py may not always be in sys.path
         return get_events(initiative, last=n)
     except Exception:
         return []

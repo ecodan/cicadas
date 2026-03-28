@@ -11,6 +11,7 @@ from tokens import append_entry
 from utils import (
     WorktreeDirtyError,
     create_worktree,
+    emit,
     get_default_branch,
     get_project_root,
     get_registry_dir,
@@ -19,15 +20,6 @@ from utils import (
     save_json,
     worktree_path,
 )
-
-
-def _emit(initiative: str, event_type: str, data: dict | None = None) -> None:
-    """Emit an event; failure is non-fatal."""
-    try:
-        from emit_event import emit_event
-        emit_event(initiative, event_type, data or {})
-    except Exception:
-        pass
 
 
 def _write_context_md(worktree_dir: Path, cicadas: Path, modules: list[str], initiative: str | None) -> None:
@@ -134,7 +126,7 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
             created = create_worktree(root, name, worktree_target)
             wt_path_str = str(created)
             print(f"[OK]   Worktree created: {created}")
-            _emit(initiative or name, "worktree.created", {"branch": name, "worktree_path": wt_path_str})
+            emit(initiative or name, "worktree.created", {"branch": name, "worktree_path": wt_path_str})
             _write_context_md(created, cicadas, list(my_mods), initiative)
             print(f"[INFO] context.md written to worktree root (canon summary + module snapshots + tasks)")
             print(f"[INFO] Point your agent at: {created}")
@@ -169,7 +161,7 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
 
     registry.setdefault("branches", {})[name] = branch_info
     save_json(get_registry_dir() / "registry.json", registry)
-    _emit(initiative or name, "branch.created", {"branch": name, "intent": intent, "modules": list(my_mods)})
+    emit(initiative or name, "branch.created", {"branch": name, "intent": intent, "modules": list(my_mods)})
 
     # Active dir is keyed by initiative name, not branch name.
     if initiative:

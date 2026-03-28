@@ -224,6 +224,21 @@ class TestBranchWorktree(CicadasTest):
         reg = utils.load_json(self.cicadas_dir / "registry.json")
         self.assertNotIn("worktree_path", reg["branches"]["feat/parallel-branch"])
 
+    def test_create_branch_emits_branch_created_event(self):
+        """create_branch writes a branch.created event to events.jsonl."""
+        branch.create_branch("feat/event-branch", "event intent", "src/foo.py", initiative=self.init_name)
+
+        events_path = self.cicadas_dir / "active" / self.init_name / "events.jsonl"
+        self.assertTrue(events_path.exists(), "events.jsonl should be created by create_branch")
+
+        events = [json.loads(l) for l in events_path.read_text().splitlines() if l.strip()]
+        branch_events = [e for e in events if e["type"] == "branch.created"]
+        self.assertEqual(len(branch_events), 1)
+        ev = branch_events[0]
+        self.assertEqual(ev["initiative"], self.init_name)
+        self.assertEqual(ev["data"]["branch"], "feat/event-branch")
+        self.assertEqual(ev["data"]["intent"], "event intent")
+
 
 if __name__ == "__main__":
     unittest.main()
