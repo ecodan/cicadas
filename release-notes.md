@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 0.7.0
+
+- **Machine-Testable Partition Specs**: `approach.md` template now includes `#### Artifact Type`, `#### How to Run`, and `#### Acceptance Criteria` subsections in each partition block. `emergence/approach.md` (Step 4b) guides agents to infer artifact type, generate How to Run from `package.json`/`pyproject.toml`/`Makefile`/`Dockerfile`, and produce acceptance criteria by artifact type (rest-api → endpoint assertions, web-ui → interaction criteria, cli → stdout/exit, library → return values, background-service → side effects, full-stack → combined). `<!-- NEEDS MANUAL REVIEW -->` flags non-deterministic or external-dependency criteria.
+- **Event Log Infrastructure**: New `emit_event.py` and `get_events.py` scripts. Each initiative maintains an append-only `events.jsonl` at `.cicadas/active/{initiative}/events.jsonl`. `emit_event.py` writes typed events with `fcntl.flock` for concurrent-write safety. `get_events.py` reads and filters by `--type` (exact or prefix), `--since` (ISO 8601), and `--last N`; outputs JSONL to stdout; exits 0 with empty output when `events.jsonl` is absent.
+- **Event Log Integration**: Lifecycle scripts now emit events automatically: `kickoff.py` → `initiative.kicked_off`; `branch.py` → `branch.created` and `worktree.created`; `archive.py` → `specs.archived`; `open_pr.py` → `pr.opened` (gh/glab success) and `pr.blocked` (BLOCK verdict). All calls use `utils.emit()` — a non-fatal lazy-import wrapper so emit failures never abort primary operations.
+- **Status event display**: `status.py` now shows the 5 most recent events per active initiative in the status output, with graceful handling of missing `events.jsonl`.
+- **Implementation Rules 9 & 10**: `implementation.md` adds Rule 9 (emit `task.complete` after each task checkbox) and Rule 10 (emit `partition.complete` before partition PR, with `summary`, `canon_entry`, and `notes_for_evaluator` fields).
+- **SKILL.md Event Log section**: New "Event Log" subsection in Operations documents the event log path, `emit_event`/`get_events` CLI, event schema, full lifecycle and agent event type tables, and the design invariant (`get_events.py` is the only consumer interface — direct file reads are forbidden).
+- **utils.emit()**: Shared non-fatal event emitter added to `utils.py`. Replaces per-script `_emit` helpers; all lifecycle scripts import `emit` from utils.
+- **Tests**: 16 new tests for `emit_event.py` and `get_events.py` (concurrent writes, type prefix matching, `--last`, `--since`, missing file); 4 new integration tests asserting events land in `events.jsonl` after kickoff, create_branch, and archive; 1 new test asserting `status.py` displays Recent events. 251 tests total.
+
 ## Version 0.6.3
 
 - **Worktree Support**: `kickoff.py` now creates a linked git worktree (`../{repo}-initiative-{name}`) instead of switching the main worktree to the new branch. `branch.py` extended to also create worktrees for `fix/`, `tweak/`, and `skill/` branches (previously only parallel `feat/` partitions used worktrees). Multiple Cicadas workstreams can now run simultaneously without branch-stomping.

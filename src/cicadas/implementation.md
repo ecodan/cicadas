@@ -54,6 +54,27 @@ When an initiative is complete:
   - After merging the initiative branch into `main` and after the final canon commit: `git push origin main`.
 - **Why**: Collaborators and CI/CD systems depend on the remote. Local-only branches and merges are invisible to the team.
 
+## 9. Emit Task Completion Events
+After marking a task checkbox `- [x]` in `tasks.md`, emit a `task.complete` event:
+```
+python {cicadas-dir}/scripts/emit_event.py \
+  --initiative {name} --type task.complete \
+  --data '{"task_id": "<id>", "summary": "<one-line summary>"}'
+```
+- **Rule**: Use `check=False` (or the equivalent try/except wrapper) — emit failure must never abort the primary operation.
+- **Why**: Allows automated drivers (e.g., Chorus) to observe task-level progress without polling spec files.
+
+## 10. Emit Partition Completion Events
+When all tasks in a partition are marked `- [x]` and before opening the partition PR, emit a `partition.complete` event:
+```
+python {cicadas-dir}/scripts/emit_event.py \
+  --initiative {name} --type partition.complete \
+  --data '{"partition": "<branch-name>", "summary": "<what was built>", "canon_entry": "<suggested canon update>", "notes_for_evaluator": "<acceptance criteria notes>"}'
+```
+- **Rule**: `summary` is required. `canon_entry` and `notes_for_evaluator` are optional but strongly encouraged for automated evaluation.
+- **Rule**: Emit before opening the PR so the event is captured in the same active spec window as the implementation.
+- **Why**: Provides structured, machine-readable signal that a partition is ready for review — distinct from the PR itself.
+
 ---
 
 _Copyright 2026 Cicadas Contributors_
