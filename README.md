@@ -131,6 +131,8 @@ The **Cicadas** toolset manages the `.cicadas/` directory:
     │   ├── tech-overview.md
     │   └── modules/            # Module-level snapshots
     ├── active/                 # Live specs for in-flight initiatives
+    │   └── {name}/
+    │       └── events.jsonl    # Append-only event log (lifecycle + agent events)
     ├── drafts/                 # Staging area for new initiatives
     ├── archive/                # Expired specs (historical record)
     └── registry.json           # Active initiatives & branch registry
