@@ -46,6 +46,40 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     -   **Plan for backward compatibility and migration** (brownfield).
     -   **Other requirements or prohibitions**
         - Do NOT include estimated effort or timeframes for phases or tasks.
+
+4b. **Per-Partition Evaluator Sections**: For each partition defined in step 4, generate three additional subsections — `#### Artifact Type`, `#### How to Run`, and `#### Acceptance Criteria` — placed before `#### Implementation Steps`. These make the partition spec machine-testable by an automated evaluator.
+
+    -   **Infer Artifact Type**: Determine which type best describes what the partition produces:
+        - `web-ui` — browser-rendered interface
+        - `rest-api` — HTTP API endpoints
+        - `cli` — command-line tool
+        - `library` — importable module with no persistent process
+        - `background-service` — daemon or worker process
+        - `full-stack` — both server and client (evaluator will start both and test via browser)
+
+        Use the partition description, module names, and tech-design.md to infer the type. **When ambiguous, ask the Builder before proceeding.**
+
+    -   **Generate `#### How to Run`**: Inspect the project root for `package.json`, `pyproject.toml`, `Makefile`, and `Dockerfile` to determine the build system and derive exact commands:
+        - `start` — the exact command to launch the artifact (e.g. `npm run dev -- --port 3000`, `uvicorn app:main --port 8000`). **Omit for `library` and `cli` when there is no persistent process.**
+        - `ready-check` — an endpoint or condition the evaluator polls before beginning tests (e.g. `GET http://localhost:3000/health returns 200`). **Required for any artifact that starts a server.**
+        - `teardown` — how to stop the process (e.g. `Ctrl+C` / process group kill).
+        If tooling cannot be detected, write a placeholder and add `<!-- NEEDS MANUAL REVIEW -->`.
+
+    -   **Generate `#### Acceptance Criteria`**: Write a checklist of falsifiable, independently verifiable pass/fail statements matched to the artifact type:
+        - `rest-api`: endpoint criteria — HTTP method, path, status code, response shape (e.g. `POST /api/items returns 201 with {id, name, createdAt}`)
+        - `web-ui`: interaction criteria — user action → observable UI state, with timing where relevant (e.g. `submitting empty form displays inline error without page reload`)
+        - `cli`: stdout/stderr/exit-code criteria (e.g. `running with --help exits 0 and prints usage`)
+        - `library`: function call → return value or side effect (e.g. `parse_config("valid.toml") returns dict with expected keys`)
+        - `background-service`: observable side effects — files written, messages queued, state changed
+        - `full-stack`: combination of API and UI criteria
+
+        Each criterion must be:
+        - **Falsifiable** — has a single expected outcome that is either true or false
+        - **Observable** — checkable by an automated agent without human judgement
+        - **Specific** — includes exact endpoints, fields, status codes, commands, or UI states
+
+        Flag any criterion that cannot be made machine-verifiable with `<!-- NEEDS MANUAL REVIEW -->` so the Builder can revise before execution. Do NOT omit the criterion — losing the intent is worse than flagging it.
+
 5.  **Draft**: Create `.cicadas/drafts/{initiative}/approach.md` (or update `.cicadas/active/{initiative}/approach.md` if post-kickoff). Include the Eval step from step 3 when applicable.
 6.  **Refine**:
     - **If pace is `"doc"` or `"section"`**: STOP and present the complete approach for Builder review.

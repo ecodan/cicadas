@@ -11,6 +11,19 @@
 **Scope**: {What this partition implements}
 **Dependencies**: None / Requires Partition X
 
+#### Artifact Type
+{web-ui | rest-api | cli | library | background-service | full-stack}
+
+#### How to Run
+- start: `{exact command to start the artifact}` _(omit for library and cli if no persistent process)_
+- ready-check: `GET http://localhost:{port}/health returns 200` _(required for any artifact that starts a server)_
+- teardown: `Ctrl+C` _(or exact teardown command)_
+
+#### Acceptance Criteria
+- [ ] {Falsifiable criterion — e.g. `POST /api/items returns 201 with {id, name}` for APIs; `submitting empty form shows inline error` for UIs; `exit code 0 with expected stdout` for CLIs}
+- [ ] {Another specific, independently verifiable criterion}
+- [ ] {Criterion that cannot be made machine-verifiable} <!-- NEEDS MANUAL REVIEW -->
+
 #### Implementation Steps
 1. {Step 1}
 2. {Step 2}
@@ -19,6 +32,18 @@
 **Modules**: `{module3}`
 **Scope**: {What this partition implements}
 **Dependencies**: {Dependency description}
+
+#### Artifact Type
+{web-ui | rest-api | cli | library | background-service | full-stack}
+
+#### How to Run
+- start: `{exact command}`
+- ready-check: `{endpoint or condition}`
+- teardown: `{command}`
+
+#### Acceptance Criteria
+- [ ] {Falsifiable criterion}
+- [ ] {Another criterion}
 
 #### Implementation Steps
 1. {Step 1}
