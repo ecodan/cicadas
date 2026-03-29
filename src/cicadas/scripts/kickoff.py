@@ -7,7 +7,7 @@ import subprocess
 from datetime import UTC, datetime
 
 from tokens import append_entry
-from utils import create_worktree, get_project_root, get_registry_dir, load_json, parse_partitions_dag, save_json, worktree_path
+from utils import create_worktree, emit, get_project_root, get_registry_dir, load_json, parse_partitions_dag, save_json, worktree_path
 
 
 def kickoff(name, intent, owner="unknown"):
@@ -40,6 +40,7 @@ def kickoff(name, intent, owner="unknown"):
     # Register
     registry.setdefault("initiatives", {})[name] = {"intent": intent, "owner": owner, "signals": [], "created_at": datetime.now(UTC).isoformat()}
     save_json(get_registry_dir() / "registry.json", registry)
+    emit(name, "initiative.kicked_off", {"intent": intent})
 
     # Write lifecycle/kickoff token boundary entry
     append_entry(active_dir / "tokens.json", initiative=name, phase="lifecycle", subphase="kickoff", source="unavailable")

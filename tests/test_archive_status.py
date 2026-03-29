@@ -446,5 +446,63 @@ class TestStatusLifecycleMerge(CicadasTest):
         self.assertIn("feat/part1", out)
 
 
+    def test_archive_emits_specs_archived_event(self):
+        """archive() writes a specs.archived event to events.jsonl before moving the active dir."""
+        name = "event-archive-test"
+        with open(self.cicadas_dir / "registry.json", "r+") as f:
+            reg = json.load(f)
+            reg["initiatives"][name] = {"intent": "test"}
+            f.seek(0)
+            json.dump(reg, f)
+            f.truncate()
+
+        active_dir = self.cicadas_dir / "active" / name
+        active_dir.mkdir(parents=True)
+        (active_dir / "prd.md").write_text("# Spec")
+
+        archive.archive(name, type_="initiative")
+
+        # events.jsonl must have been moved into the archive along with the spec
+        arch_dir = next(d for d in (self.cicadas_dir / "archive").iterdir() if name in d.name)
+        events_path = arch_dir / "events.jsonl"
+        self.assertTrue(events_path.exists(), "events.jsonl should be in the archive after move")
+
+        events = [json.loads(l) for l in events_path.read_text().splitlines() if l.strip()]
+        self.assertEqual(len(events), 1)
+        ev = events[0]
+        self.assertEqual(ev["type"], "specs.archived")
+        self.assertEqual(ev["initiative"], name)
+        self.assertEqual(ev["data"]["type"], "initiative")
+
+    def test_status_shows_recent_events(self):
+        """show_status() includes a 'Recent events' block for an initiative with events."""
+        name = "status-event-test"
+        with open(self.cicadas_dir / "registry.json", "r+") as f:
+            reg = json.load(f)
+            reg["initiatives"][name] = {"intent": "test", "signals": []}
+            f.seek(0)
+            json.dump(reg, f)
+            f.truncate()
+
+        # Write two events directly to events.jsonl
+        from datetime import datetime, timezone
+        events_path = self.cicadas_dir / "active" / name / "events.jsonl"
+        events_path.parent.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).isoformat()
+        events_path.write_text(
+            '{"timestamp":"' + ts + '","type":"initiative.kicked_off","initiative":"' + name + '","branch":"master","data":{}}\n'
+            '{"timestamp":"' + ts + '","type":"branch.created","initiative":"' + name + '","branch":"feat/x","data":{}}\n'
+        )
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            status.show_status()
+        out = f.getvalue()
+
+        self.assertIn("Recent events", out)
+        self.assertIn("initiative.kicked_off", out)
+        self.assertIn("branch.created", out)
+
+
 if __name__ == "__main__":
     unittest.main()

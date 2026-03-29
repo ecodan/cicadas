@@ -251,3 +251,16 @@ def remove_worktree(repo_root: Path, worktree_dir: Path, force: bool = False) ->
     cmd.append(str(worktree_dir))
 
     subprocess.run(cmd, cwd=repo_root, check=True)
+
+
+def emit(initiative: str, event_type: str, data: dict | None = None) -> None:
+    """Emit a typed event to the initiative event log; failure is non-fatal.
+
+    Performs a lazy import of emit_event so utils.py stays importable even in
+    environments where emit_event.py's dependencies are unavailable.
+    """
+    try:
+        from emit_event import emit_event
+        emit_event(initiative, event_type, data or {})
+    except Exception:
+        pass

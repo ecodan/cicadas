@@ -7,7 +7,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from utils import WorktreeDirtyError, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, emit, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 
 def archive(name, type_="branch", force=False):
@@ -77,6 +77,7 @@ def archive(name, type_="branch", force=False):
             print("If yes, perform a 'Reflect' operation to update .cicadas/canon/ before proceeding.")
             print("-" * 40)
 
+        emit(name, "specs.archived", {"archive_name": husk.name, "type": type_})
         shutil.move(str(active), str(husk))
         print(f"[OK]   Archived active specs to {husk.name}")
 

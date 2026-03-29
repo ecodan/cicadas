@@ -326,6 +326,50 @@ Reads `publish_dir` from `active/skill-{slug}/emergence-config.json`. Runs valid
 
 > **Post-MVP**: `skill-evaluate.md` and `skill-tune.md` (trigger-rate evaluation and description tuning) are not yet implemented. `eval_queries.json` is drafted during creation for future use.
 
+### Event Log
+
+Each initiative maintains an append-only event log at `.cicadas/active/{initiative}/events.jsonl`. Lifecycle scripts write to it automatically; implementation agents write to it as specified in `implementation.md` Rules 9 and 10.
+
+**Event log path**: `.cicadas/active/{initiative}/events.jsonl`
+
+**Write** (via CLI only — never write directly):
+```
+python {cicadas-dir}/scripts/emit_event.py \
+  --initiative {name} --type {event-type} [--data '{json}']
+```
+
+**Read** (via `get_events.py` — the only read interface):
+```
+python {cicadas-dir}/scripts/get_events.py \
+  --initiative {name} [--type prefix] [--since ISO8601] [--last N]
+```
+Outputs JSONL to stdout. Returns exit 0 with empty output if `events.jsonl` does not exist.
+
+**Event schema**:
+```json
+{"timestamp": "ISO8601", "type": "dotted.string", "initiative": "name", "branch": "git-branch", "data": {}}
+```
+
+**Lifecycle event types** (emitted automatically by scripts):
+
+| Event type | Emitted by | Key data fields |
+|---|---|---|
+| `initiative.kicked_off` | `kickoff.py` | `intent` |
+| `branch.created` | `branch.py` | `branch`, `intent`, `modules` |
+| `worktree.created` | `branch.py` | `branch`, `worktree_path` |
+| `specs.archived` | `archive.py` | `archive_name`, `type` |
+| `pr.opened` | `open_pr.py` | `base`, `head` |
+| `pr.blocked` | `open_pr.py` | `reason`, `branch` |
+
+**Agent event types** (emitted by implementation agents per `implementation.md`):
+
+| Event type | When | Key data fields |
+|---|---|---|
+| `task.complete` | After marking a task `[x]` | `task_id`, `summary` |
+| `partition.complete` | All partition tasks done, before PR | `partition`, `summary`, `canon_entry`, `notes_for_evaluator` |
+
+**Design invariant**: `get_events.py` is the only consumer interface — direct file reads are forbidden. This allows the storage format (one file vs. per-branch files) to change without breaking consumers.
+
 ---
 
 ## Agent Operations (LLM)

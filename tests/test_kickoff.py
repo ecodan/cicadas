@@ -145,5 +145,22 @@ class TestKickoff(CicadasTest):
         self.assertEqual(registry["initiatives"][name]["intent"], "old")
 
 
+    def test_kickoff_emits_initiative_kicked_off_event(self):
+        """kickoff writes an initiative.kicked_off event to events.jsonl."""
+        name = "event-init"
+        self.init_git()
+        kickoff.kickoff(name, "event test intent")
+
+        events_path = self.cicadas_dir / "active" / name / "events.jsonl"
+        self.assertTrue(events_path.exists(), "events.jsonl should be created by kickoff")
+
+        lines = [l for l in events_path.read_text().splitlines() if l.strip()]
+        self.assertEqual(len(lines), 1)
+        event = json.loads(lines[0])
+        self.assertEqual(event["type"], "initiative.kicked_off")
+        self.assertEqual(event["initiative"], name)
+        self.assertEqual(event["data"]["intent"], "event test intent")
+
+
 if __name__ == "__main__":
     unittest.main()
