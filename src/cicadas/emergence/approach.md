@@ -21,10 +21,10 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     > 2. **Final merge only** — one PR when the initiative merges to master
     > 3. **Full PR flow** — PR at every feature boundary + the initiative merge (default, team workflow)
 
-    Then immediately run `create_lifecycle.py` with the matching flags:
-    - Option 1 (no PRs): `python {cicadas-dir}/scripts/create_lifecycle.py {initiative} --no-pr-initiatives --no-pr-features`
-    - Option 2 (final only): `python {cicadas-dir}/scripts/create_lifecycle.py {initiative} --no-pr-features`
-    - Option 3 (full, default): `python {cicadas-dir}/scripts/create_lifecycle.py {initiative}`
+    Then immediately run the common CLI `create-lifecycle` command with the matching flags:
+    - Option 1 (no PRs): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {initiative} --no-pr-initiatives --no-pr-features`
+    - Option 2 (final only): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {initiative} --no-pr-features`
+    - Option 3 (full, default): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {initiative}`
 
 2.  **Ingest**: Read `prd.md`, `ux.md`, and `tech-design.md` from `.cicadas/drafts/{initiative}/` (or `.cicadas/active/{initiative}/` if the initiative was already kicked off).
 3.  **LLMs and Evals — Eval spec offer and placement** (initiatives only): Read `emergence-config.json` from `.cicadas/drafts/{initiative}/` or `.cicadas/active/{initiative}/`. If `building_on_ai` is true and `eval_status` is `"will_do"`:
@@ -87,7 +87,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
 ## Output Artifacts
 
-- **lifecycle.json** (after step 1): In `.cicadas/drafts/{initiative}/lifecycle.json`; created by `create_lifecycle.py` with the Builder's PR boundary choices. Promoted to active at kickoff.
+- **lifecycle.json** (after step 1): In `.cicadas/drafts/{initiative}/lifecycle.json`; created by the common CLI `create-lifecycle` command with the Builder's PR boundary choices. Promoted to active at kickoff.
 - **approach.md**: Use the template at `{cicadas-dir}/templates/approach.md`.
 
 **The approach document is the single most important artifact in Emergence.** Every downstream decision — branch names, module scopes, conflict detection, registry entries — flows from the partitions defined here.
