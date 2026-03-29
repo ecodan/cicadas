@@ -89,6 +89,23 @@ def save_json(path, data):
         json.dump(data, f, indent=2, default=path_serializer)
 
 
+def load_config() -> dict:
+    """Load shared Cicadas config from the primary worktree."""
+    return load_json(get_registry_dir() / "config.json")
+
+
+def worktree_policy(config: dict | None = None) -> dict:
+    """Return normalized worktree defaults with backwards-compatible fallbacks."""
+    if config is None:
+        config = load_config()
+    policy = config.get("auto_worktrees", {})
+    return {
+        "initiatives": bool(policy.get("initiatives", False)),
+        "lightweight": bool(policy.get("lightweight", False)),
+        "parallel_features": bool(policy.get("parallel_features", True)),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Worktree utilities
 # ---------------------------------------------------------------------------

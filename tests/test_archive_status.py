@@ -319,6 +319,35 @@ class TestStatusWorktrees(CicadasTest):
         self.assertIn("[clean]", out)
         self.assertIn("feat/wt-clean", out)
 
+    def test_worktrees_section_includes_initiatives(self):
+        import utils
+
+        reg = utils.load_json(self.cicadas_dir / "registry.json")
+        reg["initiatives"]["wt-init"] = {"intent": "initiative", "worktree_path": "/tmp/wt-init"}
+        utils.save_json(self.cicadas_dir / "registry.json", reg)
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            status.show_status()
+
+        out = f.getvalue()
+        self.assertIn("Worktrees", out)
+        self.assertIn("initiative/wt-init", out)
+
+    def test_check_warns_for_stale_initiative_worktree(self):
+        import check
+        import utils
+
+        reg = utils.load_json(self.cicadas_dir / "registry.json")
+        reg["initiatives"]["stale-init"] = {"intent": "initiative", "worktree_path": "/nonexistent/init/wt"}
+        utils.save_json(self.cicadas_dir / "registry.json", reg)
+
+        f = io.StringIO()
+        with redirect_stdout(f):
+            check.check_conflicts()
+
+        self.assertIn("initiative: stale-init", f.getvalue())
+
 
 class TestStatusLifecycleMerge(CicadasTest):
     """Tests for _is_merged_into, _ref_exists, and _lifecycle_merge_status via real git repos."""

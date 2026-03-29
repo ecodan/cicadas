@@ -7,13 +7,14 @@ import subprocess
 from datetime import UTC, datetime
 
 from tokens import append_entry
-from utils import create_worktree, emit, get_project_root, get_registry_dir, load_json, parse_partitions_dag, save_json, worktree_path
+from utils import create_worktree, emit, get_project_root, get_registry_dir, load_config, load_json, parse_partitions_dag, save_json, worktree_path, worktree_policy
 
 
-def kickoff(name, intent, owner="unknown"):
+def kickoff(name, intent, owner="unknown", force_worktree=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
     registry = load_json(get_registry_dir() / "registry.json")
+    policy = worktree_policy(load_config())
 
     if name in registry.get("initiatives", {}):
         print(f"[ERR]  Initiative {name} already exists.")
@@ -73,16 +74,19 @@ def kickoff(name, intent, owner="unknown"):
     except subprocess.CalledProcessError:
         print(f"[WARN] Could not push {branch_name} to remote. Push manually: git push -u origin {branch_name}")
 
-    # Create a linked worktree so this and other work streams stay independent
-    wt_dir = worktree_path(root, branch_name)
-    try:
-        created = create_worktree(root, branch_name, wt_dir)
-        registry["initiatives"][name]["worktree_path"] = str(created)
-        save_json(get_registry_dir() / "registry.json", registry)
-        print(f"[OK]   Worktree created: {created}")
-        print(f"[INFO] Work on this initiative in: {created}")
-    except Exception as e:
-        print(f"[WARN] Could not create worktree: {e}")
+    should_create_worktree = force_worktree or policy["initiatives"]
+    if should_create_worktree:
+        wt_dir = worktree_path(root, branch_name)
+        try:
+            created = create_worktree(root, branch_name, wt_dir)
+            registry["initiatives"][name]["worktree_path"] = str(created)
+            save_json(get_registry_dir() / "registry.json", registry)
+            print(f"[OK]   Worktree created: {created}")
+            print(f"[INFO] Open this initiative in: {created}")
+        except Exception as e:
+            print(f"[WARN] Could not create worktree: {e}")
+    else:
+        print("[INFO] Initiative worktree creation is disabled by default; continuing in the current workspace.")
 
     print(f"[OK]   Initiative kicked off: {name}")
 
@@ -91,5 +95,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Kickoff an initiative: promote drafts to active, register, create branch")
     parser.add_argument("name")
     parser.add_argument("--intent", required=True)
+    parser.add_argument("--worktree", action="store_true", help="Create a linked worktree even if initiative worktrees are disabled by config")
     args = parser.parse_args()
-    kickoff(args.name, args.intent)
+    kickoff(args.name, args.intent, force_worktree=args.worktree)

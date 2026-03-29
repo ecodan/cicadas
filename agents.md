@@ -9,12 +9,12 @@ Cicadas is both the **product** and the **process**. We use the Cicadas methodol
 
 ### Source & Code
 - **[src/](src/)**: The main source directory.
-  - **[src/cicadas/](src/cicadas/)**: Contains the core logic of the orchestrator, including the repo-local common CLI at `scripts/cicadas.py`, its command registry, lifecycle scripts (kickoff, branch, status, create_lifecycle, open_pr, review, emit_event, get_events, validate_skill, skill_publish, unarchive), emergence instruction modules (the **standard start flow** in `emergence/start-flow.md` for initiative/tweak/bug/skill, **skill-create.md** and **skill-edit.md** for dialogue-driven Agent Skill authoring, plus **Building on AI** — gate and eval status in start flow, optional eval spec for initiatives, eval/benchmark reminder for tweaks/bugs), and spec templates (including `skill-SKILL.md` scaffold).
+- **[src/cicadas/](src/cicadas/)**: Contains the core logic of the orchestrator, including the repo-local common CLI at `scripts/cicadas.py`, its command registry, lifecycle scripts (kickoff, branch, status, create_lifecycle, open_pr, review, emit_event, get_events, validate_skill, skill_publish, unarchive), shared worktree-policy helpers in `scripts/utils.py`, emergence instruction modules (the **standard start flow** in `emergence/start-flow.md` for initiative/tweak/bug/skill, **skill-create.md** and **skill-edit.md** for dialogue-driven Agent Skill authoring, plus **Building on AI** — gate and eval status in start flow, optional eval spec for initiatives, eval/benchmark reminder for tweaks/bugs), and spec templates (including `skill-SKILL.md` scaffold).
 - **[tests/](tests/)**: A comprehensive suite of unit and integration tests ensuring the reliability of the CLI scripts and orchestration logic.
 
 ### Agent & Methodology Memory
 - **[.agents/](.agents/)**: Stores agentic configuration, including custom skills (like the `cicadas` skill itself) and automated workflows that guide the AI's behavior.
-- **[.cicadas/](.cicadas/)**: The "Institutional Memory" of the project. This directory tracks active initiatives, holds the authoritative **Canon** (reverse-engineered from code), and maintains the registry of partitions and signals.
+- **[.cicadas/](.cicadas/)**: The "Institutional Memory" of the project. This directory tracks active initiatives, holds the authoritative **Canon** (reverse-engineered from code), maintains the registry of partitions and signals, and stores local worktree defaults in `config.json`.
 
 ## 📖 Further Reading
 - **Root [README.md](README.md)**: High-level introduction, philosophy, and quick-start guide.

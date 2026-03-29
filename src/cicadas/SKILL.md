@@ -177,15 +177,16 @@ python {cicadas-dir}/scripts/cicadas.py kickoff {initiative-name} --intent "desc
 **Effect**:
 1. Promotes docs from `.cicadas/drafts/{name}/` to `.cicadas/active/{name}/`.
 2. Registers the initiative in `registry.json` under `initiatives`.
-3. Creates the initiative branch: `git checkout -b initiative/{name}`.
+3. Creates the initiative branch without switching the current workspace.
 4. Pushes the initiative branch to remote: `git push -u origin initiative/{name}` (done by script).
+5. Creates a linked worktree only when initiative worktrees are enabled in `.cicadas/config.json` or when kickoff is run with `--worktree`.
 
 ### Start a Feature Branch (Registered)
 **When**: Starting a partition of work defined in `approach.md`.
 
 **Steps**:
 1. **Semantic Intent Check (Agent)**: Read `registry.json`. Analyze new intent against all active feature intents for logical conflicts.
-2. **Checkout initiative branch**: `git checkout initiative/{name}`
+2. Ensure the intended parent ref exists locally or on `origin`.
 3. **Script**: `python {cicadas-dir}/scripts/cicadas.py branch {branch-name} --intent "description" --modules "mod1,mod2" --initiative {initiative-name}`
 4. Review warnings from both the Agent (intent conflicts) and the Script (module overlaps).
 5. Branch is automatically pushed to remote by the script (`git push -u origin {branch-name}`), making it visible to collaborators.
@@ -272,7 +273,7 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 **The Workflow**:
 1. **Emergence**: Draft a single `buglet.md` or `tweaklet.md` in `.cicadas/drafts/{name}/`.
 2. **Kickoff**: `python {cicadas-dir}/scripts/cicadas.py kickoff {name}`. Promotes the single spec to `active/`.
-3. **Branch**: `python {cicadas-dir}/scripts/cicadas.py branch {fix|tweak}/{name} --initiative {name}`. Forks directly from `main`.
+3. **Branch**: `python {cicadas-dir}/scripts/cicadas.py branch {fix|tweak}/{name} --initiative {name}`. Forks directly from `main` in the current workspace by default; pass `--worktree` or enable lightweight worktrees in config to opt into a linked worktree.
 4. **Implement**: Work directly on the fix/tweak branch.
 5. **Reflect**: Update `active/{name}/tweaklet.md` (or `buglet.md`) to mark tasks complete and note any implementation divergence.
 6. **Significance Check**: Evaluate if the change warrants a Canon update. If yes, synthesize and commit canon before proceeding.

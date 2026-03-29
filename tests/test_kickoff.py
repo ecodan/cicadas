@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import io
 import subprocess
 import unittest
+from contextlib import redirect_stdout
 
 import kickoff
 from base import CicadasTest
@@ -105,13 +107,13 @@ class TestKickoff(CicadasTest):
         self.assertIn("entries", data)
 
     def test_kickoff_creates_worktree(self):
-        """kickoff creates a linked worktree and stays on the original branch."""
+        """kickoff creates a linked worktree when explicitly requested and stays on the original branch."""
         self.init_git()
         original_branch = subprocess.check_output(
             ["git", "branch", "--show-current"], cwd=self.root
         ).decode().strip()
 
-        kickoff.kickoff("wt-test", "worktree test")
+        kickoff.kickoff("wt-test", "worktree test", force_worktree=True)
 
         # Main worktree stays on original branch
         current = subprocess.check_output(
@@ -127,6 +129,48 @@ class TestKickoff(CicadasTest):
         with open(self.cicadas_dir / "registry.json") as f:
             registry = json.load(f)
         self.assertIn("worktree_path", registry["initiatives"]["wt-test"])
+
+    def test_kickoff_does_not_create_worktree_by_default(self):
+        self.init_git()
+
+        kickoff.kickoff("no-wt-test", "default kickoff")
+
+        expected_wt = self.root.parent / f"{self.root.name}-initiative-no-wt-test"
+        self.assertFalse(expected_wt.exists())
+
+        with open(self.cicadas_dir / "registry.json") as f:
+            registry = json.load(f)
+        self.assertNotIn("worktree_path", registry["initiatives"]["no-wt-test"])
+
+    def test_kickoff_uses_config_to_create_worktree(self):
+        self.init_git()
+        config = {"project_name": self.root.name, "auto_worktrees": {"initiatives": True}}
+        (self.cicadas_dir / "config.json").write_text(json.dumps(config))
+
+        kickoff.kickoff("config-wt-test", "config kickoff")
+
+        expected_wt = self.root.parent / f"{self.root.name}-initiative-config-wt-test"
+        self.assertTrue(expected_wt.exists())
+
+        with open(self.cicadas_dir / "registry.json") as f:
+            registry = json.load(f)
+        self.assertIn("worktree_path", registry["initiatives"]["config-wt-test"])
+
+    def test_kickoff_warns_when_worktree_creation_fails(self):
+        self.init_git()
+        conflicting_path = self.root.parent / f"{self.root.name}-initiative-wt-conflict"
+        conflicting_path.mkdir()
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            kickoff.kickoff("wt-conflict", "conflict kickoff", force_worktree=True)
+
+        output = buf.getvalue()
+        self.assertIn("Could not create worktree", output)
+
+        with open(self.cicadas_dir / "registry.json") as f:
+            registry = json.load(f)
+        self.assertNotIn("worktree_path", registry["initiatives"]["wt-conflict"])
 
     def test_kickoff_existing(self):
         self.init_git()

@@ -77,12 +77,14 @@ When you start an initiative, tweak, bug, or skill, the agent runs a **standard 
 ### Phase 2: Kickoff
 We promote drafts to **Active Specs** and register the initiative.
 *   **Command**: `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..."`
-*   **Result**: Creates `initiative/{name}` branch and `.cicadas/active/{name}/`. A linked git worktree is created at `../{repo}-initiative-{name}` so the main worktree stays on its current branch — multiple workstreams can run in parallel.
+*   **Result**: Creates `initiative/{name}` branch and `.cicadas/active/{name}/`. By default Cicadas continues in the current workspace; a linked git worktree is created only when `.cicadas/config.json` enables initiative worktrees or when kickoff is run with `--worktree`.
 
 ### Phase 3: Execution (The Dual Loop)
 Work happens in **Feature Branches** (registered) and **Task Branches** (ephemeral).
 
 *   **Start Feature**: `python src/cicadas/scripts/cicadas.py branch {feature} --intent "..."`
+    - Parallel `feat/` partitions still auto-create linked worktrees by default.
+    - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts in.
 *   **Reflect**: When code implementation diverges from the plan, we update the active specs *immediately* (and before every commit on feat/task branches).
 *   **Code Review** (optional): After Reflect; before committing on feature branches; before opening a PR or merging. The agent evaluates the diff against specs, security, correctness, and quality — producing a structured `review.md` artifact with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` checks this verdict and blocks on `BLOCK`.
 *   **Signal**: If a change affects other branches, we broadcast it: `python src/cicadas/scripts/cicadas.py signal "..."`
@@ -100,7 +102,9 @@ All scripts are in `src/cicadas/scripts/`.
 | Action | Command |
 | :--- | :--- |
 | **Kickoff Initiative** | `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..."` |
+| **Kickoff Initiative in worktree** | `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..." --worktree` |
 | **Start Feature** | `python src/cicadas/scripts/cicadas.py branch {name} --intent "..."` |
+| **Start Branch in worktree** | `python src/cicadas/scripts/cicadas.py branch {name} --intent "..." --worktree` |
 | **Check Status** | `python src/cicadas/scripts/cicadas.py status` (shows Merged/Next when lifecycle exists) |
 | **Check Conflicts** | `python src/cicadas/scripts/cicadas.py check` |
 | **Send Signal** | `python src/cicadas/scripts/cicadas.py signal "Message..."` |

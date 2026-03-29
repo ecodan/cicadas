@@ -89,6 +89,10 @@ def check_conflicts(initiative_name: str | None = None) -> bool:
             pass
 
     # Stale worktree detection — always run regardless of mode
+    for initiative_name, info in registry.get("initiatives", {}).items():
+        wt = info.get("worktree_path")
+        if wt and not Path(wt).exists():
+            print(f"[WARN] Stale worktree: {wt} (initiative: {initiative_name}). Run 'git worktree repair' or re-run kickoff.py with --worktree.")
     for branch_name, info in registry.get("branches", {}).items():
         wt = info.get("worktree_path")
         if wt and not Path(wt).exists():

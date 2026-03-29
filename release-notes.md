@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Worktree Ergonomics**: Initiative and lightweight (`fix/`, `tweak/`, `skill/`) worktrees are no longer created implicitly by default. `.cicadas/config.json` now supports `auto_worktrees.initiatives`, `auto_worktrees.lightweight`, and `auto_worktrees.parallel_features`, and both `kickoff.py` and `branch.py` accept `--worktree` for explicit opt-in.
+- **Safer Parent Resolution**: `branch.py` now resolves parent refs against both local branches and `origin/...`, so feature creation still works when the intended initiative parent exists only as a remote-tracking branch.
+- **Visibility & Coverage**: `status.py` now lists initiative worktrees, `check.py` warns on stale initiative worktrees, and new integration tests cover config-enabled worktrees, remote-only parent refs, and worktree creation failure handling.
+- **Docs**: Updated the canonical docs to explain the new default workspace behavior and the `--worktree` / config-based opt-in model.
+
 - **Common CLI Surface**: Added `src/cicadas/scripts/cicadas.py` and `command_registry.py` as the repo-local command entrypoint for deterministic Cicadas operations. The new surface wraps lifecycle, review, event, skill, and token commands behind one agent-discoverable `--help` tree while preserving the underlying scripts for compatibility.
 - **CLI Coverage**: Added `tests/test_cli.py` to verify top-level help, representative command dispatch, lifecycle mutation through the wrapper, token subcommands, and clean failure on malformed `tokens show --full` input.
 - **Docs**: Updated the canonical docs to teach the common `python src/cicadas/scripts/cicadas.py ...` interface instead of pointing agents and users at individual scripts for routine operations.
