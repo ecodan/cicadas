@@ -13,12 +13,14 @@ from utils import (
     create_worktree,
     emit,
     get_default_branch,
+    load_config,
     get_project_root,
     get_registry_dir,
     load_json,
     parse_partitions_dag,
     save_json,
     worktree_path,
+    worktree_policy,
 )
 
 
@@ -57,11 +59,32 @@ def _write_context_md(worktree_dir: Path, cicadas: Path, modules: list[str], ini
     context_path.write_text("".join(lines))
 
 
-def create_branch(name, intent, modules, initiative=None, from_branch=None, owner="unknown", worktree_dir_override=None, no_worktree=False):
+def _resolve_parent_ref(root: Path, parent: str | None) -> str | None:
+    """Resolve a parent branch name to a usable local or remote git ref."""
+    if not parent:
+        return None
+
+    candidates = [
+        parent,
+        f"refs/heads/{parent}",
+        f"origin/{parent}",
+        f"refs/remotes/origin/{parent}",
+    ]
+    for candidate in candidates:
+        try:
+            subprocess.run(["git", "rev-parse", "--verify", candidate], cwd=root, check=True, capture_output=True)
+            return candidate
+        except subprocess.CalledProcessError:
+            continue
+    return parent
+
+
+def create_branch(name, intent, modules, initiative=None, from_branch=None, owner="unknown", worktree_dir_override=None, no_worktree=False, force_worktree=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
     registry = load_json(get_registry_dir() / "registry.json")
     default_branch = get_default_branch()
+    policy = worktree_policy(load_config())
 
     if name in registry.get("branches", {}):
         print(f"[ERR]  Branch {name} already registered.")
@@ -84,23 +107,21 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
         parent = f"initiative/{initiative}"
     else:
         parent = None
-
-    # Checkout parent branch first if specified
-    if parent:
-        try:
-            subprocess.run(["git", "checkout", parent], check=True, cwd=root)
-        except subprocess.CalledProcessError:
-            print(f"[WARN] Could not checkout parent branch {parent}")
+    parent_ref = _resolve_parent_ref(root, parent)
 
     # --- Worktree logic: decide path before creating git branch ---
     use_worktree = False
     worktree_target = None
     wt_path_str = None
-    if not no_worktree:
+    if force_worktree:
+        use_worktree = True
+        worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
+    elif not no_worktree:
         is_lightweight = name.startswith(("fix/", "tweak/", "skill/"))
         if is_lightweight:
-            use_worktree = True
-            worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
+            if policy["lightweight"]:
+                use_worktree = True
+                worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
         elif initiative:
             approach_path = cicadas / "active" / initiative / "approach.md"
             partitions = parse_partitions_dag(approach_path)
@@ -108,14 +129,17 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
 
             if partition is None and partitions:
                 print(f"[WARN] Partition '{name}' not found in approach.md partitions block — treating as sequential")
-            elif partition and partition.get("depends_on") == []:
+            elif partition and partition.get("depends_on") == [] and policy["parallel_features"]:
                 use_worktree = True
                 worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
 
     if use_worktree:
         # For parallel partitions: create branch WITHOUT switching (stay on parent)
         # so we can immediately add a worktree pointing at it.
-        subprocess.run(["git", "branch", name], check=True, cwd=root)
+        branch_cmd = ["git", "branch", name]
+        if parent_ref:
+            branch_cmd.append(parent_ref)
+        subprocess.run(branch_cmd, check=True, cwd=root)
         try:
             subprocess.run(["git", "push", "-u", "origin", name], check=True, cwd=root)
             print(f"[INFO] Pushed {name} to remote.")
@@ -129,13 +153,16 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
             emit(initiative or name, "worktree.created", {"branch": name, "worktree_path": wt_path_str})
             _write_context_md(created, cicadas, list(my_mods), initiative)
             print(f"[INFO] context.md written to worktree root (canon summary + module snapshots + tasks)")
-            print(f"[INFO] Point your agent at: {created}")
+            print(f"[INFO] Open this worktree in your editor or agent: {created}")
         except subprocess.CalledProcessError as e:
             print(f"[ERR]  git worktree add failed: {e}")
             sys.exit(1)
     else:
         # Sequential (or unregistered) partition: standard checkout -b
-        subprocess.run(["git", "checkout", "-b", name], check=True, cwd=root)
+        checkout_cmd = ["git", "checkout", "-b", name]
+        if parent_ref:
+            checkout_cmd.append(parent_ref)
+        subprocess.run(checkout_cmd, check=True, cwd=root)
         try:
             subprocess.run(["git", "push", "-u", "origin", name], check=True, cwd=root)
             print(f"[INFO] Pushed {name} to remote.")
@@ -188,6 +215,16 @@ if __name__ == "__main__":
     parser.add_argument("--initiative", help="Link to an active initiative")
     parser.add_argument("--from", dest="from_branch", help="Parent branch to fork from (defaults to initiative branch)")
     parser.add_argument("--worktree-dir", dest="worktree_dir", help="Override default worktree directory path")
+    parser.add_argument("--worktree", action="store_true", help="Force a linked worktree even if the default policy would use the current workspace")
     parser.add_argument("--no-worktree", action="store_true", help="Force plain branch even if depends_on is empty")
     args = parser.parse_args()
-    create_branch(args.name, args.intent, args.modules, initiative=args.initiative, from_branch=args.from_branch, worktree_dir_override=args.worktree_dir, no_worktree=args.no_worktree)
+    create_branch(
+        args.name,
+        args.intent,
+        args.modules,
+        initiative=args.initiative,
+        from_branch=args.from_branch,
+        worktree_dir_override=args.worktree_dir,
+        no_worktree=args.no_worktree,
+        force_worktree=args.worktree,
+    )

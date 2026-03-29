@@ -2,8 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import io
+import shutil
 import subprocess
 import unittest
+from contextlib import redirect_stdout
+from pathlib import Path
 
 import branch
 from base import CicadasTest
@@ -28,6 +32,7 @@ class TestBranch(CicadasTest):
             f.seek(0)
             json.dump(reg, f)
             f.truncate()
+        subprocess.run(["git", "branch", f"initiative/{init_name}"], cwd=self.root, check=True, capture_output=True)
 
         branch_name = "feat/my-feature"
         branch.create_branch(branch_name, "feat intent", "src/foo.py", initiative=init_name)
@@ -46,9 +51,9 @@ class TestBranch(CicadasTest):
         branch_name = "fix/my-bug"
         branch.create_branch(branch_name, "bug intent", "src/bar.py")
 
-        # Main worktree stays on default branch (worktree created instead)
+        # Main worktree switches to the branch by default (no worktree unless explicitly enabled)
         curr = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.root).decode().strip()
-        self.assertEqual(curr, self.default_branch)
+        self.assertEqual(curr, branch_name)
 
         # Branch was created and points to the same commit as default branch
         branch_hash = subprocess.check_output(["git", "rev-parse", branch_name], cwd=self.root).decode().strip()
@@ -68,9 +73,9 @@ class TestBranch(CicadasTest):
         branch_name = "skill/my-skill"
         branch.create_branch(branch_name, "skill intent", "", initiative=init_name)
 
-        # Main worktree stays on default branch (worktree created instead)
+        # Main worktree switches to the branch by default (no worktree unless explicitly enabled)
         curr = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.root).decode().strip()
-        self.assertEqual(curr, self.default_branch)
+        self.assertEqual(curr, branch_name)
 
         # Branch was created from default branch
         branch_hash = subprocess.check_output(["git", "rev-parse", branch_name], cwd=self.root).decode().strip()
@@ -223,6 +228,99 @@ class TestBranchWorktree(CicadasTest):
         branch.create_branch("feat/parallel-branch", "parallel intent", "src/foo", initiative=self.init_name, no_worktree=True)
         reg = utils.load_json(self.cicadas_dir / "registry.json")
         self.assertNotIn("worktree_path", reg["branches"]["feat/parallel-branch"])
+
+    def test_lightweight_branch_does_not_get_worktree_by_default(self):
+        import utils
+        branch.create_branch("tweak/plain-lightweight", "plain tweak", "", initiative=self.init_name)
+        reg = utils.load_json(self.cicadas_dir / "registry.json")
+        self.assertNotIn("worktree_path", reg["branches"]["tweak/plain-lightweight"])
+
+    def test_lightweight_branch_can_force_worktree(self):
+        import utils
+        expected_wt = utils.worktree_path(self.root, "tweak/forced-lightweight")
+        self._worktree_dirs.append(expected_wt)
+
+        branch.create_branch("tweak/forced-lightweight", "forced tweak", "", initiative=self.init_name, force_worktree=True)
+
+        reg = utils.load_json(self.cicadas_dir / "registry.json")
+        self.assertEqual(
+            reg["branches"]["tweak/forced-lightweight"]["worktree_path"],
+            str(expected_wt.resolve()),
+        )
+
+    def test_lightweight_branch_uses_config_to_create_worktree(self):
+        import utils
+        expected_wt = utils.worktree_path(self.root, "tweak/config-lightweight")
+        self._worktree_dirs.append(expected_wt)
+        (self.cicadas_dir / "config.json").write_text(
+            json.dumps({"project_name": self.root.name, "auto_worktrees": {"lightweight": True}})
+        )
+
+        branch.create_branch("tweak/config-lightweight", "config tweak", "", initiative=self.init_name)
+
+        reg = utils.load_json(self.cicadas_dir / "registry.json")
+        self.assertEqual(
+            reg["branches"]["tweak/config-lightweight"]["worktree_path"],
+            str(expected_wt.resolve()),
+        )
+
+    def test_parallel_partition_respects_config_disable(self):
+        import utils
+        (self.cicadas_dir / "config.json").write_text(
+            json.dumps({"project_name": self.root.name, "auto_worktrees": {"parallel_features": False}})
+        )
+
+        branch.create_branch("feat/parallel-branch", "parallel intent", "src/foo", initiative=self.init_name)
+
+        reg = utils.load_json(self.cicadas_dir / "registry.json")
+        self.assertNotIn("worktree_path", reg["branches"]["feat/parallel-branch"])
+
+    def test_force_worktree_warns_when_creation_fails(self):
+        import utils
+        expected_wt = utils.worktree_path(self.root, "tweak/conflict-lightweight")
+        expected_wt.mkdir()
+
+        buf = io.StringIO()
+        with self.assertRaises(SystemExit):
+            with redirect_stdout(buf):
+                branch.create_branch(
+                    "tweak/conflict-lightweight",
+                    "conflict tweak",
+                    "",
+                    initiative=self.init_name,
+                    force_worktree=True,
+                )
+
+        self.assertIn("git worktree add failed", buf.getvalue())
+
+    def test_create_branch_uses_parent_ref_directly(self):
+        subprocess.run(["git", "checkout", "-b", "feat/base-parent"], cwd=self.root, check=True, capture_output=True)
+        (self.root / "parent.txt").write_text("parent")
+        subprocess.run(["git", "add", "parent.txt"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "parent commit"], cwd=self.root, check=True, capture_output=True)
+        parent_hash = subprocess.check_output(["git", "rev-parse", "feat/base-parent"], cwd=self.root).decode().strip()
+        subprocess.run(["git", "checkout", self.default_branch], cwd=self.root, check=True, capture_output=True)
+
+        branch.create_branch("feat/from-parent", "from explicit parent", "src/foo", from_branch="feat/base-parent", no_worktree=True)
+
+        branch_hash = subprocess.check_output(["git", "rev-parse", "feat/from-parent"], cwd=self.root).decode().strip()
+        self.assertEqual(branch_hash, parent_hash)
+
+    def test_create_branch_uses_remote_only_initiative_parent(self):
+        remote_dir = Path(self.test_dir) / "origin.git"
+        subprocess.run(["git", "init", "--bare", str(remote_dir)], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "remote", "add", "origin", str(remote_dir)], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "push", "-u", "origin", self.default_branch], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "push", "-u", "origin", f"initiative/{self.init_name}"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "branch", "-D", f"initiative/{self.init_name}"], cwd=self.root, check=True, capture_output=True)
+
+        branch.create_branch("feat/from-remote-parent", "remote parent", "src/foo", initiative=self.init_name, no_worktree=True)
+
+        branch_hash = subprocess.check_output(["git", "rev-parse", "feat/from-remote-parent"], cwd=self.root).decode().strip()
+        remote_parent_hash = subprocess.check_output(
+            ["git", "rev-parse", f"origin/initiative/{self.init_name}"], cwd=self.root
+        ).decode().strip()
+        self.assertEqual(branch_hash, remote_parent_hash)
 
     def test_create_branch_emits_branch_created_event(self):
         """create_branch writes a branch.created event to events.jsonl."""

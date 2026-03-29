@@ -7,6 +7,19 @@ from pathlib import Path
 from utils import get_default_branch, get_project_root, get_registry_dir, load_json
 
 
+def _worktree_rows(registry: dict) -> list[tuple[str, str]]:
+    rows: list[tuple[str, str]] = []
+    for name, info in registry.get("initiatives", {}).items():
+        wt = info.get("worktree_path")
+        if wt:
+            rows.append((f"initiative/{name}", wt))
+    for name, info in registry.get("branches", {}).items():
+        wt = info.get("worktree_path")
+        if wt:
+            rows.append((name, wt))
+    return rows
+
+
 def _recent_events(initiative: str, n: int = 5) -> list[dict]:
     """Return up to n most recent events for an initiative; empty list if unavailable."""
     try:
@@ -137,11 +150,10 @@ def show_status() -> None:
             print(f"  - {name}: {info['intent']}")
 
     # Worktrees section — only shown if any branches have worktree_path recorded
-    worktree_branches = [(n, i) for n, i in branches.items() if i.get("worktree_path")]
-    if worktree_branches:
-        print(f"\nWorktrees ({len(worktree_branches)}):")
-        for name, info in worktree_branches:
-            wt = info["worktree_path"]
+    worktree_rows = _worktree_rows(registry)
+    if worktree_rows:
+        print(f"\nWorktrees ({len(worktree_rows)}):")
+        for name, wt in worktree_rows:
             from pathlib import Path as _Path
             wt_path = _Path(wt)
             if not wt_path.exists():

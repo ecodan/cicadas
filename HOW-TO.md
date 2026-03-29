@@ -124,8 +124,11 @@ Whenever you ask to **start an initiative**, **start a tweak**, **start a bug**,
 5.  **Draft Tasks**: *"Draft the tasks."*
 6.  **Kickoff**: *"Kickoff [initiative-name]."*
     - Agent promotes drafts to active and creates the **Initiative Branch**.
+    - By default work continues in the current workspace. To create a linked initiative worktree, enable it in `.cicadas/config.json` or use `--worktree`.
 7.  **Implementation Loop**:
     - **Start Feature**: *"Start feature [partition-name]."* (Forks from Initiative Branch).
+      - Parallel `feat/` partitions still create linked worktrees by default.
+      - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts into a worktree.
     - **Reflect**: The Agent keeps specs current as you build.
     - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` blocks on `BLOCK`.
     - **Complete Feature**: Merges back to the Initiative Branch.
@@ -165,6 +168,8 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 1.  **Draft**: *"Draft the buglet"* or *"Draft the tweaklet"*.
 2.  **Kickoff**: Promotes the single spec to active.
 3.  **Branch**: Forks directly from `main`.
+    - Default behavior is to keep work in the current workspace.
+    - Pass `--worktree` or enable lightweight worktrees in `.cicadas/config.json` to opt into a linked worktree.
 4.  **Complete**: Merge to `main`, optionally update Canon, and Archive.
     - **Note**: You can run `archive` and include the spec move in your PR to `main`. Use `unarchive` if you need to revert and make further changes.
 

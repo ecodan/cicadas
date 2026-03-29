@@ -54,7 +54,7 @@ When starting an initiative, tweak, bug, or skill, the agent runs the **standard
 - **Lifecycle** (optional): Run `python {cicadas-dir}/scripts/cicadas.py create-lifecycle ...` to add `lifecycle.json` with PR boundaries and steps; promoted to active at kickoff.
 
 ### 2. Kickoff
-Promote drafts to `active`, register the initiative, create the `initiative/{name}` branch (without switching the main worktree), and create a linked worktree at `../{repo}-initiative-{name}`.
+Promote drafts to `active`, register the initiative, and create the `initiative/{name}` branch without switching the main worktree. By default Cicadas now continues in the current workspace; create a linked worktree only when `.cicadas/config.json` enables initiative worktrees or when kickoff is run with `--worktree`.
 
 ### 3. Execution (The Inner Loop)
 - **Start Feature**: Create a registered feature branch for a partition.

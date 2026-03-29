@@ -157,8 +157,9 @@ Progressive spec authoring using subagents or manual drafting:
 **Effect**:
 1. Promotes docs from `.cicadas/drafts/{name}/` to `.cicadas/active/{name}/`.
 2. Registers the initiative in `registry.json` under `initiatives`.
-3. Creates the **initiative branch** and linked initiative worktree — a long-lived integration point where all feature branches merge.
-4. The shared specs become the "constitution" for all feature branches.
+3. Creates the **initiative branch** — a long-lived integration point where all feature branches merge.
+4. Creates a linked initiative worktree only when local config enables initiative worktrees or kickoff is run with `--worktree`.
+5. The shared specs become the "constitution" for all feature branches.
 
 **Branch hierarchy**:
 ```
@@ -181,7 +182,7 @@ main
 
 **Steps**:
 1. **Semantic Check (Agent)**: Read `registry.json`. Analyze the new intent against all active feature intents for logical conflicts. This is an LLM reasoning step — module overlap alone is insufficient.
-2. **Checkout initiative branch**: `git checkout initiative/{name}` — ensure branching from the correct parent.
+2. **Resolve parent ref**: ensure the initiative parent exists locally or as `origin/initiative/{name}`.
 3. **Module Check (Script)**: `python src/cicadas/scripts/cicadas.py branch {branch-name} --intent "description" --modules "mod1,mod2" --initiative {initiative-name}`
 4. Review warnings from both the Agent (intent conflicts) and the Script (module overlaps).
 
@@ -190,6 +191,7 @@ main
 - Registers the branch in `registry.json` under `branches`, linked to the initiative.
 - Creates `.cicadas/active/{branch-name}/` for branch-specific specs.
 - Generates a gitignored `context.md` file in the branch root that bundles `canon/summary.md`, module snapshots, approach, and tasks to provide immediate AI contexts.
+- Parallel `feat/` partitions still default to linked worktrees, while initiative and lightweight worktrees are now opt-in through config or `--worktree`.
 
 #### Outer Loop: Complete a Feature Branch
 

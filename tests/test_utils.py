@@ -32,6 +32,21 @@ class TestUtils(CicadasTest):
         expected = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.root).decode().strip()
         self.assertEqual(utils.get_default_branch(), expected)
 
+    def test_worktree_policy_defaults(self):
+        self.assertEqual(
+            utils.worktree_policy({}),
+            {"initiatives": False, "lightweight": False, "parallel_features": True},
+        )
+
+    def test_worktree_policy_reads_config(self):
+        policy = utils.worktree_policy(
+            {"auto_worktrees": {"initiatives": True, "lightweight": True, "parallel_features": False}}
+        )
+        self.assertEqual(
+            policy,
+            {"initiatives": True, "lightweight": True, "parallel_features": False},
+        )
+
 
 class TestGetRegistryRoot(CicadasTest):
     def test_primary_worktree_returns_self(self):

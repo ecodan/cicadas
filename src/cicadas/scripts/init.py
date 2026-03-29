@@ -20,7 +20,17 @@ def init_cicadas(root: Path) -> None:
 
     save_json(cicadas / "registry.json", {"schema_version": "2.0", "initiatives": {}, "branches": {}})
     save_json(cicadas / "index.json", {"schema_version": "2.0", "entries": []})
-    save_json(cicadas / "config.json", {"project_name": root.name})
+    save_json(
+        cicadas / "config.json",
+        {
+            "project_name": root.name,
+            "auto_worktrees": {
+                "initiatives": False,
+                "lightweight": False,
+                "parallel_features": True,
+            },
+        },
+    )
 
     print(f"Initialized Cicadas in {cicadas}")
 
