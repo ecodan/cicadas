@@ -14,6 +14,13 @@
       "summary": "Add git worktree support to kickoff and branch scripts: every kickoff/branch now creates a linked worktree so parallel workstreams don't stomp on each other's checked-out branch. Added get_registry_root/get_registry_dir to route registry I/O to the primary worktree.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-03-29T00:00:47.313419+00:00",
+      "branch": "initiative/partition-acceptance",
+      "summary": "Complete partition-acceptance: machine-testable partition specs (AC, Artifact Type, How to Run in approach.md template + emergence guidance) and typed event log infrastructure (emit_event.py, get_events.py, lifecycle script integration, utils.emit, status display, implementation Rules 9-10, SKILL.md Event Log section). 251 tests.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
