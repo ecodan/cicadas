@@ -21,6 +21,13 @@
       "summary": "Complete partition-acceptance: machine-testable partition specs (AC, Artifact Type, How to Run in approach.md template + emergence guidance) and typed event log infrastructure (emit_event.py, get_events.py, lifecycle script integration, utils.emit, status display, implementation Rules 9-10, SKILL.md Event Log section). 251 tests.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-03-29T00:06:55.111783+00:00",
+      "branch": "initiative/partition-acceptance",
+      "summary": "Added machine-testable partition specs (Artifact Type, How to Run, Acceptance Criteria in approach.md) and typed event log infrastructure (emit_event.py, get_events.py, utils.emit). All lifecycle scripts now emit events; implementation agents emit task.complete and partition.complete per Rules 9-10.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }

@@ -1,0 +1,51 @@
+{
+  "name": "partition-acceptance",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Add machine-testable partition specs (AC, Artifact Type, How to Run) and a general-purpose typed event log for transparent state observation by human and automated drivers",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-03-28T15:35:21.135644+00:00"
+  },
+  "timestamp": "20260329-000649",
+  "associated_branches": {
+    "feat/partition-spec-templates": {
+      "intent": "Add AC, Artifact Type, How to Run subsections to approach.md template and update emergence/approach.md generation guidance",
+      "modules": [
+        "src/cicadas/emergence",
+        "src/cicadas/templates"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-28T15:36:52.546668+00:00",
+      "worktree_path": "/Users/dan/dev/code/ai/cicadas-feat-partition-spec-templates",
+      "initiative": "partition-acceptance"
+    },
+    "feat/event-log-infrastructure": {
+      "intent": "Create emit_event.py and get_events.py scripts with flock-based concurrent write safety and full test coverage",
+      "modules": [
+        "src/cicadas/scripts/get_events.py",
+        "tests",
+        "src/cicadas/scripts/emit_event.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-28T15:36:54.094956+00:00",
+      "worktree_path": "/Users/dan/dev/code/ai/cicadas-feat-event-log-infrastructure",
+      "initiative": "partition-acceptance"
+    },
+    "feat/event-integration": {
+      "intent": "Wire emit_event into lifecycle scripts, update status.py, and document event log in implementation.md and SKILL.md",
+      "modules": [
+        "src/cicadas/scripts/status.py",
+        "src/cicadas/scripts/open_pr.py",
+        "src/cicadas/scripts/archive.py",
+        "src/cicadas/implementation.md",
+        "src/cicadas/scripts/kickoff.py",
+        "src/cicadas/scripts/branch.py",
+        "src/cicadas/SKILL.md"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-28T22:28:22.528683+00:00",
+      "initiative": "partition-acceptance"
+    }
+  }
+}

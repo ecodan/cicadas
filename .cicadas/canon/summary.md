@@ -31,8 +31,11 @@ scripts/archive.py: deregister and expire active specs on initiative completion
 scripts/abort.py: context-aware rollback for any branch type
 scripts/history.py: generate HTML timeline from archive + index; includes token summaries
 scripts/tokens.py: append-only token usage log API (init_log, append_entry, load_log)
-scripts/utils.py: shared utilities (root detection, git helpers, JSON I/O, worktree ops)
-emergence/: markdown prompts for Clarify, UX, Tech, Approach, Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec (Building on AI), Code Review; start-flow includes Building on AI? and eval status
+scripts/utils.py: shared utilities (root detection, git helpers, JSON I/O, worktree ops, emit() non-fatal event emitter)
+scripts/emit_event.py: append typed event to events.jsonl with fcntl.flock; CLI: --initiative, --type, --data
+scripts/get_events.py: read/filter events.jsonl; CLI: --initiative, --type, --since, --last; exits 0+empty if absent
+emergence/: markdown prompts for Clarify, UX, Tech, Approach (incl. Step 4b: Artifact Type, How to Run, AC generation per partition), Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec (Building on AI), Code Review; start-flow includes Building on AI? and eval status
+templates/approach.md: partition blocks include Artifact Type, How to Run, and Acceptance Criteria subsections
 templates/: spec templates (prd, ux, tech-design, approach, tasks, buglet, tweaklet, eval-spec, review), canon templates, synthesis prompt
 
 ## Conventions

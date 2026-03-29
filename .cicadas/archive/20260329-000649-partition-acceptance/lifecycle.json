@@ -1,0 +1,37 @@
+{
+  "pr_boundaries": {
+    "specs": false,
+    "initiatives": true,
+    "features": false,
+    "tasks": false
+  },
+  "steps": [
+    {
+      "id": "kickoff_initiative",
+      "name": "Kickoff initiative",
+      "description": "Promote drafts to active, create initiative branch"
+    },
+    {
+      "id": "kickoff_features",
+      "name": "Kickoff feature branches",
+      "description": "For each partition in approach, run branch.py"
+    },
+    {
+      "id": "feature_work",
+      "name": "Feature work (per feature)",
+      "description": "Task branches \u2192 implement \u2192 test \u2192 reflect \u2192 commit \u2192 push \u2192 PR (if enabled) \u2192 merge to feature"
+    },
+    {
+      "id": "complete_feature",
+      "name": "Complete each feature",
+      "description": "Update index, push, open PR to initiative (if enabled), merge"
+    },
+    {
+      "id": "complete_initiative",
+      "name": "Complete initiative",
+      "description": "Synthesize canon, archive (registry cleanup), open PR, merge",
+      "opens_pr": true
+    }
+  ],
+  "initiative": "partition-acceptance"
+}
