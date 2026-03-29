@@ -1,12 +1,5 @@
 {
   "schema_version": "2.0",
-  "initiatives": {
-    "common-cli": {
-      "intent": "Wrap Cicadas scripts in a common repo-local CLI and migrate docs/skills to use it",
-      "owner": "unknown",
-      "signals": [],
-      "created_at": "2026-03-29T16:11:43.064855+00:00"
-    }
-  },
+  "initiatives": {},
   "branches": {}
 }

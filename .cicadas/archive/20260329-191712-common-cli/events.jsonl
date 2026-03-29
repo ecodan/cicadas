@@ -1,1 +1,2 @@
 {"timestamp":"2026-03-29T16:11:43.072227+00:00","type":"initiative.kicked_off","initiative":"common-cli","branch":"master","data":{"intent":"Wrap Cicadas scripts in a common repo-local CLI and migrate docs/skills to use it"}}
+{"timestamp":"2026-03-29T19:17:12.269246+00:00","type":"specs.archived","initiative":"common-cli","branch":"master","data":{"archive_name":"20260329-191712-common-cli","type":"initiative"}}
