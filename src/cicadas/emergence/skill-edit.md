@@ -74,7 +74,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
     b. Run validation:
        ```
-       python {cicadas-dir}/scripts/validate_skill.py {slug}
+       python {cicadas-dir}/scripts/cicadas.py validate-skill {slug}
        ```
        If validation fails, fix autonomously if unambiguous (e.g., description now too long after expansion — trim to 1024 chars), re-validate, and report. If the violation requires a content decision, surface it before writing.
 
@@ -90,7 +90,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 ## Artifacts
 
 - **Modified**: `.cicadas/active/skill-{slug}/SKILL.md` and/or bundled files
-- **Validated**: `validate_skill.py` exits 0 after edit
+- **Validated**: `python {cicadas-dir}/scripts/cicadas.py validate-skill ...` exits 0 after edit
 
 ## Escalation
 

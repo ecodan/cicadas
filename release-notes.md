@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+- **Common CLI Surface**: Added `src/cicadas/scripts/cicadas.py` and `command_registry.py` as the repo-local command entrypoint for deterministic Cicadas operations. The new surface wraps lifecycle, review, event, skill, and token commands behind one agent-discoverable `--help` tree while preserving the underlying scripts for compatibility.
+- **CLI Coverage**: Added `tests/test_cli.py` to verify top-level help, representative command dispatch, lifecycle mutation through the wrapper, token subcommands, and clean failure on malformed `tokens show --full` input.
+- **Docs**: Updated the canonical docs to teach the common `python src/cicadas/scripts/cicadas.py ...` interface instead of pointing agents and users at individual scripts for routine operations.
+
 ## Version 0.7.0
 
 - **Machine-Testable Partition Specs**: `approach.md` template now includes `#### Artifact Type`, `#### How to Run`, and `#### Acceptance Criteria` subsections in each partition block. `emergence/approach.md` (Step 4b) guides agents to infer artifact type, generate How to Run from `package.json`/`pyproject.toml`/`Makefile`/`Dockerfile`, and produce acceptance criteria by artifact type (rest-api → endpoint assertions, web-ui → interaction criteria, cli → stdout/exit, library → return values, background-service → side effects, full-stack → combined). `<!-- NEEDS MANUAL REVIEW -->` flags non-deterministic or external-dependency criteria.
@@ -127,4 +133,3 @@
 - Updated documentation (`README.md`) to reflect the new paths and branding changes from Chorus to Cicadas.
 - Updated all skill files to use relative paths within the skill.
 - Created a comprehensive README instruction file
-

@@ -30,8 +30,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
         *  4. Don't publish (I'll install manually)"*
         Write the chosen base path to `emergence-config.json` as `publish_dir` (null if option 4). Example: `"publish_dir": ".agents/skills"`.
     0f. **PR preference**: Ask *"Do you want to open a PR when publishing this skill to master? (yes / no)"*, then run `create_lifecycle.py`:
-        - **Yes** (default): `python {cicadas-dir}/scripts/create_lifecycle.py skill-{slug} --no-pr-features`
-        - **No**: `python {cicadas-dir}/scripts/create_lifecycle.py skill-{slug} --no-pr-initiatives --no-pr-features`
+        - **Yes** (default): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle skill-{slug} --no-pr-features`
+        - **No**: `python {cicadas-dir}/scripts/cicadas.py create-lifecycle skill-{slug} --no-pr-initiatives --no-pr-features`
 
 1.  **Clarifying Dialogue**
 
@@ -89,19 +89,19 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
     b. Run kickoff:
        ```
-       python {cicadas-dir}/scripts/kickoff.py skill-{slug} --intent "{one-line description}"
+       python {cicadas-dir}/scripts/cicadas.py kickoff skill-{slug} --intent "{one-line description}"
        ```
 
     c. Create the skill branch:
        ```
-       python {cicadas-dir}/scripts/branch.py skill/{slug} --intent "{one-line description}" --initiative skill-{slug}
+       python {cicadas-dir}/scripts/cicadas.py branch skill/{slug} --intent "{one-line description}" --initiative skill-{slug}
        ```
 
     d. Validate:
        ```
-       python {cicadas-dir}/scripts/validate_skill.py {slug}
+       python {cicadas-dir}/scripts/cicadas.py validate-skill {slug}
        ```
-       If `validate_skill.py` exits 1, fix the reported violations automatically if unambiguous (e.g., slug casing, description length), re-run, and report the outcome. If the violation requires a content decision, surface it to the Builder.
+       If `python {cicadas-dir}/scripts/cicadas.py validate-skill ...` exits 1, fix the reported violations automatically if unambiguous (e.g., slug casing, description length), re-run, and report the outcome. If the violation requires a content decision, surface it to the Builder.
 
     e. Report completion:
        ```

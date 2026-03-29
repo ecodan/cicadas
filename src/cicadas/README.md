@@ -27,7 +27,7 @@ bash install.sh --update   # refresh skill files without touching .cicadas/
 This is the orchestrator itself. It contains:
 - `SKILL.md`: The agent manual and technical definition (includes "Implementation agent rules" so the same guardrails apply in Cursor, Claude Code, and other envs).
 - `implementation.md`: Guardrails for implementation agents (pause before commit, Reflect, tasks, Code Review on feat/).
-- `scripts/`: CLI tools for project lifecycle operations (kickoff, branch, status, create_lifecycle, open_pr, review, tokens, emit_event, get_events, validate_skill, skill_publish, unarchive, etc.). `utils.py` includes `emit()` — a shared non-fatal event emitter (lazy-imports `emit_event`) used by kickoff, branch, archive, and open_pr.
+- `scripts/`: The repo-local CLI entrypoint `cicadas.py`, its command registry, and the underlying deterministic tools for project lifecycle operations (kickoff, branch, status, create_lifecycle, open_pr, review, tokens, emit_event, get_events, validate_skill, skill_publish, unarchive, etc.). `utils.py` includes `emit()` — a shared non-fatal event emitter (lazy-imports `emit_event`) used by kickoff, branch, archive, and open_pr.
 - `emergence/`: Instruction modules for the drafting phase. Includes `start-flow.md` — the mandatory sequence (name, draft folder, **LLMs and Evals?** and eval status, requirements source/pace, publish destination for skills, PR preference) run first for initiative, tweak, bug, and skill. `skill-create.md` — dialogue-driven Agent Skill authoring (clarifying dialogue, SKILL.md generation, bundled files, `eval_queries.json` draft, kickoff + validate). `skill-edit.md` — one-question diagnostic, minimum-change proposal, validate. When work involves LLMs, `eval-spec.md` guides creation of an eval spec (initiatives only); Approach asks eval placement. Tweaks/bugs get an optional eval/benchmark reminder. Choices stored in `emergence-config.json`. Cicadas does not run evals.
 - `templates/`: Standardized markdown templates for specs (including `eval-spec.md` for LLMs and Evals, `skill-SKILL.md` scaffold for Agent Skills), canon, and per-initiative lifecycle (`lifecycle-default.json`, `lifecycle-schema.md`). `canon-summary.md` is the template for the 300–500 token agent-optimized codebase snapshot produced during synthesis.
 
@@ -51,7 +51,7 @@ When starting an initiative, tweak, bug, or skill, the agent runs the **standard
 - **Tech**: Design the architecture.
 - **Approach**: Slice the work into logical partitions (Feature Branches).
 - **Tasks**: Create a testable checklist.
-- **Lifecycle** (optional): Run `create_lifecycle.py` to add `lifecycle.json` with PR boundaries and steps; promoted to active at kickoff.
+- **Lifecycle** (optional): Run `python {cicadas-dir}/scripts/cicadas.py create-lifecycle ...` to add `lifecycle.json` with PR boundaries and steps; promoted to active at kickoff.
 
 ### 2. Kickoff
 Promote drafts to `active`, register the initiative, create the `initiative/{name}` branch (without switching the main worktree), and create a linked worktree at `../{repo}-initiative-{name}`.
@@ -60,7 +60,7 @@ Promote drafts to `active`, register the initiative, create the `initiative/{nam
 - **Start Feature**: Create a registered feature branch for a partition.
 - **Implement Task**: Work on ephemeral task branches.
 - **Reflect**: Periodically update active specs to match code changes.
-- **Code Review** (optional): After Reflect, run *"Code review"* to evaluate the diff against specs, security, correctness, and quality. Writes `review.md` to `.cicadas/active/{initiative}/` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `open_pr.py` reads the verdict and blocks on `BLOCK`. Check verdict anytime via `review.py`.
+- **Code Review** (optional): After Reflect, run *"Code review"* to evaluate the diff against specs, security, correctness, and quality. Writes `review.md` to `.cicadas/active/{initiative}/` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python {cicadas-dir}/scripts/cicadas.py open-pr ...` reads the verdict and blocks on `BLOCK`. Check verdict anytime via `python {cicadas-dir}/scripts/cicadas.py review ...`.
 - **Signal**: Broadcast breaking changes to other active branches.
 
 ### 4. Completion & Synthesis

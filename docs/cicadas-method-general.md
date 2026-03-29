@@ -74,48 +74,20 @@ Cicadas logic resides in `src/cicadas/`, and it manages the `.cicadas/` folder i
 ```
 project-root/
 ├── src/                              # Existing source code
-├── scripts/
-│   └── cicadas/                       # Cicadas orchestrator
-│       ├── SKILL.md                  # Agent skill definition (entry point)
-│       ├── implementation.md         # Guardrails for agent implementation
-│       ├── reverse-engineering.md    # Bootstrapping guide for existing codebases
-        │   ├── scripts/                  # Python orchestration scripts
-        │   ├── utils.py              # Shared utilities (path resolution, JSON I/O)
-        │   ├── init.py               # Bootstrap .cicadas/ structure
-        │   ├── kickoff.py            # Promote drafts → active, register initiative
-        │   ├── branch.py             # Register a feature branch, check module overlaps
-        │   ├── status.py             # Show initiatives, branches, signals
-        │   ├── create_lifecycle.py   # Creates lifecycle.json with PR boundaries
-        │   ├── open_pr.py            # Opens PR, checks review.md merge gate
-        │   ├── review.py             # Parses review.md verdict
-        │   ├── check.py              # Check for conflicts & main updates
-        │   ├── signal.py             # Broadcast a change to peer branches
-        │   ├── archive.py            # Move active specs → archive, deregister branch/initiative
-        │   ├── update_index.py       # Append to change ledger
-        │   ├── abort.py              # Context-aware rollback
-        │   ├── tokens.py             # Token usage log API
-        │   ├── history.py            # Generates HTML timeline
-        │   └── prune.py              # Rollback branch or initiative → restore to drafts
-        ├── templates/                # Markdown templates
-        │   ├── synthesis-prompt.md   # LLM prompt for canon synthesis
-        │   ├── product-overview.md   # Canon template
-        │   ├── ux-overview.md        # Canon template
-        │   ├── tech-overview.md      # Canon template
-        │   ├── module-snapshot.md    # Canon template (per module)
-        │   ├── prd.md                # Active spec template
-        │   ├── ux.md                 # Active spec template
-        │   ├── tech-design.md        # Active spec template
-        │   ├── approach.md           # Active spec template
-        │   └── tasks.md              # Active spec template
-        └── emergence/                # Instruction modules for spec authoring
-            ├── emergence.md          # Emergence phase overview
-            ├── start-flow.md         # Standard start flow (includes Building on AI? and eval status)
-            ├── clarify.md            # PRD refinement subagent
-            ├── ux.md                 # UX design subagent
-            ├── tech-design.md        # Architecture subagent
-            ├── approach.md           # Partitioning & sequencing subagent
-            ├── tasks.md              # Task breakdown subagent
-            └── code-review.md        # Code review algorithm
+├── src/cicadas/                      # Cicadas orchestrator
+│   ├── SKILL.md                     # Agent skill definition (entry point)
+│   ├── implementation.md            # Guardrails for agent implementation
+│   ├── scripts/                     # Repo-local CLI + deterministic orchestration scripts
+│   │   ├── cicadas.py               # Common entrypoint for agent-facing commands
+│   │   ├── command_registry.py      # Subcommand registry and wrappers
+│   │   ├── utils.py                 # Shared utilities (path resolution, JSON I/O)
+│   │   ├── kickoff.py               # Promote drafts → active, register initiative
+│   │   ├── branch.py                # Register a feature branch, check module overlaps
+│   │   ├── review.py                # Parses review.md verdict
+│   │   ├── tokens.py                # Token usage log API
+│   │   └── ...                      # Other deterministic lifecycle scripts
+│   ├── templates/                   # Markdown templates
+│   └── emergence/                   # Instruction modules for spec authoring
 └── .cicadas/                         # Cicadas artifacts (managed by scripts)
     ├── config.json                   # Local configuration
     ├── registry.json                 # Global registry (initiatives + feature branches)
@@ -180,12 +152,12 @@ Progressive spec authoring using subagents or manual drafting:
 
 **Trigger**: Drafts are reviewed and approved.
 
-**Action (Script)**: `python src/cicadas/scripts/brood.py {initiative-name} --intent "description"`
+**Action (Script)**: `python src/cicadas/scripts/cicadas.py kickoff {initiative-name} --intent "description"`
 
 **Effect**:
 1. Promotes docs from `.cicadas/drafts/{name}/` to `.cicadas/active/{name}/`.
 2. Registers the initiative in `registry.json` under `initiatives`.
-3. Creates the **initiative branch**: `git checkout -b initiative/{name}` — a long-lived integration branch where all feature branches merge.
+3. Creates the **initiative branch** and linked initiative worktree — a long-lived integration point where all feature branches merge.
 4. The shared specs become the "constitution" for all feature branches.
 
 **Branch hierarchy**:
@@ -210,7 +182,7 @@ main
 **Steps**:
 1. **Semantic Check (Agent)**: Read `registry.json`. Analyze the new intent against all active feature intents for logical conflicts. This is an LLM reasoning step — module overlap alone is insufficient.
 2. **Checkout initiative branch**: `git checkout initiative/{name}` — ensure branching from the correct parent.
-3. **Module Check (Script)**: `python src/cicadas/scripts/branch.py {branch-name} --intent "description" --modules "mod1,mod2" --initiative {initiative-name}`
+3. **Module Check (Script)**: `python src/cicadas/scripts/cicadas.py branch {branch-name} --intent "description" --modules "mod1,mod2" --initiative {initiative-name}`
 4. Review warnings from both the Agent (intent conflicts) and the Script (module overlaps).
 
 **Script effect**:
@@ -224,7 +196,7 @@ main
 **When**: All task branches for this feature are merged.
 
 **Steps**:
-1. **Update index (Script)**: `python src/cicadas/scripts/update_index.py --branch {name} --summary "..."` — logs to the change ledger.
+1. **Update index (Script)**: `python src/cicadas/scripts/cicadas.py update-index --branch {name} --summary "..."` — logs to the change ledger.
 2. **Merge to initiative**: `git checkout initiative/{name} && git merge {branch-name}` — merges into the initiative branch, **not** `main`.
 
 **Key**: No synthesis, no archiving at this step. Active specs stay active — they're the living document for the rest of the initiative, continuously updated by Reflect. Canon is produced only at initiative completion (Phase 5).
@@ -237,7 +209,7 @@ main
 1. Checkout from Feature Branch: `git checkout -b task/{feature}/{task-name}`
 2. Implement code.
 3. **Reflect** (see below): Keep active specs current as code reality diverges from plan.
-4. Open a **PR** against the feature branch using `open_pr.py`. Include in the PR description:
+4. Open a **PR** against the feature branch using `python src/cicadas/scripts/cicadas.py open-pr`. Include in the PR description:
    - What was implemented
    - **Reflect findings**: any spec divergences discovered and updated
    - Test results
@@ -262,13 +234,13 @@ main
 
 **Problem**: Feature A changes an API signature that Feature B depends on. Feature B's developer needs to know.
 
-**Action (Script)**: `python src/cicadas/scripts/signal.py "Changed Auth API: renamed login() to authenticate()"`
+**Action (Script)**: `python src/cicadas/scripts/cicadas.py signal "Changed Auth API: renamed login() to authenticate()"`
 
 **Effect**:
 - Appends a timestamped signal to the Initiative entry in `registry.json`.
 
 **Reception**:
-- `python src/cicadas/scripts/status.py` surfaces unacknowledged signals.
+- `python src/cicadas/scripts/cicadas.py status` surfaces unacknowledged signals.
 - The Agent should check for signals when performing a **Check Status** operation and assess their relevance.
 
 ### Phase 5: Initiative Completion (Outer Loop: Synthesis & Archive)
@@ -310,7 +282,7 @@ Use the prompt in `src/cicadas/templates/synthesis-prompt.md` to guide this proc
 
 #### Step 3: Archive & Commit
 
-1. Run: `python src/cicadas/scripts/archive.py {initiative-name}` — moves all active specs to `archive/`.
+1. Run: `python src/cicadas/scripts/cicadas.py archive {initiative-name}` — moves all active specs to `archive/`.
 2. Remove the initiative from `registry.json`.
 3. Commit canon + archive as a follow-up commit on `main`.
 4. Push to remote.
@@ -323,14 +295,14 @@ Use the prompt in `src/cicadas/templates/synthesis-prompt.md` to guide this proc
 
 ### Guide 1: Bootstrapping an Existing Project
 When starting Cicadas on a codebase that already has code:
-1. **Initialize**: Run `python src/cicadas/scripts/init.py`.
+1. **Initialize**: Run `python src/cicadas/scripts/cicadas.py init`.
 2. **Reverse Engineer**: Follow `src/cicadas/REVERSE_ENGINEERING.md` for disciplined code discovery.
 3. **Analyze**: Identify core modules and architectural patterns.
 4. **Draft Canon**:
     - Create `.cicadas/canon/product-overview.md` using the template.
     - Create module snapshots in `.cicadas/canon/modules/` for key components.
 5. **Seed Index**:
-    - Run `python src/cicadas/scripts/update_index.py --branch "bootstrap" --summary "Initial bootstrap"`.
+    - Run `python src/cicadas/scripts/cicadas.py update-index --branch "bootstrap" --summary "Initial bootstrap"`.
 
 ### Guide 2: Canon Synthesis (The LLM's Core Task)
 **When to run**: At initiative completion, on `main`, after the code merge. NOT per-feature-branch.
@@ -353,20 +325,20 @@ When starting Cicadas on a codebase that already has code:
 4. **Builder review**: Present canon for review before archiving and committing.
 
 ### Guide 3: Conflict Resolution
-Run: `python src/cicadas/scripts/check.py`
+Run: `python src/cicadas/scripts/cicadas.py check`
 
 **Interpreting Output**:
 - **Module Overlap**: Another branch is touching the same modules. *Action*: Check their active specs, coordinate.
 - **Signals**: Another branch broadcast a change. *Action*: Assess relevance and update your approach.
 - **Main Updates**: New commits on main. *Action*: Rebase your branch.
-- **Registry Desync**: Branch not registered. *Action*: Run `branch.py` to register it.
+- **Registry Desync**: Branch not registered. *Action*: Run `python src/cicadas/scripts/cicadas.py branch ...` to register it.
 
 ### Guide 4: Agent Guardrails
 1. **No Unplanned Work**: Never start writing code until you have a reviewed `tasks.md`.
 2. **Branch Only**: Only implement code on a registered feature branch, fix branch, tweak branch, or a task branch off of one.
 3. **Hard Stop**: After drafting specs, STOP and wait for the Builder to approve. After synthesis, STOP and wait for the Builder to review canon.
 4. **Tool Mandate**: NEVER manually edit `registry.json`. ALWAYS use the scripts.
-5. **Merge Boundaries**: A per-initiative `lifecycle.json` defines PR boundaries and step lists, with `open_pr.py` handling code review validation through `review.md` artifacts.
+5. **Merge Boundaries**: A per-initiative `lifecycle.json` defines PR boundaries and step lists, with `python src/cicadas/scripts/cicadas.py open-pr` handling code review validation through `review.md` artifacts.
 6. **Reflect Before PR**: Always run the Reflect operation before opening a PR for a task branch. Include Reflect findings in the PR description.
 7. **No Canon on Branches**: Never write to `.cicadas/canon/` on any branch. Canon is only synthesized on `main` at initiative completion.
 
@@ -387,12 +359,12 @@ The Agent handles all ceremony behind natural-language commands from the Builder
 ### Guide 6: Builder Commands
 The Builder interacts via natural-language commands. The Agent handles all scripts, git operations, and agentic operations behind the scenes.
 
-- **"Initialize cicadas"**: Runs `init.py`. Sets up `.cicadas/` structure.
-- **"Kickoff {name}"**: Runs `brood.py`. Promotes drafts, registers initiative, creates initiative branch.
-- **"Start feature {name}"**: Semantic check + `branch.py`. Creates feature branch from initiative branch, registers, checks conflicts.
+- **"Initialize cicadas"**: Runs `python src/cicadas/scripts/cicadas.py init`. Sets up `.cicadas/` structure.
+- **"Kickoff {name}"**: Runs `python src/cicadas/scripts/cicadas.py kickoff`. Promotes drafts, registers initiative, creates the initiative branch/worktree.
+- **"Start feature {name}"**: Semantic check + `python src/cicadas/scripts/cicadas.py branch`. Creates feature branch from initiative branch, registers, checks conflicts.
 - **"Implement task {X}"**: Creates task branch, implements, Reflects, opens PR with findings.
-- **"Signal {message}"**: Runs `signal.py`. Broadcasts change to initiative.
-- **"Complete feature {name}"**: Runs `update_index.py`. Merges feature branch into initiative branch.
+- **"Signal {message}"**: Runs `python src/cicadas/scripts/cicadas.py signal`. Broadcasts change to initiative.
+- **"Complete feature {name}"**: Runs `python src/cicadas/scripts/cicadas.py update-index`. Merges feature branch into initiative branch.
 - **"Complete initiative {name}"**: Merges initiative to `main`, synthesizes canon on `main`, archives specs, commits.
 
 ---
@@ -403,16 +375,16 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 
 | Phase | Command | Action |
 |-------|---------|--------|
-| **Init** | `python src/cicadas/scripts/init.py` | Bootstrap project structure |
-| **Kickoff** | `python src/cicadas/scripts/brood.py {name} --intent "..."` | Promote drafts, register initiative |
-| **Feature** | `python src/cicadas/scripts/branch.py {name} --intent "..." --modules "..." --initiative {name}` | Register feature branch |
-| **Status** | `python src/cicadas/scripts/status.py` | Show global state & signals |
-| **Check** | `python src/cicadas/scripts/check.py` | Check for conflicts & updates |
-| **Signal** | `python src/cicadas/scripts/signal.py "{message}"` | Broadcast to initiative |
-| **PR** | `python src/cicadas/scripts/open_pr.py` | Reads review target and creates PR |
-| **Archive** | `python src/cicadas/scripts/archive.py {name}` | Expire active specs & initiative |
-| **Log** | `python src/cicadas/scripts/update_index.py --branch {name} --summary "..."` | Record history |
-| **Prune** | `python src/cicadas/scripts/prune.py {name} --type {branch\|initiative}` | Rollback & restore to drafts |
+| **Init** | `python src/cicadas/scripts/cicadas.py init` | Bootstrap project structure |
+| **Kickoff** | `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..."` | Promote drafts, register initiative |
+| **Feature** | `python src/cicadas/scripts/cicadas.py branch {name} --intent "..." --modules "..." --initiative {name}` | Register feature branch |
+| **Status** | `python src/cicadas/scripts/cicadas.py status` | Show global state & signals |
+| **Check** | `python src/cicadas/scripts/cicadas.py check` | Check for conflicts & updates |
+| **Signal** | `python src/cicadas/scripts/cicadas.py signal "{message}"` | Broadcast to initiative |
+| **PR** | `python src/cicadas/scripts/cicadas.py open-pr` | Reads review target and creates PR |
+| **Archive** | `python src/cicadas/scripts/cicadas.py archive {name}` | Expire active specs & initiative |
+| **Log** | `python src/cicadas/scripts/cicadas.py update-index --branch {name} --summary "..."` | Record history |
+| **Prune** | `python src/cicadas/scripts/cicadas.py prune {name} --type {branch\|initiative}` | Rollback & restore to drafts |
 
 ### Agent Operations (LLM)
 
@@ -472,7 +444,7 @@ Issues identified through dry-run exercises (greenfield, brownfield, and paralle
 
 | # | Issue | Severity | Mitigation |
 |---|-------|----------|------------|
-| T2 | **`brood.py` should create the initiative branch**: Currently the Agent must manually run `git checkout -b initiative/{name}` after kickoff. | Low | Add git branch creation to `brood.py`. |
+| T2 | **Initiative kickoff depends on git metadata writes**: Environments that can edit the worktree but not `.git` internals can promote specs without creating the initiative branch or worktree. | Medium | Detect git permission failures explicitly and offer a sequential single-worktree fallback or a clear retry path with elevated git access. |
 | T3 | **`branch.py` should enforce parent branch**: Forks from current HEAD. A `--from` flag (defaulting to the linked initiative branch) would prevent mistakes. | Low | Add `--from` flag to `branch.py`. |
 
 ### 8.6 Process & Ergonomics

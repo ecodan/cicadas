@@ -20,8 +20,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     0c. **Create draft folder**: Ensure `.cicadas/drafts/{name}/` exists (create it if needed).
     0d. **LLMs and Evals?**: Ask *"Will this feature or change be powered by LLMs and may require ML evals to ensure quality? (yes / no)"*. If **yes**, ask *"This change involves LLMs. Experimentation and evals may be required. Does this project already have completed evals, or will you be doing evals? (already have / will do)"*. Write `building_on_ai` and `eval_status` to `.cicadas/drafts/{name}/emergence-config.json` (merge with existing keys). If **no**, write `building_on_ai: false` and continue.
     0e. **PR preference**: Ask *"Do you want to open a PR when merging this fix to master? (yes / no)"*, then run `create_lifecycle.py`:
-        - **Yes** (default): `python {cicadas-dir}/scripts/create_lifecycle.py {name} --no-pr-features`
-        - **No**: `python {cicadas-dir}/scripts/create_lifecycle.py {name} --no-pr-initiatives --no-pr-features`
+        - **Yes** (default): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {name} --no-pr-features`
+        - **No**: `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {name} --no-pr-initiatives --no-pr-features`
 
 1.  **Understand the Bug**: Ask the Builder for the observed behavior and reproduction steps if not already clear.
 2.  **Analyze**: Quickly scan the codebase to identify the likely cause. Do not perform a deep refactor or redesign.

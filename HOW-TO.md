@@ -84,12 +84,12 @@ Cicadas uses a two-layer branching hierarchy to manage concurrent work and ensur
 | **Active Specs** | The living requirements driving current work (`.cicadas/active/`). |
 | **Approach** | The strategy doc where you define the **Initiative** and its **Partitions**. |
 | **Reflect** | Keeping active specs in sync with code *during* development. |
-| **Code Review** | Optional agent operation run after Reflect, before opening a PR or merging. Evaluates the diff against active specs, security patterns, correctness bugs, and code quality. Writes a structured `review.md` to `.cicadas/active/{initiative}/` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `open_pr.py` reads this verdict and blocks on `BLOCK`. |
+| **Code Review** | Optional agent operation run after Reflect, before opening a PR or merging. Evaluates the diff against active specs, security patterns, correctness bugs, and code quality. Writes a structured `review.md` to `.cicadas/active/{initiative}/` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` reads this verdict and blocks on `BLOCK`. |
 | **Signal** | Broadcasting breaking changes to other peer branches. |
 | **Synthesis** | Overwriting Canon on `main` at the end of an initiative. |
-| **Lifecycle** | Per-initiative `lifecycle.json` (in drafts/active) defines PR boundaries (specs, initiatives, features, tasks) and an ordered step list. Created during Approach (e.g. `create_lifecycle.py`). |
-| **Status (Merged/Next)** | When lifecycle exists, `status.py` reports which branches are merged and suggests the next step (git-based; no host API). |
-| **Open PR** | `open_pr.py` opens a PR from the current branch (uses `gh` or `glab` if installed; else Bitbucket URL or fallback message). |
+| **Lifecycle** | Per-initiative `lifecycle.json` (in drafts/active) defines PR boundaries (specs, initiatives, features, tasks) and an ordered step list. Created during Approach (for example, `python src/cicadas/scripts/cicadas.py create-lifecycle {name}`). |
+| **Status (Merged/Next)** | When lifecycle exists, `python src/cicadas/scripts/cicadas.py status` reports which branches are merged and suggests the next step (git-based; no host API). |
+| **Open PR** | `python src/cicadas/scripts/cicadas.py open-pr` opens a PR from the current branch (uses `gh` or `glab` if installed; else Bitbucket URL or fallback message). |
 
 ---
 
@@ -127,7 +127,7 @@ Whenever you ask to **start an initiative**, **start a tweak**, **start a bug**,
 7.  **Implementation Loop**:
     - **Start Feature**: *"Start feature [partition-name]."* (Forks from Initiative Branch).
     - **Reflect**: The Agent keeps specs current as you build.
-    - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `open_pr.py` blocks on `BLOCK`.
+    - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` blocks on `BLOCK`.
     - **Complete Feature**: Merges back to the Initiative Branch.
 8.  **Complete Initiative**: *"Complete initiative [initiative-name]."*
     - Merges Initiative Branch to `main`, **Synthesizes** the Canon on `main`, and **Archives** the specs.
@@ -168,7 +168,7 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 4.  **Complete**: Merge to `main`, optionally update Canon, and Archive.
     - **Note**: You can run `archive` and include the spec move in your PR to `main`. Use `unarchive` if you need to revert and make further changes.
 
-**Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent runs `abort.py` from the current branch, rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
+**Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent runs `python src/cicadas/scripts/cicadas.py abort` from the current branch, rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
 
 ---
 
@@ -188,9 +188,9 @@ The agent runs the start flow (name, Building on AI?, publish destination, PR pr
 **Edit an existing skill**: *"The skill isn't triggering reliably."* or *"Edit skill db-migrations."*
 The agent asks one diagnostic question (under-triggering / over-triggering / wrong output), proposes a minimum targeted change as a before/after diff, and validates after applying.
 
-**Validate a skill**: `python src/cicadas/scripts/validate_skill.py {slug}`
+**Validate a skill**: `python src/cicadas/scripts/cicadas.py validate-skill {slug}`
 
-**Publish a skill** (after merging `skill/{name}` to `main`): `python src/cicadas/scripts/skill_publish.py {slug}`
+**Publish a skill** (after merging `skill/{name}` to `main`): `python src/cicadas/scripts/cicadas.py skill-publish {slug}`
 Reads `publish_dir` from `emergence-config.json`, runs validation before copying.
 
 ### Registering Cicadas as a Claude Code Skill
