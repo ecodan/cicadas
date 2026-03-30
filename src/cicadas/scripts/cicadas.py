@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from command_registry import alias_map, register_subcommands
+from command_registry import alias_map, command_specs, register_subcommands
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -27,7 +27,13 @@ def main(argv: list[str] | None = None) -> int:
         argv = [aliases[argv[0]], *argv[1:]]
 
     parser = build_parser()
-    args = parser.parse_args(argv)
+    command_names = {spec.name for spec in command_specs()}
+    if argv and argv[0] in command_names:
+        args = parser.parse_args([argv[0]])
+        if hasattr(args, "script_args"):
+            args.script_args = list(argv[1:])
+    else:
+        args = parser.parse_args(argv)
     if not getattr(args, "command", None):
         parser.print_help()
         return 0

@@ -103,3 +103,21 @@ class TestCicadasCli(CicadasTest):
 
         self.assertEqual(result.returncode, 1)
         self.assertIn("Error reading tokens file", result.stderr)
+
+    def test_update_index_forwards_option_style_args_via_cli(self):
+        result = self._run_cli(
+            "update-index",
+            "--branch",
+            "feat/cli",
+            "--summary",
+            "cli message",
+            "--modules",
+            "cli_mod",
+        )
+
+        self.assertEqual(result.returncode, 0)
+        index_path = self.cicadas_dir / "index.json"
+        payload = json.loads(index_path.read_text())
+        self.assertEqual(payload["entries"][-1]["branch"], "feat/cli")
+        self.assertEqual(payload["entries"][-1]["summary"], "cli message")
+        self.assertEqual(payload["entries"][-1]["modules"], ["cli_mod"])
