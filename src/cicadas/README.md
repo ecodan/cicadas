@@ -28,8 +28,8 @@ This is the orchestrator itself. It contains:
 - `SKILL.md`: The agent manual and technical definition (includes "Implementation agent rules" so the same guardrails apply in Cursor, Claude Code, and other envs).
 - `implementation.md`: Guardrails for implementation agents (pause before commit, Reflect, tasks, Code Review on feat/).
 - `scripts/`: The repo-local CLI entrypoint `cicadas.py`, its command registry, and the underlying deterministic tools for project lifecycle operations (kickoff, branch, status, create_lifecycle, open_pr, review, tokens, emit_event, get_events, validate_skill, skill_publish, unarchive, etc.). `utils.py` includes `emit()` — a shared non-fatal event emitter (lazy-imports `emit_event`) used by kickoff, branch, archive, and open_pr.
-- `emergence/`: Instruction modules for the drafting phase. Includes `start-flow.md` — the mandatory sequence (name, draft folder, **LLMs and Evals?** and eval status, requirements source/pace, publish destination for skills, PR preference) run first for initiative, tweak, bug, and skill. `skill-create.md` — dialogue-driven Agent Skill authoring (clarifying dialogue, SKILL.md generation, bundled files, `eval_queries.json` draft, kickoff + validate). `skill-edit.md` — one-question diagnostic, minimum-change proposal, validate. When work involves LLMs, `eval-spec.md` guides creation of an eval spec (initiatives only); Approach asks eval placement. Tweaks/bugs get an optional eval/benchmark reminder. Choices stored in `emergence-config.json`. Cicadas does not run evals.
-- `templates/`: Standardized markdown templates for specs (including `eval-spec.md` for LLMs and Evals, `skill-SKILL.md` scaffold for Agent Skills), canon, and per-initiative lifecycle (`lifecycle-default.json`, `lifecycle-schema.md`). `canon-summary.md` is the template for the 300–500 token agent-optimized codebase snapshot produced during synthesis.
+- `emergence/`: Instruction modules for the drafting phase. Includes `start-flow.md` — the mandatory sequence (name, draft folder, **LLMs and Evals?** and eval status, requirements source/pace, publish destination for skills, PR preference) run first for initiative, tweak, bug, and skill. `skill-create.md` — dialogue-driven Agent Skill authoring (clarifying dialogue, SKILL.md generation, bundled files, `eval_queries.json` draft, kickoff + validate). `skill-edit.md` — one-question diagnostic, minimum-change proposal, validate. When work involves LLMs, `eval-spec.md` guides creation of an eval spec (initiatives only); Approach asks eval placement. Tweaks/bugs get an optional eval/benchmark reminder. Choices stored in `emergence-config.json`. Cicadas does not run evals. `clarify.md` now refreshes approved front matter fields rather than older `steps_completed` metadata.
+- `templates/`: Standardized markdown templates for specs (including `eval-spec.md` for LLMs and Evals, `skill-SKILL.md` scaffold for Agent Skills), canon, and per-initiative lifecycle (`lifecycle-default.json`, `lifecycle-schema.md`). The five core initiative templates now share machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) to support compact context reloads. `canon-summary.md` is the template for the 300–500 token agent-optimized codebase snapshot produced during synthesis and now includes an explicit branch-start routing cue.
 
 ### 2. The `.cicadas/` Directory
 Located at your project root, this folder stores all project-specific state:
@@ -53,18 +53,24 @@ When starting an initiative, tweak, bug, or skill, the agent runs the **standard
 - **Tasks**: Create a testable checklist.
 - **Lifecycle** (optional): Run `python {cicadas-dir}/scripts/cicadas.py create-lifecycle ...` to add `lifecycle.json` with PR boundaries and steps; promoted to active at kickoff.
 
+The skill now defines explicit `Branch Reset`, `Phase Reset`, and `Partition Reset` rules. These rules tell the agent to prefer approved file-backed state over prior conversation, reload front matter and indexed sections first, and opportunistically clear or compact conversational context when the host supports it.
+
 ### 2. Kickoff
 Promote drafts to `active`, register the initiative, and create the `initiative/{name}` branch without switching the main worktree. By default Cicadas now continues in the current workspace; create a linked worktree only when `.cicadas/config.json` enables initiative worktrees or when kickoff is run with `--worktree`.
 
 ### 3. Execution (The Inner Loop)
 - **Start Feature**: Create a registered feature branch for a partition.
 - **Implement Task**: Work on ephemeral task branches.
-- **Reflect**: Periodically update active specs to match code changes.
+- **Reflect**: Periodically update active specs to match code changes, including refreshing front matter metadata so the compact context entrypoints stay authoritative.
 - **Code Review** (optional): After Reflect, run *"Code review"* to evaluate the diff against specs, security, correctness, and quality. Writes `review.md` to `.cicadas/active/{initiative}/` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python {cicadas-dir}/scripts/cicadas.py open-pr ...` reads the verdict and blocks on `BLOCK`. Check verdict anytime via `python {cicadas-dir}/scripts/cicadas.py review ...`.
 - **Signal**: Broadcast breaking changes to other active branches.
 
 ### 4. Completion & Synthesis
 Merge back to `main`. The agent then **synthesizes** new Canon docs from the code and active specs (including `canon/summary.md` — a 300–500 token agent-optimized snapshot used for context injection at branch start), then archives the specs.
+
+## Verification
+
+`tests/test_templates.py` provides lightweight regression coverage for the context contract: it checks the shared front matter structure in the core templates, the branch-start cue in `canon-summary.md`, and the Clarify instructions that keep the new metadata current.
 
 ---
 

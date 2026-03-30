@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Context Optimization**: The five core initiative templates (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) now share a compact machine-readable front matter contract with `summary`, `modules`, `depends_on`, and `index` fields so agents can reload approved context without re-reading full drafting threads.
+- **Reset Rules**: `SKILL.md` now defines explicit Branch Reset, Phase Reset, and Partition Reset rules. These rules re-anchor agents on approved file-backed state, reload indexed sections first, and opportunistically ask the host to clear or compact context when supported.
+- **Clarify / Canon Routing**: `emergence/clarify.md` now refreshes the new front matter fields instead of `steps_completed`, and `templates/canon-summary.md` now includes a branch-start routing cue for compact context loading.
+- **Verification**: Added `tests/test_templates.py` to verify the front matter contract, Clarify front matter guidance, and canon summary routing hint.
+- **Docs**: Updated the canonical docs to explain the new compact context contract and reset-boundary behavior. Evals remain future work; this change only adds the scaffolding for better context hygiene.
+
 - **Worktree Ergonomics**: Initiative and lightweight (`fix/`, `tweak/`, `skill/`) worktrees are no longer created implicitly by default. `.cicadas/config.json` now supports `auto_worktrees.initiatives`, `auto_worktrees.lightweight`, and `auto_worktrees.parallel_features`, and both `kickoff.py` and `branch.py` accept `--worktree` for explicit opt-in.
 - **Safer Parent Resolution**: `branch.py` now resolves parent refs against both local branches and `origin/...`, so feature creation still works when the intended initiative parent exists only as a remote-tracking branch.
 - **Visibility & Coverage**: `status.py` now lists initiative worktrees, `check.py` warns on stale initiative worktrees, and new integration tests cover config-enabled worktrees, remote-only parent refs, and worktree creation failure handling.
