@@ -2,20 +2,19 @@
 
 ## Unreleased
 
+## Version 0.7.5
+
 - **Context Optimization**: The five core initiative templates (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) now share a compact machine-readable front matter contract with `summary`, `modules`, `depends_on`, and `index` fields so agents can reload approved context without re-reading full drafting threads.
 - **Reset Rules**: `SKILL.md` now defines explicit Branch Reset, Phase Reset, and Partition Reset rules. These rules re-anchor agents on approved file-backed state, reload indexed sections first, and opportunistically ask the host to clear or compact context when supported.
-- **Clarify / Canon Routing**: `emergence/clarify.md` now refreshes the new front matter fields instead of `steps_completed`, and `templates/canon-summary.md` now includes a branch-start routing cue for compact context loading.
+- **Clarify / Canon Routing**: `emergence/clarify.md` now refreshes the new front matter fields instead of `steps_completed`, `templates/canon-summary.md` includes a branch-start routing cue for compact context loading, and the synthesized canon now documents the compact-context workflow.
 - **Verification**: Added `tests/test_templates.py` to verify the front matter contract, Clarify front matter guidance, and canon summary routing hint.
-- **Docs**: Updated the canonical docs to explain the new compact context contract and reset-boundary behavior. Evals remain future work; this change only adds the scaffolding for better context hygiene.
-
+- **Common CLI Fix**: `cicadas.py` now forwards option-style subcommand arguments like `update-index --branch ... --summary ...` correctly instead of rejecting or misrouting them, and `tests/test_cli.py` includes a regression test for wrapper-based `update-index`.
 - **Worktree Ergonomics**: Initiative and lightweight (`fix/`, `tweak/`, `skill/`) worktrees are no longer created implicitly by default. `.cicadas/config.json` now supports `auto_worktrees.initiatives`, `auto_worktrees.lightweight`, and `auto_worktrees.parallel_features`, and both `kickoff.py` and `branch.py` accept `--worktree` for explicit opt-in.
 - **Safer Parent Resolution**: `branch.py` now resolves parent refs against both local branches and `origin/...`, so feature creation still works when the intended initiative parent exists only as a remote-tracking branch.
 - **Visibility & Coverage**: `status.py` now lists initiative worktrees, `check.py` warns on stale initiative worktrees, and new integration tests cover config-enabled worktrees, remote-only parent refs, and worktree creation failure handling.
-- **Docs**: Updated the canonical docs to explain the new default workspace behavior and the `--worktree` / config-based opt-in model.
-
 - **Common CLI Surface**: Added `src/cicadas/scripts/cicadas.py` and `command_registry.py` as the repo-local command entrypoint for deterministic Cicadas operations. The new surface wraps lifecycle, review, event, skill, and token commands behind one agent-discoverable `--help` tree while preserving the underlying scripts for compatibility.
-- **CLI Coverage**: Added `tests/test_cli.py` to verify top-level help, representative command dispatch, lifecycle mutation through the wrapper, token subcommands, and clean failure on malformed `tokens show --full` input.
-- **Docs**: Updated the canonical docs to teach the common `python src/cicadas/scripts/cicadas.py ...` interface instead of pointing agents and users at individual scripts for routine operations.
+- **CLI Coverage**: Added `tests/test_cli.py` to verify top-level help, representative command dispatch, lifecycle mutation through the wrapper, token subcommands, `update-index` forwarding, and clean failure on malformed `tokens show --full` input.
+- **Docs**: Updated the canonical docs to explain the compact context contract, reset-boundary behavior, common CLI usage, and the new worktree defaults. Evals remain future work; these releases only add the scaffolding for better context hygiene.
 
 ## Version 0.7.0
 
