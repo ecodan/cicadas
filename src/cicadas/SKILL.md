@@ -167,7 +167,51 @@ Progressive spec authoring in `.cicadas/drafts/{initiative-name}/`, using instru
 
 **Critical**: `approach.md` MUST define logical partitions with declared module scopes. These become feature branches.
 
+**Spec front matter contract**: Core initiative specs (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) should carry machine-readable front matter that makes compact reload possible at later workflow boundaries. The front matter is part of the spec, not a separate coordination file. Keep it short and refresh it whenever the document meaning changes. Use this contract:
+
+```yaml
+summary: "Short approved summary for cheap reload"
+phase: "clarify|ux|tech|approach|tasks"
+when_to_load:
+  - "When this spec should be opened"
+depends_on:
+  - "Other specs this one assumes"
+modules:
+  - "Primary files or subsystems affected"
+index:
+  logical_key: "## Heading Title"
+next_section: "Heading to continue drafting from"
+```
+
+Rules:
+- `summary` must stay compact enough to be useful as a low-token reload artifact.
+- `index` must point to stable semantic headings or section ids, not line numbers.
+- `emergence-config.json` remains operational state only; do not move semantic spec indexes there.
+- `canon/summary.md` remains the shared compact cross-doc artifact for branch start; do not create a second always-on context manifest for the same role.
+
 Human review is required after each step. The Agent MUST NOT proceed without Builder approval.
+
+### Context Reset Rules
+
+Context resets are workflow boundaries, not magic memory deletion. A skill cannot guarantee that a host agent forgets prior conversation state, so Cicadas defines what to trust and reload next.
+
+**Branch Reset**:
+1. At branch start, if the host supports it, ask for context clearing, compaction, or a fresh session/subagent.
+2. Regardless of host support, treat prior detailed conversation as non-authoritative.
+3. Reload only `canon/summary.md`, the front matter of the active specs, and the indexed sections needed for the current branch or partition.
+4. Open full documents only if compact artifacts leave ambiguity, conflict, or missing acceptance criteria.
+
+**Phase Reset**:
+1. After Builder approval of Clarify, UX, Tech, Approach, or Tasks, refresh the approved document's front matter.
+2. If the host supports it, ask it to clear or compact detailed drafting history before starting the next phase.
+3. Start the next phase from approved summaries and the indexed sections explicitly required by that phase.
+4. Treat older drafting dialogue as background only; the approved files are authoritative.
+
+**Partition Reset**:
+1. When starting a new partition, if the host supports it, prefer a fresh or compacted context.
+2. Default to partition-scoped loading: `canon/summary.md`, `approach.md` front matter + current partition section, and `tasks.md` front matter + current partition tasks.
+3. Treat other partitions as out of scope unless compatibility, sequencing, or ambiguity requires expansion.
+4. Escalate to broader spec loading only when the compact partition context is insufficient.
 
 ### Kickoff (Initiative Start)
 **Trigger**: Drafts reviewed and approved.
@@ -190,6 +234,7 @@ python {cicadas-dir}/scripts/cicadas.py kickoff {initiative-name} --intent "desc
 3. **Script**: `python {cicadas-dir}/scripts/cicadas.py branch {branch-name} --intent "description" --modules "mod1,mod2" --initiative {initiative-name}`
 4. Review warnings from both the Agent (intent conflicts) and the Script (module overlaps).
 5. Branch is automatically pushed to remote by the script (`git push -u origin {branch-name}`), making it visible to collaborators.
+6. Apply **Branch Reset** before implementation: if the host supports clear/compact/fresh-start behavior, use it; then reload `canon/summary.md`, relevant spec front matter, and only the indexed sections needed for this branch.
 
 ### Complete a Feature Branch
 **When**: All task branches merged into the feature branch.
@@ -239,6 +284,7 @@ If picking up a session already in progress (new conversation, resumed context):
 2. Read `.cicadas/active/{initiative}/tasks.md` to find the first unchecked task.
 3. Check for any unread signals in the status output.
 4. Verify you are on the correct registered branch (`git branch --show-current` and cross-check against `registry.json`) before proceeding.
+5. Apply the relevant reset rule before continuing: Branch Reset for a branch resume, or Phase Reset if resuming a spec-writing step.
 
 ### Check Status & Signals
 ```
@@ -387,8 +433,10 @@ These are reasoning + editing operations performed by the Agent, NOT scripts.
 **Action**:
 1. Analyze `git diff` against the active specs.
 2. Update relevant docs in `.cicadas/active/` (e.g., `tech-design.md`, `approach.md`, `tasks.md`) to match code reality. In `tasks.md`, mark completed work with `- [x]` and add or adjust tasks if implementation diverged.
-3. If the change is significant enough to impact other feature branches, proceed to Signal.
-4. Include Reflect findings in the PR description when opening a PR.
+3. Refresh the front matter of any spec whose meaning changed so its `summary`, `modules`, `depends_on`, `index`, or `next_section` remain accurate.
+4. If the change completes a phase or partition boundary, apply the corresponding reset rule and prefer compact approved context for the next step.
+5. If the change is significant enough to impact other feature branches, proceed to Signal.
+6. Include Reflect findings in the PR description when opening a PR.
 
 ### Signal Assessment
 **Trigger**: After Reflect discovers a cross-branch impact.
