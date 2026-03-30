@@ -1,27 +1,41 @@
 
-# Tasks: {Feature Name}
+---
+summary: "{One tight paragraph summarizing the execution plan, current partition focus, and the most important delivery checkpoints. Keep it compact enough to drive next-task selection.}"
+phase: "tasks"
+when_to_load:
+  - "When selecting the next implementation task or reviewing completion state."
+  - "When checking partition progress, PR boundaries, or execution sequencing."
+depends_on:
+  - "prd.md"
+  - "ux.md"
+  - "tech-design.md"
+  - "approach.md"
+modules:
+  - "{Primary files, modules, or packages targeted by these tasks}"
+index:
+  partition_one: "## Partition: feat/{branch-name-1}"
+  partition_two: "## Partition: feat/{branch-name-2}"
+  initiative_boundary: "## Initiative Boundary"
+next_section: "## Partition: feat/{branch-name-1}"
+---
 
-# Tasks: {Feature Name}
+# Tasks: {Initiative Name}
 
-<!-- Select one mode below and delete the other -->
+<!-- Add one section per partition defined in approach.md. -->
+<!-- Use the format shown below for task lines, with unique numeric ids. -->
+<!-- Inject Open PR tasks only at the lifecycle boundaries configured for this initiative. -->
 
-## Mode A: Foundation (Strict Phases)
+## Partition: feat/{branch-name-1}
 
-### Phase 1: Models (Blocking)
-- [ ] Create `models/example.py`: Define `Example` class <!-- id: 0 -->
-- [ ] Create `models/other.py`: Define `Other` class (Parallel) <!-- id: 1 -->
+- [ ] {First concrete, testable task for this partition} <!-- id: 1 -->
+- [ ] {Next task for this partition} <!-- id: 2 -->
+<!-- Optional: inject a feature-boundary PR task here only when lifecycle.json enables feature PRs. -->
 
-### Phase 2: Services (Parallelizable)
-- [ ] Create `services/logic.py`: Implement `process_data` <!-- id: 2 -->
+## Partition: feat/{branch-name-2}
 
+- [ ] {First concrete, testable task for this partition} <!-- id: 10 -->
+- [ ] {Next task for this partition} <!-- id: 11 -->
 
-## Mode B: Feature (Vertical Slices)
+## Initiative Boundary
 
-### Feature: Inventory System
-- [ ] Update `models/character.py`: Add inventory list <!-- id: 10 -->
-- [ ] Update `cli.py`: Add `inventory` command <!-- id: 11 -->
-
-### Feature: Crafting System (Parallel to Inventory)
-- [ ] Update `models/item.py`: Add recipes <!-- id: 20 -->
-
-
+- [ ] Open PR: initiative/{initiative-name} -> master and await merge approval before continuing <!-- id: 100 -->

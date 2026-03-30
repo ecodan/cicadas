@@ -1,4 +1,26 @@
 
+---
+summary: "{One tight paragraph summarizing the implementation strategy, partitioning plan, major dependencies, and execution order. Keep it compact enough to seed branch-start context.}"
+phase: "approach"
+when_to_load:
+  - "When starting registered feature branches or reviewing partition scope, sequencing, and dependencies."
+  - "When deciding what work can proceed in parallel and what must wait."
+depends_on:
+  - "prd.md"
+  - "ux.md"
+  - "tech-design.md"
+modules:
+  - "{Primary modules or subsystems coordinated by this approach}"
+index:
+  strategy: "## Strategy"
+  partitions: "## Partitions (Feature Branches)"
+  sequencing: "## Sequencing"
+  migrations_compat: "## Migrations & Compat"
+  risks: "## Risks & Mitigations"
+  alternatives: "## Alternatives Considered"
+next_section: "Strategy"
+---
+
 # Approach: {Initiative Name}
 
 ## Strategy

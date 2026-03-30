@@ -1,6 +1,26 @@
 
 ---
-next_section: 'Overview & Context'
+summary: "{One tight paragraph summarizing the technical approach, core architectural decisions, and the most important constraints. Keep it compact enough to serve as a low-cost reload artifact.}"
+phase: "tech"
+when_to_load:
+  - "When implementing or reviewing architecture, interfaces, data models, conventions, and sequencing."
+  - "When checking whether changes still conform to the agreed technical approach."
+depends_on:
+  - "prd.md"
+  - "ux.md"
+modules:
+  - "{Primary module, package, or code path shaped by this design}"
+index:
+  overview: "## Overview & Context"
+  stack: "## Tech Stack & Dependencies"
+  structure: "## Project / Module Structure"
+  adrs: "## Architecture Decisions (ADRs)"
+  data_models: "## Data Models"
+  interfaces: "## API & Interface Design"
+  conventions: "## Implementation Patterns & Conventions"
+  security_performance: "## Security & Performance"
+  implementation_sequence: "## Implementation Sequence"
+next_section: "Overview & Context"
 ---
 
 # Tech Design: {Initiative Name}

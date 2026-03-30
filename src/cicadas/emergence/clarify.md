@@ -46,7 +46,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
 3. **Canon Check**: On brownfield projects, read existing canon (`product-overview.md`, `ux-overview.md`, `tech-overview.md`) to understand what the system already does. Use this to ask sharper, more targeted questions and to avoid re-specifying existing behavior.
 
-4. **Initialize**: Create `.cicadas/drafts/{initiative}/prd.md` using the template at `{cicadas-dir}/templates/prd.md`. The template contains a **Progress** checklist — use this as your working checklist, ticking each item (`- [ ]` → `- [x]`) when a section is approved.
+4. **Initialize**: Create `.cicadas/drafts/{initiative}/prd.md` using the template at `{cicadas-dir}/templates/prd.md`. The template contains both a **Progress** checklist and machine-readable front matter. Use the checklist as your working checklist, ticking each item (`- [ ]` → `- [x]`) when a section is approved, and keep the front matter current as the approved document meaning evolves.
 
 5. **Iterative Drafting**: Build the PRD section-by-section in **Progress checklist** order. For each section:
     - **Draft**: Write the section content.
@@ -54,8 +54,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - **Halt & Elicit** (only if pace is `"section"`): Present the **Balanced Elicitation Menu** and STOP for input:
         - `[D] Deep Dive`: Ask 1–2 probing questions to refine this section.
         - `[R] Review`: Adopt a critical persona to highlight risks or gaps.
-        - `[C] Continue`: Mark the section complete in `steps_completed` and move on.
-    - If pace is `"doc"` or `"all"`, skip the menu and mark the section complete automatically.
+        - `[C] Continue`: Mark the section complete in the **Progress** checklist, refresh front matter fields that changed (`summary`, `depends_on`, `modules`, `index`, `next_section`), and move on.
+    - If pace is `"doc"` or `"all"`, skip the menu and mark the section complete automatically while still refreshing any affected front matter fields.
 
 5. **Finalize**: Once all sections are complete, present a summary and confirm the PRD is ready to hand off to the UX instruction module.
     - **If pace is `"doc"` or `"section"`**: STOP and wait for Builder review. Remind the Builder of the remaining spec steps:
@@ -122,7 +122,12 @@ If the user is satisfied with the section as drafted, proceed to the next sectio
 
 ## Output Artifact: `prd.md`
 
-Use the template at `{cicadas-dir}/templates/prd.md`. Update `steps_completed` in the frontmatter as each section is approved.
+Use the template at `{cicadas-dir}/templates/prd.md`. As each section is approved, update the **Progress** checklist in the document body and refresh the front matter so:
+- `summary` reflects the current approved PRD in compact form
+- `depends_on` remains accurate for later phases
+- `modules` names the primary areas affected
+- `index` points to the current semantic headings
+- `next_section` points to the next section still being drafted
 
 ## Key Considerations
 

@@ -72,6 +72,7 @@ bash install.sh --update
 
 ### Phase 1: Emergence (Drafting)
 When you start an initiative, tweak, bug, or skill, the agent runs a **standard start flow** first (name → draft folder → **Building on AI?** (yes/no; if yes, eval status) → requirements source/pace for initiatives → publish destination for skills → PR preference), then drafts specs. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** (tweaks/bugs); Cicadas does not run evals. We draft specifications in `.cicadas/drafts/` using specialized instruction modules (Clarify, UX, Tech, Approach, Tasks, Skill Create). **Clarify** can be driven by Q&A, a requirements doc (`drafts/{initiative}/requirements.md`), or a Loom transcript (`drafts/{initiative}/loom.md`).
+Every core initiative spec now carries compact machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved state without re-reading entire drafting threads.
 *   **Key Artifact**: `approach.md` defines the partitions (feature branches).
 
 ### Phase 2: Kickoff
@@ -86,14 +87,23 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
     - Parallel `feat/` partitions still auto-create linked worktrees by default.
     - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts in.
 *   **Reflect**: When code implementation diverges from the plan, we update the active specs *immediately* (and before every commit on feat/task branches).
+    - Reflect refreshes the affected specs' front matter as well as their prose content so the compact routing metadata stays accurate.
 *   **Code Review** (optional): After Reflect; before committing on feature branches; before opening a PR or merging. The agent evaluates the diff against specs, security, correctness, and quality — producing a structured `review.md` artifact with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` checks this verdict and blocks on `BLOCK`.
 *   **Signal**: If a change affects other branches, we broadcast it: `python src/cicadas/scripts/cicadas.py signal "..."`
 
 ### Phase 4: Completion (Synthesis)
 When all features are merged into the initiative branch, we merge to `main` and then:
 1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/` (including `canon/summary.md` — a 300–500 token snapshot used to inject context at branch start).
-2.  **Archive**: Active specs are moved to `.cicadas/archive/`.
+    2.  **Archive**: Active specs are moved to `.cicadas/archive/`.
     - **1-PR Flow**: You can include the `archive` move and registry cleanup in your main PR for a single-commit finalization. If rework is needed, use `unarchive` to restore the state instantly.
+
+### Context Reset Discipline
+
+Cicadas treats branch starts, approved spec boundaries, and partition handoffs as **reset points**. The skill now tells the agent to:
+
+- Prefer approved file-backed state over prior chat history.
+- Reload from `canon/summary.md` plus spec front matter and indexed sections first.
+- Opportunistically clear or compact conversational context when the host supports it, without relying on that behavior for correctness.
 
 
 ### Quick Command Reference
