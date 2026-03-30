@@ -14,6 +14,8 @@ Cicadas is a spec-driven development orchestrator for human-AI teams that treats
 - Scripts are pure Python stdlib — no external dependencies at runtime; only `git` and Python 3.11+ required.
 - Agent operations (Reflect, Code Review, Synthesis) are LLM tasks defined in `emergence/` markdown prompts, not scripts. Clarify supports intake via Q&A, doc, or Loom. Start flow includes Building on AI? (yes/no) and eval status; stored in emergence-config.json. Initiatives: optional eval spec (eval-spec.md + template); Approach asks eval placement. Tweaks/bugs: optional eval/benchmark reminder. Cicadas does not run evals.
 - Context injection: `branch.py` writes `context.md` at branch creation time (canon summary + scoped module snapshots + specs); gitignored.
+- Compact context contract: core initiative specs now carry machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved context from the specs themselves.
+- Reset workflow: `SKILL.md` defines Branch Reset, Phase Reset, and Partition Reset rules. They prefer `canon/summary.md`, spec front matter, and indexed sections before full-doc loading, and only use host-supported clear/compact behavior opportunistically.
 
 ## Modules
 
@@ -35,14 +37,17 @@ scripts/utils.py: shared utilities (root detection, git helpers, JSON I/O, workt
 scripts/emit_event.py: append typed event to events.jsonl with fcntl.flock; CLI: --initiative, --type, --data
 scripts/get_events.py: read/filter events.jsonl; CLI: --initiative, --type, --since, --last; exits 0+empty if absent
 emergence/: markdown prompts for Clarify, UX, Tech, Approach (incl. Step 4b: Artifact Type, How to Run, AC generation per partition), Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec (Building on AI), Code Review; start-flow includes Building on AI? and eval status
+emergence/clarify.md: refreshes approved front matter fields as sections are completed; no longer relies on `steps_completed`
 templates/approach.md: partition blocks include Artifact Type, How to Run, and Acceptance Criteria subsections
-templates/: spec templates (prd, ux, tech-design, approach, tasks, buglet, tweaklet, eval-spec, review), canon templates, synthesis prompt
+templates/: spec templates (prd, ux, tech-design, approach, tasks, buglet, tweaklet, eval-spec, review), canon templates, synthesis prompt; core initiative templates share the front matter contract
+tests/test_templates.py: regression checks for the front matter contract and compact context routing hints
 
 ## Conventions
 
 - Never manually edit `registry.json` — always use scripts.
 - Never write to `.cicadas/canon/` on any branch — canon only on master after merge.
 - Reflect (update active specs to match code) before every commit on feat/task branches.
+- Refresh front matter during Reflect when the meaning of a spec changes.
 - Code Review (writes review.md) after Reflect on feat branches; open_pr.py enforces BLOCK.
 - Tests use real temp filesystems + real git repos (no mocks for I/O); base class in `tests/base.py`.
 - PYTHONPATH=src/cicadas/scripts:tests for all test runs; system python3 (not .venv) for tests.

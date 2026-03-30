@@ -1,0 +1,46 @@
+{
+  "name": "context-optimization",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Optimize Cicadas context usage with spec front matter, indexed sections, and reset rules that prefer compact approved context while opportunistically using host-supported clear/compact capabilities.",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-03-30T01:09:34.754157+00:00"
+  },
+  "timestamp": "20260330-033429",
+  "associated_branches": {
+    "feat/frontmatter-contract": {
+      "intent": "Define and apply a standardized front matter schema and section-index pattern across the core initiative templates so later phases and branches can reload compact approved context.",
+      "modules": [
+        "src/cicadas/templates/ux.md",
+        "src/cicadas/templates/approach.md",
+        "src/cicadas/templates/tasks.md",
+        "src/cicadas/templates/tech-design.md",
+        "src/cicadas/templates/prd.md"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-30T01:14:32.249236+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-frontmatter-contract",
+      "initiative": "context-optimization"
+    },
+    "feat/skill-reset-rules": {
+      "intent": "Teach Cicadas to create, refresh, and consume spec front matter and to apply branch-start, post-spec, and post-partition reset rules with opportunistic host clear/compact hints.",
+      "modules": [
+        "src/cicadas/SKILL.md"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-30T01:30:46.261745+00:00",
+      "initiative": "context-optimization"
+    },
+    "feat/context-verification": {
+      "intent": "Verify the front matter contract, refine canon-summary guidance only if needed, and cover the new template and skill behavior with tests or equivalent checks.",
+      "modules": [
+        "src/cicadas/templates/canon-summary.md",
+        "tests"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-03-30T02:46:56.153302+00:00",
+      "initiative": "context-optimization"
+    }
+  }
+}

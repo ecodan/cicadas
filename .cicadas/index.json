@@ -28,6 +28,13 @@
       "summary": "Added machine-testable partition specs (Artifact Type, How to Run, Acceptance Criteria in approach.md) and typed event log infrastructure (emit_event.py, get_events.py, utils.emit). All lifecycle scripts now emit events; implementation agents emit task.complete and partition.complete per Rules 9-10.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-03-30T03:37:21.190651+00:00",
+      "branch": "context-optimization",
+      "summary": "Add spec front matter indexes, reset-boundary guidance, canon-summary routing hints, and regression checks for compact context reloads.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
