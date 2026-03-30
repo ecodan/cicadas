@@ -146,6 +146,15 @@ Progressive spec authoring using subagents or manual drafting:
 
 **Pace & Limits**: At the start of Clarify, the Builder chooses a review cadence (`section` / `doc` / `all`) stored in `emergence-config.json` that dictates where instruction modules stop to request human review. The standard start flow also records **Building on AI?** (yes/no) and, if yes, eval status (already have / will do); initiatives with "will do" may add an eval spec and placement in Approach. A `tokens.json` log actively captures LLM usage during drafting and updates throughout the initiative.
 
+**Compact Context Contract**: The five core initiative specs (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) now carry machine-readable front matter with:
+
+- `summary`: compact approved summary of the document
+- `modules`: likely code areas touched by the work
+- `depends_on`: upstream specs or artifacts that inform this document
+- `index`: stable section labels pointing to the detailed headings inside the file
+
+This front matter is the low-token re-entry point for later phases and branch starts. Clarify refreshes it as sections are approved, and Reflect refreshes it again when implementation changes the plan.
+
 **Mechanism**: Subagents in `src/cicadas/emergence/` or manual authoring. See `EMERGENCE.md` for details.
 
 ### Phase 2: Kickoff
@@ -190,8 +199,18 @@ main
 - Creates git branch (forking from the initiative branch).
 - Registers the branch in `registry.json` under `branches`, linked to the initiative.
 - Creates `.cicadas/active/{branch-name}/` for branch-specific specs.
-- Generates a gitignored `context.md` file in the branch root that bundles `canon/summary.md`, module snapshots, approach, and tasks to provide immediate AI contexts.
 - Parallel `feat/` partitions still default to linked worktrees, while initiative and lightweight worktrees are now opt-in through config or `--worktree`.
+
+**Branch Reset Rule**:
+
+At branch start, the agent should treat prior chat detail as stale and re-anchor on approved file-backed context:
+
+- load `canon/summary.md`
+- load front matter from the active specs
+- open only the indexed sections needed for the current branch or task
+- if the host/runtime supports context clearing or compaction, use it opportunistically before reloading
+
+The reset rule is behavioral guidance, not a hard dependency. Correctness must still come from the files even if the host ignores the clear-context hint.
 
 #### Outer Loop: Complete a Feature Branch
 
@@ -228,9 +247,19 @@ main
 **Action (Agent)**:
 1. Analyze `git diff` against the active specs.
 2. Update the relevant docs in `.cicadas/active/` (e.g., `tech-design.md`, `approach.md`, `tasks.md`) to match code reality.
+3. Refresh the affected documents' front matter so the compact summaries, dependencies, modules, and section index remain accurate.
 3. If the change is significant enough to impact other feature branches, proceed to **Signal**.
 
 **This is NOT a script** — it is an LLM reasoning + file editing operation performed by the agent.
+
+#### Phase Reset and Partition Reset
+
+Approved spec boundaries and partition starts are also reset points:
+
+- **Phase Reset**: after PRD, UX, Tech, Approach, or Tasks approval, carry forward the approved front matter and the indexed sections needed by the next phase rather than the full drafting dialogue
+- **Partition Reset**: when starting a partition, default to that partition's `approach.md` and `tasks.md` sections; do not load unrelated partitions unless ambiguity or conflict requires it
+
+As with Branch Reset, the method may ask the host to clear or compact context when supported, but approved on-disk state remains authoritative either way.
 
 ### Phase 4: Coordination (Signals)
 

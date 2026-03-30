@@ -112,6 +112,27 @@ Cicadas uses a two-layer branching hierarchy to manage concurrent work and ensur
 
 Whenever you ask to **start an initiative**, **start a tweak**, **start a bug**, or **create a skill**, the agent runs a **standard start flow** first: name (confirmed even if you already said it) → create draft folder → **Building on AI?** (yes/no; if yes, eval status: already have / will do — skipped for skills) → requirements source and pace (initiatives only) → publish destination (skills only) → PR preference → then collect requirements or draft the spec. This keeps the "start" experience repeatable. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** in the tweaklet/buglet; Cicadas does not run evals. The flow is defined in the skill at `emergence/start-flow.md` and is embedded in the Clarify, Tweak, Bug Fix, and Skill Create instruction modules.
 
+## Compact Context Contract
+
+To keep long-running agent work from bloating context, the five core initiative specs now use a shared machine-readable front matter contract:
+
+- `summary`: compact approved summary of the document
+- `modules`: code areas most likely to be touched
+- `depends_on`: upstream specs or artifacts this document relies on
+- `index`: stable section labels pointing to the detailed headings inside the file
+
+This lets the agent restart from approved file state instead of dragging full drafting conversations forward. Clarify refreshes this front matter as sections are approved, and Reflect refreshes it again when implementation changes the plan.
+
+## Reset Boundaries
+
+Cicadas now treats three moments as context-reset boundaries:
+
+- `Branch Reset`: at branch start, reload `canon/summary.md`, the active spec front matter, and only the indexed sections needed for the current task
+- `Phase Reset`: after each approved spec phase, treat the detailed drafting conversation as stale and carry forward only the approved file-backed summaries and indexed sections
+- `Partition Reset`: when starting a partition, default to the current partition's approach/tasks sections and avoid loading unrelated partitions unless ambiguity forces it
+
+If the host agent/runtime supports context clearing or compaction, the skill asks it to do that at these boundaries. If not, Cicadas still works because file-backed state remains authoritative.
+
 ---
 
 ## 🟢 Greenfield: Starting a New Project
@@ -129,7 +150,7 @@ Whenever you ask to **start an initiative**, **start a tweak**, **start a bug**,
     - **Start Feature**: *"Start feature [partition-name]."* (Forks from Initiative Branch).
       - Parallel `feat/` partitions still create linked worktrees by default.
       - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts into a worktree.
-    - **Reflect**: The Agent keeps specs current as you build.
+    - **Reflect**: The Agent keeps specs current as you build, including refreshing spec front matter so compact context stays accurate.
     - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` blocks on `BLOCK`.
     - **Complete Feature**: Merges back to the Initiative Branch.
 8.  **Complete Initiative**: *"Complete initiative [initiative-name]."*
