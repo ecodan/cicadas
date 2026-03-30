@@ -1,6 +1,24 @@
 
 ---
-next_section: 'Executive Summary'
+summary: "{One tight paragraph summarizing the initiative's goals, users, and intended outcome. Keep it compact enough to serve as a low-cost reload artifact.}"
+phase: "clarify"
+when_to_load:
+  - "When defining or reviewing initiative goals, users, scope, success criteria, and risks."
+  - "When validating that implementation still aligns with the intended problem and outcomes."
+depends_on: []
+modules:
+  - "{Primary code, workflow, or product area this initiative changes}"
+index:
+  executive_summary: "## Executive Summary"
+  project_classification: "## Project Classification"
+  success_criteria: "## Success Criteria"
+  user_journeys: "## User Journeys"
+  scope: "## Scope"
+  functional_requirements: "## Functional Requirements"
+  non_functional_requirements: "## Non-Functional Requirements"
+  open_questions: "## Open Questions"
+  risk_mitigation: "## Risk Mitigation"
+next_section: "Executive Summary"
 ---
 
 # PRD: {Initiative Name}
@@ -158,4 +176,3 @@ The system is successful when:
 |------|-----------|--------|------------|
 | {Risk 1} | Low/Med/High | Low/Med/High | {How we address it} |
 | {Risk 2} | Low/Med/High | Low/Med/High | {How we address it} |
-

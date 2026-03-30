@@ -1,6 +1,25 @@
 
 ---
-next_section: 'Design Goals & Constraints'
+summary: "{One tight paragraph summarizing the intended builder or end-user experience, key interaction goals, and main UX constraints. Keep it compact enough to reuse at later workflow boundaries.}"
+phase: "ux"
+when_to_load:
+  - "When designing or reviewing journeys, flows, states, copy, and interaction constraints."
+  - "When implementation questions depend on experience details rather than product goals alone."
+depends_on:
+  - "prd.md"
+modules:
+  - "{Primary user-facing surface, workflow, or interaction area affected}"
+index:
+  design_goals: "## Design Goals & Constraints"
+  journeys: "## User Journeys & Touchpoints"
+  information_architecture: "## Information Architecture"
+  key_flows: "## Key User Flows"
+  ui_states: "## UI States"
+  copy_tone: "## Copy & Tone"
+  visual_design: "## Visual Design Direction"
+  consistency: "## UX Consistency Patterns"
+  accessibility: "## Responsive & Accessibility"
+next_section: "Design Goals & Constraints"
 ---
 
 # UX Design: {Initiative Name}
