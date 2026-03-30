@@ -29,7 +29,7 @@ next_section: "## Partition: feat/{branch-name-1}"
 
 - [ ] {First concrete, testable task for this partition} <!-- id: 1 -->
 - [ ] {Next task for this partition} <!-- id: 2 -->
-- [ ] Open PR: feat/{branch-name-1} -> initiative/{initiative-name} and await merge approval before continuing <!-- id: 3 -->
+<!-- Optional: inject a feature-boundary PR task here only when lifecycle.json enables feature PRs. -->
 
 ## Partition: feat/{branch-name-2}
 

@@ -57,12 +57,24 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("## Partition: feat/{branch-name-1}", text)
         self.assertIn("## Initiative Boundary", text)
         self.assertIn("Open PR: initiative/{initiative-name} -> master", text)
+        self.assertNotIn(
+            "Open PR: feat/{branch-name-1} -> initiative/{initiative-name}",
+            text,
+        )
 
     def test_canon_summary_includes_branch_start_routing_hint(self):
         text = (TEMPLATES / "canon-summary.md").read_text()
 
         self.assertIn("Branch-start rule:", text)
         self.assertIn("active spec front matter", text)
+
+    def test_clarify_module_uses_current_frontmatter_contract(self):
+        text = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()
+
+        self.assertNotIn("steps_completed", text)
+        self.assertIn("refresh front matter", text)
+        self.assertIn("summary", text)
+        self.assertIn("next_section", text)
 
 
 if __name__ == "__main__":
