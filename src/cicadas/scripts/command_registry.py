@@ -41,6 +41,7 @@ SCRIPT_COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec("create-lifecycle", "Create lifecycle.json in drafts or active", "create_lifecycle.py", aliases=("create_lifecycle",)),
     CommandSpec("open-pr", "Open a PR from the current branch", "open_pr.py", aliases=("open_pr",)),
     CommandSpec("review", "Check code review verdict for the current initiative", "review.py"),
+    CommandSpec("scan-repo", "Scan the repo and write adaptive canon metadata", "scan_repo.py", aliases=("scan_repo",)),
     CommandSpec("synthesize", "Gather context and generate or apply a synthesis prompt", "synthesize.py"),
     CommandSpec("register-existing", "Register an existing branch in the Cicadas registry", "register_existing.py", aliases=("register_existing",)),
     CommandSpec("validate-skill", "Validate an Agent Skill directory against the spec", "validate_skill.py", aliases=("validate_skill",)),

@@ -166,6 +166,8 @@ class TestBranchWorktree(CicadasTest):
         reg = utils.load_json(self.cicadas_dir / "registry.json")
         reg["initiatives"][self.init_name] = {"intent": "test"}
         utils.save_json(self.cicadas_dir / "registry.json", reg)
+        (self.cicadas_dir / "canon" / "summary.md").write_text("# Canon Summary\n")
+        (self.cicadas_dir / "canon" / "repo-context.md").write_text("# Repo Context\n")
         # Create active dir and approach.md with a parallel partition
         active = self.cicadas_dir / "active" / self.init_name
         active.mkdir(parents=True, exist_ok=True)
@@ -206,6 +208,7 @@ class TestBranchWorktree(CicadasTest):
         self.assertIn("worktree_path", reg["branches"]["feat/parallel-branch"])
         # context.md should exist in worktree
         self.assertTrue((expected_wt / "context.md").exists())
+        self.assertIn("## Repo Context", (expected_wt / "context.md").read_text())
 
     def test_sequential_partition_gets_plain_branch(self):
         import utils

@@ -6,6 +6,7 @@ You are an expert technical writer and software architect. Your task is to updat
 2.  **Active Specs**: Documentation from the `active/` directory for this initiative (PRDs, specs, tasks) describing the recently completed work.
 3.  **Existing Canon**: The current state of the documentation in `canon/`.
 4.  **Change Ledger**: The history of changes in `index.json`.
+5.  **Repo Metadata**: `canon/repo.json`, `canon/repo-tree.jsonl`, and `canon/repo-context.md` when present.
 
 **Task:**
 
@@ -20,6 +21,7 @@ Before writing any content, create a **Synthesis Plan**:
 - List each canon file you will create or update.
 - For each file, describe the specific additions, modifications, or removals.
 - If updating, identify which sections change and which remain.
+- Respect `repo.json` when it defines the repo mode and canon plan.
 
 ### Step 3: Write
 
@@ -28,7 +30,12 @@ Review the code and active specs, then update the following files in the `canon/
 1.  **`product-overview.md`**: Update goals, personas, journey narratives, features, and success criteria if product scope has changed.
 2.  **`ux-overview.md`**: Update design direction, navigation model, UX consistency patterns, accessibility, and copy/tone if the UX has changed.
 3.  **`tech-overview.md`**: Update the tech stack, architecture, key components, data models, API surface, and implementation conventions to reflect the codebase state.
-4.  **`modules/{module_name}.md`**: Update or create specific module documentation for any modified code modules.
+4.  **Mode-specific canon files**:
+    - `routing-guide.md` for `large-repo` and `mega-repo`
+    - `area-map.md` for `mega-repo`
+    - `areas/{area_name}.md` for `large-repo` and `mega-repo`
+    - `playbooks/{playbook_name}.md` when the selected mode or active specs call for recurring brownfield task guidance
+5.  **`modules/{module_name}.md`**: Update or create specific module documentation for any modified code modules when module snapshots remain part of the canon plan.
 
 ### Step 4: Extract Key Decisions
 
@@ -40,6 +47,7 @@ From the active specs, identify and embed **Key Decisions** into the relevant ca
 -   **Be Comprehensive**: Do not delete existing information unless it is obsolete. *Expand* the documentation.
 -   **Use Mermaid**: Use mermaid diagrams for complex flows.
 -   **Follow Templates**: Adhere to the structure of the provided templates.
+-   **Prefer compact routing artifacts**: Use `repo-context.md` for prompt-efficient structural context. Treat `repo-tree.jsonl` as a deeper machine inventory, not a primary prose output target.
 -   **Brownfield caution**: When updating, preserve unchanged sections exactly. Only modify sections affected by the new code.
 -   **Verify Unchanged Modules**: If a canon module file exists but the corresponding code module was not modified, leave the canon file unchanged.
 

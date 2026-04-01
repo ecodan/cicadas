@@ -6,6 +6,7 @@ import unittest
 
 import synthesize
 from base import CicadasTest
+from utils import REPO_CONTEXT_FILENAME, REPO_METADATA_FILENAME, REPO_TREE_FILENAME
 
 
 class TestSynthesize(CicadasTest):
@@ -47,6 +48,9 @@ class TestSynthesize(CicadasTest):
         self.assertEqual(context["active_docs"]["prd.md"], "Active PRD")
         self.assertIn("src/my_mod/logic.py", context["code_context"])
         self.assertIn("overview.md", context["canon_docs"])
+        self.assertTrue((self.cicadas_dir / "canon" / REPO_METADATA_FILENAME).exists())
+        self.assertTrue((self.cicadas_dir / "canon" / REPO_TREE_FILENAME).exists())
+        self.assertTrue((self.cicadas_dir / "canon" / REPO_CONTEXT_FILENAME).exists())
 
     def test_generate_prompt(self):
         context = {
@@ -54,6 +58,7 @@ class TestSynthesize(CicadasTest):
             "active_docs": {"prd.md": "Active"},
             "code_context": {"src/main.py": "print(1)"},
             "index": {"entries": []},
+            "repo_context": "# Repo Context\n",
         }
         prompt = synthesize.generate_prompt(context)
         # Check for real template content identifiers instead of mocked one
@@ -61,6 +66,7 @@ class TestSynthesize(CicadasTest):
         self.assertIn("Canon", prompt)
         self.assertIn("Active", prompt)
         self.assertIn("print(1)", prompt)
+        self.assertIn("#### REPO CONTEXT ####", prompt)
 
     def test_gather_context_empty_active_dir(self):
         """gather_context returns empty active_docs when active dir has no files."""
@@ -87,6 +93,13 @@ class TestSynthesize(CicadasTest):
 
         context = synthesize.gather_context(name)
         self.assertEqual(context["code_context"], {})
+
+    def test_gather_context_backfills_repo_metadata_when_missing(self):
+        context = synthesize.gather_context("initiative/demo", is_initiative=True)
+        self.assertIsInstance(context["repo_metadata"], dict)
+        self.assertTrue((self.cicadas_dir / "canon" / REPO_METADATA_FILENAME).exists())
+        self.assertTrue((self.cicadas_dir / "canon" / REPO_TREE_FILENAME).exists())
+        self.assertTrue((self.cicadas_dir / "canon" / REPO_CONTEXT_FILENAME).exists())
 
     def test_apply_response_multiple_file_blocks(self):
         """apply_response writes all files when response contains multiple File: blocks."""
@@ -126,6 +139,22 @@ Updated content
         target = self.cicadas_dir / "canon/new_doc.md"
         self.assertTrue(target.exists())
         self.assertEqual(target.read_text().strip(), "Updated content")
+
+    def test_apply_response_writes_new_canon_families(self):
+        response = """
+File: canon/routing-guide.md
+```markdown
+Routing content
+```
+
+File: canon/areas/core.md
+```markdown
+Area content
+```
+"""
+        synthesize.apply_response(response)
+        self.assertEqual((self.cicadas_dir / "canon/routing-guide.md").read_text().strip(), "Routing content")
+        self.assertEqual((self.cicadas_dir / "canon/areas/core.md").read_text().strip(), "Area content")
 
 
 if __name__ == "__main__":

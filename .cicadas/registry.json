@@ -1,5 +1,12 @@
 {
   "schema_version": "2.0",
-  "initiatives": {},
+  "initiatives": {
+    "repo-adaptability": {
+      "intent": "Add adaptive repo classification, scan-backed metadata, and scale-specific canon generation",
+      "owner": "unknown",
+      "signals": [],
+      "created_at": "2026-04-01T03:51:02.183572+00:00"
+    }
+  },
   "branches": {}
 }

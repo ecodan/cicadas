@@ -26,9 +26,20 @@ Specifically, scan:
 - Test files (reveal intent, edge cases, and conventions)
 - Any existing docs, wikis, or inline comments
 
+Before canon synthesis, generate or refresh adaptive repo metadata:
+- Run `python {cicadas-dir}/scripts/cicadas.py scan-repo` when `canon/repo.json` is missing or stale.
+- Treat `canon/repo.json` as the durable repo-mode and canon-plan artifact.
+- Treat `canon/repo-tree.jsonl` as machine inventory for deeper structural inspection.
+- Treat `canon/repo-context.md` as the compact routing/context artifact for agents and synthesis prompts.
+
+Apply the explicit repo-scale heuristic:
+- `normal-repo` when the repo has a small number of meaningful subsystems and most brownfield work can localize after orientation plus modest module docs.
+- `large-repo` when routing matters, multiple layers exist, and bounded area docs can still cover most common work.
+- `mega-repo` when routing the change to the correct ownership zone is itself the hard problem, and a linear canon would be too shallow to guide most brownfield work safely.
+
 ### Phase 2 — Canon Synthesis
 
-Using the templates in `{cicadas-dir}/templates/`, create the following canon documents in `.cicadas/canon/`:
+Using the templates in `{cicadas-dir}/templates/`, create the canon documents required by the selected repo mode in `.cicadas/canon/`:
 
 #### 1. `product-overview.md`
 The **"What and Why"** of the product, including UX context.
@@ -52,8 +63,18 @@ Use `{cicadas-dir}/templates/tech-overview.md`. Populate:
 - API/interface surface
 - Implementation conventions (naming, error handling, testing, logging)
 
-#### 3. `modules/*.md`
-One file per significant module/package using `{cicadas-dir}/templates/module-snapshot.md`.
+#### 3. Routing and operational canon
+
+For `large-repo` and `mega-repo`, add:
+- `routing-guide.md`
+- `areas/*.md`
+
+For `mega-repo`, also add:
+- `area-map.md`
+- `playbooks/*.md` when recurring brownfield task patterns are important enough to preserve
+
+#### 4. `modules/*.md`
+One file per significant module/package using `{cicadas-dir}/templates/module-snapshot.md` when the selected canon plan still calls for module snapshots.
 
 Focus on modules that:
 - Contain business logic
@@ -78,6 +99,7 @@ Once canon is complete and verified:
 
 - **Never Hallucinate**: If you do not have sufficient evidence to populate a section, **do not guess or infer**. Leave this placeholder exactly: `> ⚠️ Insufficient context to complete this section. Please review and fill in manually.`
 - **Write for agents, not humans**: Be precise and explicit. Agents can't read between the lines. If a convention exists, spell it out.
+- **Use the right artifact for the right audience**: `repo.json` is machine metadata, `repo-tree.jsonl` is structural inventory, and `repo-context.md` is the token-efficient reload artifact. Do not dump raw inventory into prose canon unless it materially helps future work.
 - **As-built, not aspirational**: Document what the system *is*, not what it *could be*. Open Questions are the place for uncertainty.
 - **Mental models over line counts**: A clear description of what a component *does* is more valuable than listing every method.
 - **Mark uncertainties explicitly**: If the "why" behind a decision isn't visible in the code, add it to Open Questions rather than guessing.

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -92,6 +93,386 @@ def save_json(path, data):
 def load_config() -> dict:
     """Load shared Cicadas config from the primary worktree."""
     return load_json(get_registry_dir() / "config.json")
+
+
+REPO_METADATA_FILENAME = "repo.json"
+REPO_TREE_FILENAME = "repo-tree.jsonl"
+REPO_CONTEXT_FILENAME = "repo-context.md"
+EXCLUDED_COMPLEXITY_PREFIXES = (
+    ".agents",
+    ".claude",
+    ".cursor",
+    ".direnv",
+    ".idea",
+    ".next",
+    ".nuxt",
+    ".tox",
+    ".venv",
+    ".vscode",
+    ".rovodev",
+    ".build",
+    ".cache",
+    ".coverage",
+    ".cicadas/active",
+    ".cicadas/archive",
+    ".cicadas/drafts",
+    ".cicadas/canon",
+    "build",
+    "coverage",
+    "dist",
+    "docs",
+    "node_modules",
+    "out",
+    "target",
+    "venv",
+)
+
+
+def canon_dir(root: Path | None = None) -> Path:
+    if root is None:
+        root = get_project_root()
+    return root / ".cicadas" / "canon"
+
+
+def repo_metadata_path(root: Path | None = None) -> Path:
+    return canon_dir(root) / REPO_METADATA_FILENAME
+
+
+def repo_tree_path(root: Path | None = None) -> Path:
+    return canon_dir(root) / REPO_TREE_FILENAME
+
+
+def repo_context_path(root: Path | None = None) -> Path:
+    return canon_dir(root) / REPO_CONTEXT_FILENAME
+
+
+def load_repo_metadata(canon_root: Path | None = None) -> dict | None:
+    path = repo_metadata_path(canon_root if canon_root is not None else None)
+    if canon_root is not None and canon_root.name == "canon":
+        path = canon_root / REPO_METADATA_FILENAME
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid {REPO_METADATA_FILENAME}: {exc}") from exc
+
+
+def save_repo_metadata(data: dict, canon_root: Path | None = None) -> Path:
+    path = repo_metadata_path(canon_root if canon_root is not None else None)
+    if canon_root is not None and canon_root.name == "canon":
+        path = canon_root / REPO_METADATA_FILENAME
+    save_json(path, data)
+    return path
+
+
+def load_repo_tree(canon_root: Path | None = None) -> list[dict] | None:
+    path = repo_tree_path(canon_root if canon_root is not None else None)
+    if canon_root is not None and canon_root.name == "canon":
+        path = canon_root / REPO_TREE_FILENAME
+    if not path.exists():
+        return None
+
+    entries: list[dict] = []
+    for lineno, line in enumerate(path.read_text().splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid {REPO_TREE_FILENAME} line {lineno}: {exc}") from exc
+        if not isinstance(entry, dict):
+            raise ValueError(f"Invalid {REPO_TREE_FILENAME} line {lineno}: expected object")
+        entries.append(entry)
+    return entries
+
+
+def save_repo_tree(entries: list[dict], canon_root: Path | None = None) -> Path:
+    path = repo_tree_path(canon_root if canon_root is not None else None)
+    if canon_root is not None and canon_root.name == "canon":
+        path = canon_root / REPO_TREE_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        for entry in entries:
+            f.write(json.dumps(entry, sort_keys=True))
+            f.write("\n")
+    return path
+
+
+def load_repo_context(canon_root: Path | None = None) -> str | None:
+    path = repo_context_path(canon_root if canon_root is not None else None)
+    if canon_root is not None and canon_root.name == "canon":
+        path = canon_root / REPO_CONTEXT_FILENAME
+    if not path.exists():
+        return None
+    return path.read_text()
+
+
+def save_repo_context(text: str, canon_root: Path | None = None) -> Path:
+    path = repo_context_path(canon_root if canon_root is not None else None)
+    if canon_root is not None and canon_root.name == "canon":
+        path = canon_root / REPO_CONTEXT_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
+
+
+def _match_path_prefix(rel_path: str, prefixes: list[str]) -> bool:
+    normalized = rel_path.strip("/")
+    for prefix in prefixes:
+        candidate = prefix.strip("/")
+        if normalized == candidate or normalized.startswith(f"{candidate}/"):
+            return True
+    return False
+
+
+def scale_exclusion_reason(rel_path: str) -> str | None:
+    normalized = rel_path.strip("/")
+    if not normalized or normalized in {".git", "__pycache__"}:
+        return "internal"
+    if normalized.startswith(".cicadas/") and not normalized.startswith(".cicadas/canon/summary.md"):
+        return "cicadas-internal"
+    for prefix in EXCLUDED_COMPLEXITY_PREFIXES:
+        if normalized == prefix or normalized.startswith(f"{prefix}/"):
+            return "generated-or-local"
+    return None
+
+
+def path_counts_toward_complexity(rel_path: str) -> bool:
+    return scale_exclusion_reason(rel_path) is None
+
+
+def entry_counts_toward_complexity(entry: dict) -> bool:
+    explicit = entry.get("counts_toward_scale")
+    if explicit is not None:
+        return bool(explicit)
+    return path_counts_toward_complexity(entry.get("path", ""))
+
+
+def infer_repo_mode_from_signals(
+    top_level_dirs: list[str],
+    build_paths: list[str],
+    test_paths: list[str],
+    runtime_paths: list[str],
+) -> tuple[str, list[dict], dict]:
+    ownership_candidates = runtime_paths[:]
+
+    subsystem_breadth = min(5, max(1, len(top_level_dirs) // 4 + (1 if len(top_level_dirs) >= 3 else 0)))
+    layer_diversity = min(5, max(1, sum(bool(paths) for paths in [build_paths, test_paths, runtime_paths]) + (1 if len(runtime_paths) > 2 else 0)))
+    ownership_zone_count = min(5, max(1, len(ownership_candidates) // 3 + (1 if len(ownership_candidates) >= 2 else 0)))
+    path_diversity = min(5, max(1, int(bool(build_paths)) + int(bool(test_paths)) + (1 if len(runtime_paths) > 1 else 0)))
+    routing_difficulty = min(
+        5,
+        max(
+            1,
+            ownership_zone_count
+            + (1 if len(runtime_paths) > 2 else 0)
+            + (1 if path_diversity >= 4 else 0),
+        ),
+    )
+
+    heuristic_scores = {
+        "subsystem_breadth": subsystem_breadth,
+        "layer_diversity": layer_diversity,
+        "ownership_zone_count": ownership_zone_count,
+        "path_diversity": path_diversity,
+        "routing_difficulty": routing_difficulty,
+    }
+
+    max_score = max(heuristic_scores.values())
+    if ownership_zone_count <= 1 and subsystem_breadth <= 2 and len(runtime_paths) <= 2:
+        mode = "normal-repo"
+    elif routing_difficulty >= 4 and ownership_zone_count >= 3:
+        mode = "mega-repo"
+    elif max_score >= 3:
+        mode = "large-repo"
+    else:
+        mode = "normal-repo"
+
+    evidence = [
+        {
+            "signal": "top_level_subsystems",
+            "observation": f"Found {len(top_level_dirs)} top-level directories worth scanning.",
+            "weight": "medium",
+        },
+        {
+            "signal": "ownership_zone_candidates",
+            "observation": f"Found {len(ownership_candidates)} likely ownership zones from directory boundaries.",
+            "weight": "high" if ownership_zone_count >= 4 else "medium",
+        },
+        {
+            "signal": "path_diversity",
+            "observation": f"Detected build/test/runtime path diversity across {len(build_paths)} build, {len(test_paths)} test, and {len(runtime_paths)} runtime paths.",
+            "weight": "high" if path_diversity >= 4 else "medium",
+        },
+    ]
+    return mode, evidence, heuristic_scores
+
+
+def _meaningful_test_roots(entries: list[dict]) -> list[str]:
+    roots = {
+        entry.get("path", "").split("/", 1)[0]
+        for entry in entries
+        if entry.get("path", "").startswith("tests")
+    }
+    return sorted(root for root in roots if root)
+
+
+def _meaningful_runtime_areas(dir_entries: list[dict]) -> list[str]:
+    runtime_prefixes = ("src", "app", "packages", "services")
+    areas: set[str] = set()
+    for entry in dir_entries:
+        path = entry.get("path", "")
+        if not entry_counts_toward_complexity(entry):
+            continue
+        parts = path.split("/")
+        if not parts or parts[0] not in runtime_prefixes:
+            continue
+        if parts[0] == "src" and len(parts) >= 2:
+            areas.add("/".join(parts[:2]))
+        else:
+            areas.add(parts[0])
+    return sorted(areas)
+
+
+def build_canon_plan(repo_metadata: dict | None) -> dict:
+    if not repo_metadata:
+        return {
+            "repo_mode": "legacy",
+            "top_level": ["product-overview.md", "ux-overview.md", "tech-overview.md", "summary.md"],
+            "directories": ["modules"],
+            "prefer_context": False,
+            "module_snapshot_policy": "full",
+        }
+
+    canon_plan = repo_metadata.get("canon_plan", {})
+    top_level = list(dict.fromkeys((canon_plan.get("orientation") or []) + (canon_plan.get("routing") or [])))
+    playbooks = canon_plan.get("playbooks") or []
+    directories: list[str] = []
+    if canon_plan.get("area"):
+        directories.append("areas")
+    if playbooks:
+        directories.append("playbooks")
+    module_policy = canon_plan.get("module_snapshots", "full")
+    if module_policy != "minimal":
+        directories.append("modules")
+    return {
+        "repo_mode": repo_metadata.get("repo_mode", "normal-repo"),
+        "top_level": top_level or ["product-overview.md", "tech-overview.md", "summary.md"],
+        "directories": directories,
+        "prefer_context": True,
+        "module_snapshot_policy": module_policy,
+    }
+
+
+def enumerate_canon_targets(plan: dict) -> list[str]:
+    targets = list(plan.get("top_level", []))
+    for directory in plan.get("directories", []):
+        targets.append(f"{directory}/")
+    return targets
+
+
+def infer_repo_mode(repo_tree: list[dict] | None, repo_metadata: dict | None = None) -> tuple[str, list[dict], dict]:
+    if repo_metadata and repo_metadata.get("repo_mode") and repo_metadata.get("classification", {}).get("heuristic_scores"):
+        return (
+            repo_metadata["repo_mode"],
+            list(repo_metadata.get("classification", {}).get("evidence", [])),
+            dict(repo_metadata.get("classification", {}).get("heuristic_scores", {})),
+        )
+
+    entries = repo_tree or []
+    dir_entries = [entry for entry in entries if entry.get("kind") == "directory"]
+    file_entries = [entry for entry in entries if entry.get("kind") == "file"]
+    top_level_dirs = [
+        entry
+        for entry in dir_entries
+        if "/" not in entry.get("path", "").strip("/")
+        and entry_counts_toward_complexity(entry)
+    ]
+    build_paths = [entry["path"] for entry in file_entries if entry.get("path") in {"pyproject.toml", "package.json", "Makefile", "Dockerfile", "install.sh"}]
+    test_paths = _meaningful_test_roots(entries)
+    runtime_paths = _meaningful_runtime_areas(dir_entries)
+    return infer_repo_mode_from_signals(
+        top_level_dirs=[entry.get("path", "") for entry in top_level_dirs],
+        build_paths=build_paths,
+        test_paths=test_paths,
+        runtime_paths=runtime_paths,
+    )
+
+
+def generate_repo_context(repo_metadata: dict, repo_tree: list[dict] | None = None) -> str:
+    repo_mode = repo_metadata.get("repo_mode", "unknown")
+    scan = repo_metadata.get("scan", {})
+    dominant_languages = scan.get("dominant_languages", [])
+    build_paths = scan.get("build_paths", [])
+    test_paths = scan.get("test_paths", [])
+    runtime_paths = scan.get("runtime_paths", [])
+    ownership = scan.get("ownership_zone_candidates", [])
+    lines = [
+        "# Repo Context",
+        "",
+        f"- Repo mode candidate: `{repo_mode}`",
+        f"- Dominant languages: {', '.join(f'`{lang}`' for lang in dominant_languages) if dominant_languages else '`unknown`'}",
+        "- Highest-signal areas:",
+    ]
+    if ownership:
+        for path in ownership[:5]:
+            lines.append(f"  - `{path}`")
+    else:
+        lines.append("  - `unknown`")
+    lines.extend(
+        [
+            "- Build/test/runtime paths:",
+            f"  - Build: {', '.join(f'`{path}`' for path in build_paths) if build_paths else '`unknown`'}",
+            f"  - Test: {', '.join(f'`{path}`' for path in test_paths) if test_paths else '`unknown`'}",
+            f"  - Runtime: {', '.join(f'`{path}`' for path in runtime_paths) if runtime_paths else '`unknown`'}",
+        ]
+    )
+    if ownership:
+        lines.append(f"- Routing note: Start with `{ownership[0]}` and expand to neighboring areas only if needed.")
+    elif repo_tree:
+        first = next(
+            (
+                entry.get("path")
+                for entry in repo_tree
+                if entry.get("kind") == "directory" and entry.get("path") and entry_counts_toward_complexity(entry)
+            ),
+            None,
+        )
+        lines.append(f"- Routing note: Start with `{first}`." if first else "- Routing note: Start with top-level runtime paths.")
+    return "\n".join(lines) + "\n"
+
+
+def collect_code_context(root: Path, modules: list[str], repo_tree: list[dict] | None = None) -> dict[str, str]:
+    code_context: dict[str, str] = {}
+    matched_any = False
+    normalized_modules = [module.strip() for module in modules if module.strip()]
+    for mod in normalized_modules:
+        mod_path = root / "src" / mod.replace(".", "/")
+        if not mod_path.exists():
+            mod_path = root / mod.replace(".", "/")
+
+        if mod_path.exists():
+            matched_any = True
+            for py_file in mod_path.glob("**/*.py"):
+                rel_path = py_file.relative_to(root)
+                code_context[str(rel_path)] = py_file.read_text()
+
+    if matched_any or not repo_tree:
+        return code_context
+
+    high_signal_files = [
+        entry.get("path")
+        for entry in repo_tree
+        if entry.get("kind") == "file"
+        and entry.get("language") == "python"
+        and _match_path_prefix(entry.get("path", ""), normalized_modules)
+    ]
+    for rel_str in high_signal_files[:25]:
+        path = root / rel_str
+        if path.exists():
+            code_context[rel_str] = path.read_text()
+    return code_context
 
 
 def worktree_policy(config: dict | None = None) -> dict:

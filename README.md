@@ -93,7 +93,7 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
 
 ### Phase 4: Completion (Synthesis)
 When all features are merged into the initiative branch, we merge to `main` and then:
-1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/` (including `canon/summary.md` — a 300–500 token snapshot used to inject context at branch start).
+1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/` (including `canon/summary.md` — a 300–500 token snapshot used to inject context at branch start, and for adaptive repos `repo.json`, `repo-tree.jsonl`, and `repo-context.md`).
     2.  **Archive**: Active specs are moved to `.cicadas/archive/`.
     - **1-PR Flow**: You can include the `archive` move and registry cleanup in your main PR for a single-commit finalization. If rework is needed, use `unarchive` to restore the state instantly.
 
@@ -102,7 +102,7 @@ When all features are merged into the initiative branch, we merge to `main` and 
 Cicadas treats branch starts, approved spec boundaries, and partition handoffs as **reset points**. The skill now tells the agent to:
 
 - Prefer approved file-backed state over prior chat history.
-- Reload from `canon/summary.md` plus spec front matter and indexed sections first.
+- Reload from `canon/summary.md`, then `canon/repo-context.md` when present, plus spec front matter and indexed sections first.
 - Opportunistically clear or compact conversational context when the host supports it, without relying on that behavior for correctness.
 
 
@@ -143,6 +143,10 @@ The **Cicadas** toolset manages the `.cicadas/` directory:
     ├── canon/                  # Authoritative, generated checks
     │   ├── product-overview.md
     │   ├── tech-overview.md
+    │   ├── summary.md
+    │   ├── repo.json           # Adaptive repo metadata when scan/classification is enabled
+    │   ├── repo-tree.jsonl     # Streamable machine inventory for deeper structural inspection
+    │   ├── repo-context.md     # Compact routing/reload artifact for agents
     │   └── modules/            # Module-level snapshots
     ├── active/                 # Live specs for in-flight initiatives
     │   └── {name}/

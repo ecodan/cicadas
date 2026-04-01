@@ -67,6 +67,11 @@ class TestSpecTemplates(unittest.TestCase):
 
         self.assertIn("Branch-start rule:", text)
         self.assertIn("active spec front matter", text)
+        self.assertIn("repo-context.md", text)
+
+    def test_adaptive_canon_templates_exist(self):
+        for name in ["routing-guide.md", "area-map.md", "area.md", "playbook.md"]:
+            self.assertTrue((TEMPLATES / name).exists(), msg=f"{name} should exist")
 
     def test_clarify_module_uses_current_frontmatter_contract(self):
         text = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()

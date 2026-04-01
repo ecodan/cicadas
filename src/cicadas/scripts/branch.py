@@ -35,6 +35,12 @@ def _write_context_md(worktree_dir: Path, cicadas: Path, modules: list[str], ini
         lines.append(canon_summary.read_text())
         lines.append("\n\n")
 
+    repo_context = cicadas / "canon" / "repo-context.md"
+    if repo_context.exists():
+        lines.append("## Repo Context\n\n")
+        lines.append(repo_context.read_text())
+        lines.append("\n\n")
+
     # Module snapshots
     module_snapshots = cicadas / "canon" / "modules"
     if module_snapshots.exists() and modules:

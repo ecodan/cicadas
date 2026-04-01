@@ -1,12 +1,56 @@
 # Copyright 2026 Cicadas Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+from __future__ import annotations
+
 import argparse
 import json
 import re
 from pathlib import Path
 
-from utils import get_project_root, load_json
+from scan_repo import run_scan
+from utils import (
+    build_canon_plan,
+    canon_dir,
+    collect_code_context,
+    enumerate_canon_targets,
+    get_project_root,
+    load_json,
+    load_repo_context,
+    load_repo_metadata,
+    load_repo_tree,
+)
+
+
+def _ensure_repo_metadata(root: Path) -> tuple[dict | None, list[dict] | None, str | None]:
+    metadata = load_repo_metadata()
+    tree = load_repo_tree()
+    context = load_repo_context()
+    if metadata is None:
+        run_scan(root=root)
+        metadata = load_repo_metadata()
+        tree = load_repo_tree()
+        context = load_repo_context()
+    return metadata, tree, context
+
+
+def _gather_canon_docs(canon_root: Path, plan: dict) -> dict[str, str]:
+    canon_docs: dict[str, str] = {}
+    for doc in sorted(canon_root.glob("*.md")):
+        canon_docs[doc.name] = doc.read_text()
+    for target in enumerate_canon_targets(plan):
+        if target.endswith("/"):
+            directory = canon_root / target.rstrip("/")
+            if not directory.exists():
+                continue
+            for doc in sorted(directory.glob("*.md")):
+                rel = doc.relative_to(canon_root).as_posix()
+                canon_docs[rel] = doc.read_text()
+            continue
+        doc_path = canon_root / target
+        if doc_path.exists():
+            canon_docs[target] = doc_path.read_text()
+    return canon_docs
 
 
 def gather_context(name, is_initiative=False):
@@ -14,58 +58,58 @@ def gather_context(name, is_initiative=False):
     cicadas = root / ".cicadas"
     registry = load_json(cicadas / "registry.json")
 
-    context = {"active_docs": {}, "code_context": {}, "canon_docs": {}}
+    metadata, repo_tree, repo_context = _ensure_repo_metadata(root)
+    plan = build_canon_plan(metadata)
+    context = {
+        "active_docs": {},
+        "code_context": {},
+        "canon_docs": {},
+        "repo_metadata": metadata or {},
+        "repo_tree": repo_tree or [],
+        "repo_context": repo_context or "",
+        "canon_plan": plan,
+    }
 
-    # 1. Gather Active Specs
     source_dir = cicadas / "active" / name
-
     if source_dir.exists():
         for doc in source_dir.glob("*.md"):
             context["active_docs"][doc.name] = doc.read_text()
 
-    # 2. Gather Code Context (if branch)
     modules = []
     if not is_initiative:
         branch_info = registry.get("branches", {}).get(name, {})
         modules = branch_info.get("modules", [])
+    context["code_context"] = collect_code_context(root, modules, repo_tree)
 
-    for mod in modules:
-        # Simplistic mapping: mod.name -> src/mod/
-        mod_path = root / "src" / mod.replace(".", "/")
-        if not mod_path.exists():
-            mod_path = root / mod.replace(".", "/")  # Try without src
+    canon_root = canon_dir(root)
+    if canon_root.exists():
+        context["canon_docs"] = _gather_canon_docs(canon_root, plan)
 
-        if mod_path.exists():
-            for py_file in mod_path.glob("**/*.py"):
-                rel_path = py_file.relative_to(root)
-                context["code_context"][str(rel_path)] = py_file.read_text()
-
-    # 3. Gather Existing Canon
-    canon_dir = cicadas / "canon"
-    if canon_dir.exists():
-        for doc in canon_dir.glob("*.md"):
-            context["canon_docs"][doc.name] = doc.read_text()
-        # Also gather module snapshots
-        modules_dir = canon_dir / "modules"
-        if modules_dir.exists():
-            for doc in modules_dir.glob("*.md"):
-                context["canon_docs"][f"modules/{doc.name}"] = doc.read_text()
-
-    # 4. Gather Change Ledger
-    index = load_json(cicadas / "index.json")
-    context["index"] = index
-
+    context["index"] = load_json(cicadas / "index.json")
     return context
 
 
 def generate_prompt(context):
-    get_project_root()
     prompt_template = Path(__file__).parent.parent / "templates" / "synthesis-prompt.md"
-
     template_text = prompt_template.read_text()
 
     prompt = f"{template_text}\n\n"
     prompt += "### DATA CONTEXT ###\n\n"
+
+    if context.get("repo_metadata"):
+        prompt += "#### REPO METADATA ####\n"
+        prompt += f"```json\n{json.dumps(context['repo_metadata'], indent=2)}\n```\n\n"
+
+    if context.get("repo_context"):
+        prompt += "#### REPO CONTEXT ####\n"
+        prompt += f"```markdown\n{context['repo_context']}\n```\n\n"
+
+    if context.get("repo_tree"):
+        prompt += "#### REPO TREE SAMPLE ####\n"
+        prompt += "```jsonl\n"
+        for entry in context["repo_tree"][:40]:
+            prompt += json.dumps(entry, sort_keys=True) + "\n"
+        prompt += "```\n\n"
 
     prompt += "#### EXISTING CANON ####\n"
     for name, content in context["canon_docs"].items():
@@ -88,10 +132,8 @@ def generate_prompt(context):
 def apply_response(response_text):
     root = get_project_root()
     cicadas = root / ".cicadas"
-    cicadas / "canon"
 
-    # Regex to find code blocks with file names
-    pattern = r"File: (canon/[\w\/\.-]+)\n```(?:markdown|python)?\n(.*?)\n```"
+    pattern = r"File: (canon/[\w\/\.-]+)\n```(?:markdown|python|json|jsonl|text)?\n(.*?)\n```"
     matches = re.findall(pattern, response_text, re.DOTALL)
 
     if not matches:
