@@ -29,6 +29,7 @@ class TestCicadasCli(CicadasTest):
         self.assertIn("check", result.stdout)
         self.assertIn("kickoff", result.stdout)
         self.assertIn("create-lifecycle", result.stdout)
+        self.assertIn("graph", result.stdout)
         self.assertIn("tokens", result.stdout)
         self.assertNotIn("create_lifecycle", result.stdout)
         self.assertNotIn("open_pr", result.stdout)
@@ -49,7 +50,7 @@ class TestCicadasCli(CicadasTest):
         self.assertIn("usage:", result.stderr)
 
     def test_advanced_subcommand_help_is_available(self):
-        for command in ("create-lifecycle", "validate-skill", "get-events"):
+        for command in ("create-lifecycle", "validate-skill", "get-events", "graph"):
             result = self._run_cli(command, "--help")
             self.assertEqual(result.returncode, 0, msg=f"{command} help should succeed")
             self.assertIn("usage:", result.stdout)
