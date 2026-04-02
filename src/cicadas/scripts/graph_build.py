@@ -39,11 +39,12 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
             "seeded_areas": stats["seeded_areas"],
             "file_count": stats["file_count"],
             "analyzers": {
-                "python": "structural",
+                "python": stats.get("python_stats", {}).get("python_mode", "structural"),
                 "javascript": "unavailable",
                 "java": "unavailable",
                 "rust": "unavailable",
             },
+            "symbols_indexed": stats.get("python_stats", {}).get("symbols_indexed", 0),
         }
     )
 

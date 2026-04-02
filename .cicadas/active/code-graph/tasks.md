@@ -1,5 +1,5 @@
 ---
-summary: "Execute Code Graph in four partitions: the graph foundation is now in place with build/status flow, SQLite storage, seeded areas, and foundation tests; next focus is query commands, then observability, then workflow integration. The key remaining checkpoints are trustworthy query outputs, useful local usage logs, and the initiative-level PR review."
+summary: "Execute Code Graph in four partitions: the graph foundation is complete, and the query CLI now supports area, tests, callers, callees, route, and signature-impact with Python-backed semantics. The main remaining work is broader non-Python enrichment, then observability, then workflow integration and initiative-level PR review."
 phase: "tasks"
 when_to_load:
   - "When selecting the next implementation task or reviewing partition completion for Code Graph."
@@ -37,13 +37,13 @@ next_section: "## Partition: feat/graph-query-cli"
 
 ## Partition: feat/graph-query-cli
 
-- [ ] Register the `graph` command namespace in the common CLI and wire subcommands for area, neighbors, tests, callers, callees, signature-impact, and route <!-- id: 20 -->
-- [ ] Implement ranked query result formatting that includes freshness and coverage context instead of raw backend rows <!-- id: 21 -->
-- [ ] Add artifact-led query behavior for `graph area`, `graph neighbors`, and `graph tests` against the SQLite store <!-- id: 22 -->
-- [ ] Add symbol-led query behavior for `graph callers`, `graph callees`, and `graph signature-impact` with explicit partial-coverage reporting <!-- id: 23 -->
+- [x] Register the `graph` command namespace in the common CLI and wire subcommands for area, neighbors, tests, callers, callees, signature-impact, and route <!-- id: 20 -->
+- [x] Implement ranked query result formatting that includes freshness and coverage context instead of raw backend rows <!-- id: 21 -->
+- [x] Add artifact-led query behavior for `graph area`, `graph neighbors`, and `graph tests` against the SQLite store <!-- id: 22 -->
+- [x] Add symbol-led query behavior for `graph callers`, `graph callees`, and `graph signature-impact` with explicit partial-coverage reporting <!-- id: 23 -->
 - [ ] Add best-effort language enrichment hooks for Python, JS/TS, Java, and Rust and surface analyzer availability in results <!-- id: 24 -->
-- [ ] Implement `graph route "<description>"` as a secondary routing helper after artifact-led queries are stable <!-- id: 25 -->
-- [ ] Add integration tests for routing, caller/callee, and signature-impact flows on representative temp repos <!-- id: 26 -->
+- [x] Implement `graph route "<description>"` as a secondary routing helper after artifact-led queries are stable <!-- id: 25 -->
+- [x] Add integration tests for routing, caller/callee, and signature-impact flows on representative temp repos <!-- id: 26 -->
 
 ## Partition: feat/graph-observability
 

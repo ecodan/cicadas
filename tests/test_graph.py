@@ -68,3 +68,42 @@ class TestGraphCli(CicadasTest):
         self.assertEqual(result.returncode, 0)
         payload = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
         self.assertEqual(payload["seeded_areas"][0]["name"], "payments")
+
+    def test_graph_area_reports_area_for_file(self):
+        self.init_git()
+        (self.root / "src").mkdir()
+        (self.root / "src" / "demo.py").write_text("def demo():\n    return 1\n")
+        (self.cicadas_dir / "canon").mkdir(exist_ok=True)
+        (self.cicadas_dir / "canon" / "repo.json").write_text(
+            json.dumps({"candidate_slices": [{"name": "payments", "paths": ["src"], "status": "seeded"}]})
+        )
+        (self.cicadas_dir / "canon" / "repo-tree.jsonl").write_text(
+            json.dumps({"path": "src/demo.py", "kind": "file", "language": "python", "extension": ".py", "summary": "demo"}) + "\n"
+        )
+        self._run_cli("graph", "build")
+
+        result = self._run_cli("graph", "area", "src/demo.py")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("payments", result.stdout)
+
+    def test_graph_signature_impact_reports_callers_and_tests_for_python(self):
+        self.init_git()
+        (self.root / "src").mkdir()
+        (self.root / "tests").mkdir()
+        (self.root / "src" / "helpers.py").write_text(
+            "def helper():\n    return 1\n\n"
+            "def consumer():\n    return helper()\n"
+        )
+        (self.root / "tests" / "test_helpers.py").write_text(
+            "from src.helpers import helper\n\n"
+            "def test_helper():\n    assert helper() == 1\n"
+        )
+
+        self._run_cli("graph", "build")
+        result = self._run_cli("graph", "signature-impact", "helper")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Direct callers: 2", result.stdout)
+        self.assertIn("consumer", result.stdout)
+        self.assertIn("test_helper", result.stdout)

@@ -7,6 +7,7 @@ import hashlib
 from pathlib import Path
 
 from graph_ir import GraphEdge, GraphNode
+from graph_extract.python import extract_python_graph
 from utils import (
     get_project_root,
     load_repo_metadata,
@@ -123,9 +124,15 @@ def build_structural_graph(build_id: str) -> tuple[list[GraphNode], list[GraphEd
             )
             edges.append(GraphEdge(edge_id=_edge_id("declares", file_id, test_id), kind="declares", src_id=file_id, dst_id=test_id, build_id=build_id))
 
+    file_entries = [entry for entry in repo_tree if entry.get("kind") == "file"]
+    area_lookup = {entry.get("path"): _area_for_path(entry.get("path", ""), areas) for entry in file_entries if entry.get("path")}
+    python_nodes, python_edges, python_stats = extract_python_graph(root=root, file_entries=file_entries, build_id=build_id, area_lookup=area_lookup)
+    nodes.extend(python_nodes)
+    edges.extend(python_edges)
+
     return nodes, edges, {
         "indexed_languages": sorted({entry.get("language") for entry in repo_tree if entry.get("kind") == "file" and entry.get("language")}),
         "seeded_areas": [{"name": area["name"], "paths": area["paths"], "source": area["source"]} for area in areas],
         "file_count": file_count,
+        "python_stats": python_stats,
     }
-
