@@ -1,5 +1,5 @@
 ---
-summary: "Execute Code Graph in four partitions: the graph foundation is now in place with build/status flow, SQLite storage, seeded areas, and foundation tests; next focus is query commands, then observability, then workflow integration. The key remaining checkpoints are trustworthy query outputs, useful local usage logs, and the initiative-level PR review."
+summary: "Execute Code Graph in four partitions: the graph foundation and query CLI are complete, including area, neighbors, tests, callers, callees, route, and signature-impact with Python-backed semantics plus explicit analyzer availability for other languages. The remaining work is observability, then workflow integration and the initiative-level PR review."
 phase: "tasks"
 when_to_load:
   - "When selecting the next implementation task or reviewing partition completion for Code Graph."
@@ -20,7 +20,7 @@ index:
   partition_observability: "## Partition: feat/graph-observability"
   partition_integration: "## Partition: feat/graph-workflow-integration"
   initiative_boundary: "## Initiative Boundary"
-next_section: "## Partition: feat/graph-query-cli"
+next_section: "## Partition: feat/graph-observability"
 ---
 
 # Tasks: Code Graph
@@ -37,13 +37,13 @@ next_section: "## Partition: feat/graph-query-cli"
 
 ## Partition: feat/graph-query-cli
 
-- [ ] Register the `graph` command namespace in the common CLI and wire subcommands for area, neighbors, tests, callers, callees, signature-impact, and route <!-- id: 20 -->
-- [ ] Implement ranked query result formatting that includes freshness and coverage context instead of raw backend rows <!-- id: 21 -->
-- [ ] Add artifact-led query behavior for `graph area`, `graph neighbors`, and `graph tests` against the SQLite store <!-- id: 22 -->
-- [ ] Add symbol-led query behavior for `graph callers`, `graph callees`, and `graph signature-impact` with explicit partial-coverage reporting <!-- id: 23 -->
-- [ ] Add best-effort language enrichment hooks for Python, JS/TS, Java, and Rust and surface analyzer availability in results <!-- id: 24 -->
-- [ ] Implement `graph route "<description>"` as a secondary routing helper after artifact-led queries are stable <!-- id: 25 -->
-- [ ] Add integration tests for routing, caller/callee, and signature-impact flows on representative temp repos <!-- id: 26 -->
+- [x] Register the `graph` command namespace in the common CLI and wire subcommands for area, neighbors, tests, callers, callees, signature-impact, and route <!-- id: 20 -->
+- [x] Implement ranked query result formatting that includes freshness and coverage context instead of raw backend rows <!-- id: 21 -->
+- [x] Add artifact-led query behavior for `graph area`, `graph neighbors`, and `graph tests` against the SQLite store <!-- id: 22 -->
+- [x] Add symbol-led query behavior for `graph callers`, `graph callees`, and `graph signature-impact` with explicit partial-coverage reporting <!-- id: 23 -->
+- [x] Add best-effort language enrichment hooks for Python, JS/TS, Java, and Rust and surface analyzer availability in results <!-- id: 24 -->
+- [x] Implement `graph route "<description>"` as a secondary routing helper after artifact-led queries are stable <!-- id: 25 -->
+- [x] Add integration tests for routing, caller/callee, and signature-impact flows on representative temp repos <!-- id: 26 -->
 
 ## Partition: feat/graph-observability
 
