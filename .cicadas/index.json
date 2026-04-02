@@ -63,6 +63,13 @@
       "summary": "Add local graph usage logging, end-to-end timing, filterable usage reports, and observability resilience tests.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:49:28.278225+00:00",
+      "branch": "feat/graph-workflow-integration",
+      "summary": "Integrate optional graph guidance across the Cicadas skill, emergence modules, routing templates, and top-level docs while keeping graph usage conditional.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
