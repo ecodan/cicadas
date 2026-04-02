@@ -1,1 +1,2 @@
 {"timestamp":"2026-04-01T03:51:02.189188+00:00","type":"initiative.kicked_off","initiative":"repo-adaptability","branch":"master","data":{"intent":"Add adaptive repo classification, scan-backed metadata, and scale-specific canon generation"}}
+{"timestamp":"2026-04-02T02:36:05.846588+00:00","type":"specs.archived","initiative":"repo-adaptability","branch":"master","data":{"archive_name":"20260402-023605-repo-adaptability","type":"initiative"}}

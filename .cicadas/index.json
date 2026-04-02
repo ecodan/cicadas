@@ -35,6 +35,13 @@
       "summary": "Add spec front matter indexes, reset-boundary guidance, canon-summary routing hints, and regression checks for compact context reloads.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T02:36:06.001653+00:00",
+      "branch": "initiative/repo-adaptability",
+      "summary": "Adaptive repo classification, bootstrap V3 canon planning, and targeted reconcile landed on master.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
