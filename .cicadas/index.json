@@ -56,6 +56,13 @@
       "summary": "Add graph query commands for area, neighbors, tests, callers, callees, route, and signature-impact with Python-backed semantics and explicit analyzer coverage.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:44:32.438881+00:00",
+      "branch": "feat/graph-observability",
+      "summary": "Add local graph usage logging, end-to-end timing, filterable usage reports, and observability resilience tests.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
