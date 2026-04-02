@@ -42,6 +42,13 @@
       "summary": "Adaptive repo classification, bootstrap V3 canon planning, and targeted reconcile landed on master.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:29:30.659740+00:00",
+      "branch": "feat/graph-foundation",
+      "summary": "Add optional code graph foundation with SQLite storage, explicit build/status commands, seeded area loading, and foundation tests.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
