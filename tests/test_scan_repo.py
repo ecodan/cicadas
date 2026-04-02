@@ -8,6 +8,7 @@ import sys
 import unittest
 from contextlib import redirect_stderr
 from pathlib import Path
+from unittest import mock
 
 import scan_repo
 from base import CicadasTest
@@ -178,13 +179,41 @@ class TestScanRepo(CicadasTest):
     def test_scan_spools_tree_to_disk_during_inventory_build(self):
         src_dir = self.root / "src" / "pkg"
         src_dir.mkdir(parents=True)
-        for idx in range(5):
+        for idx in range(3):
             (src_dir / f"mod_{idx}.py").write_text(f"print({idx})\n")
 
         tree_path = self.root / ".cicadas" / "canon" / REPO_TREE_FILENAME
-        summary = scan_repo.scan_repository(self.root, tree_path=tree_path)
+        observed_previous_entries = False
+
+        class FakeExecutor:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def map(self, fn, items):
+                for item in items:
+                    yield fn(item)
+
+        original_summarize = scan_repo._summarize_file
+
+        def summarize_with_probe(path: Path, root: Path, gitignored_paths: set[str]) -> dict:
+            nonlocal observed_previous_entries
+            if path.name == "mod_1.py" and tree_path.exists():
+                existing_lines = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+                observed_previous_entries = any(line["path"] == "src/pkg/mod_0.py" for line in existing_lines)
+            return original_summarize(path, root, gitignored_paths)
+
+        with mock.patch.object(scan_repo, "ThreadPoolExecutor", FakeExecutor):
+            with mock.patch.object(scan_repo, "_summarize_file", side_effect=summarize_with_probe):
+                summary = scan_repo.scan_repository(self.root, tree_path=tree_path)
 
         self.assertTrue(tree_path.exists())
+        self.assertTrue(observed_previous_entries)
         lines = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
         self.assertTrue(any(line["path"] == "src/pkg/mod_0.py" for line in lines))
         self.assertTrue(any(line["kind"] == "directory" and line["path"] == "src/pkg" for line in lines))
