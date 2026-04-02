@@ -24,6 +24,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
         - **No**: `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {name} --no-pr-initiatives --no-pr-features`
 
 1.  **Define Intent**: Clarify the specific improvement the Builder wants to make.
+    - When the tweak begins from a file, symbol, or failing test and optional graph artifacts are present, use `python {cicadas-dir}/scripts/cicadas.py graph area|tests|signature-impact ...` to tighten scope before drafting.
+    - When graph artifacts are not present, use the standard canon-first routing path and continue normally.
 2.  **Scope Check**: Verify the tweak is small (< 100 lines, no new dependencies).
 3.  **Draft Tweaklet**: Fill out the `tweaklet.md` template.
     - Clearly state the intent.

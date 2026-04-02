@@ -45,6 +45,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 2. **Ingest**: Read the initial request and identify the initiative name. _(Only when intake is [Q] Q&A.)_
 
 3. **Canon Check**: On brownfield projects, read existing canon (`product-overview.md`, `ux-overview.md`, `tech-overview.md`) to understand what the system already does. Use this to ask sharper, more targeted questions and to avoid re-specifying existing behavior.
+    - If `.cicadas/graph/metadata.json` and `.cicadas/graph/codegraph.sqlite` exist, you may also use `python {cicadas-dir}/scripts/cicadas.py graph ...` commands to route from a symptom, failing test, symbol, or unclear owning area.
+    - Treat graph usage as optional and additive. If graph artifacts are missing or stale, fall back to `canon/summary.md`, `canon/repo-context.md`, routing guides, and targeted code reads without blocking Clarify.
 
 4. **Initialize**: Create `.cicadas/drafts/{initiative}/prd.md` using the template at `{cicadas-dir}/templates/prd.md`. The template contains both a **Progress** checklist and machine-readable front matter. Use the checklist as your working checklist, ticking each item (`- [ ]` → `- [x]`) when a section is approved, and keep the front matter current as the approved document meaning evolves.
 
