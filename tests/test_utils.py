@@ -47,6 +47,83 @@ class TestUtils(CicadasTest):
             {"initiatives": True, "lightweight": True, "parallel_features": False},
         )
 
+    def test_extract_modules_from_doc_supports_block_and_inline_frontmatter(self):
+        block_doc = (
+            "---\n"
+            "modules:\n"
+            "  - src/payments\n"
+            "  - src/accounts\n"
+            "---\n"
+            "\nBody\n"
+        )
+        inline_doc = (
+            "---\n"
+            "modules: [src/core, src/shared]\n"
+            "---\n"
+        )
+        malformed_doc = "---\nmodules:\n  - src/core\n"
+
+        self.assertEqual(utils.extract_modules_from_doc(block_doc), ["src/payments", "src/accounts"])
+        self.assertEqual(utils.extract_modules_from_doc(inline_doc), ["src/core", "src/shared"])
+        self.assertEqual(utils.extract_modules_from_doc(malformed_doc), [])
+
+    def test_changed_paths_since_last_commit_returns_empty_without_git_history(self):
+        self.assertEqual(utils.changed_paths_since_last_commit(self.root), [])
+
+    def test_build_reconcile_scope_falls_back_to_first_slice_when_no_match(self):
+        scope = utils.build_reconcile_scope(
+            {
+                "repo_mode": "large-repo",
+                "canon_plan": {"minimum_slice_files": ["summary.md"]},
+                "candidate_slices": [
+                    {"name": "payments", "paths": ["src/payments"], "status": "seeded"},
+                    {"name": "accounts", "paths": ["src/accounts"], "status": "seeded"},
+                ],
+            },
+            active_docs={"tech-design.md": "---\nmodules:\n  - src/unknown\n---\n\nLocal change\n"},
+            changed_paths=[],
+        )
+
+        self.assertEqual(scope["mode"], "targeted")
+        self.assertEqual(scope["touched_slices"], ["payments"])
+        self.assertEqual(scope["code_scope"], ["src/payments"])
+        self.assertIn("slices/payments/summary.md", scope["canon_doc_scope"])
+
+    def test_build_reconcile_scope_refreshes_global_docs_for_repo_wide_changes(self):
+        scope = utils.build_reconcile_scope(
+            {
+                "repo_mode": "mega-repo",
+                "canon_plan": {"minimum_slice_files": ["summary.md"]},
+                "candidate_slices": [
+                    {"name": "payments", "paths": ["src/payments"], "status": "seeded"},
+                    {"name": "accounts", "paths": ["src/accounts"], "status": "seeded"},
+                ],
+            },
+            active_docs={"tech-design.md": "---\nmodules:\n  - src/payments\n---\n\nRepo-wide architecture and convention update.\n"},
+            changed_paths=["README.md"],
+        )
+
+        self.assertEqual(scope["global_docs"], ["product-overview.md", "tech-overview.md", "summary.md"])
+        self.assertEqual(scope["neighbor_slices"], [])
+
+    def test_build_reconcile_scope_adds_neighbor_for_boundary_shift(self):
+        scope = utils.build_reconcile_scope(
+            {
+                "repo_mode": "mega-repo",
+                "canon_plan": {"minimum_slice_files": ["summary.md", "boundaries.md"]},
+                "candidate_slices": [
+                    {"name": "payments", "paths": ["src/payments"], "status": "seeded"},
+                    {"name": "accounts", "paths": ["src/accounts"], "status": "seeded"},
+                ],
+            },
+            active_docs={"tech-design.md": "---\nmodules:\n  - src/payments\n---\n\nBoundary and interface change.\n"},
+            changed_paths=["src/payments/logic.py"],
+        )
+
+        self.assertEqual(scope["touched_slices"], ["payments"])
+        self.assertEqual(scope["neighbor_slices"], ["accounts"])
+        self.assertIn("slices/accounts/boundaries.md", scope["canon_doc_scope"])
+
 
 class TestGetRegistryRoot(CicadasTest):
     def test_primary_worktree_returns_self(self):

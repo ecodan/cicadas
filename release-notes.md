@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- Adaptive canon bootstrap that classifies repos as `normal-repo`, `large-repo`, or `mega-repo`, writes `repo.json` / `repo-tree.jsonl` / `repo-context.md`, and seeds lazy `slices/` packs only for larger repos.
+
+### Changed
+
+- Initiative completion now uses targeted canon reconcile for large and mega repos, updating touched slices by default and refreshing top-level orientation docs only when durable repo-wide truth changed.
+- `init` no longer creates an empty `.cicadas/canon/modules/` directory up front.
+
 ## Version 0.7.5
 
 - **Context Optimization**: The five core initiative templates (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) now share a compact machine-readable front matter contract with `summary`, `modules`, `depends_on`, and `index` fields so agents can reload approved context without re-reading full drafting threads.

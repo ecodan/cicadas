@@ -12,7 +12,7 @@ Cicadas reverses the traditional relationship between code and documentation. In
 1.  **Active Specs are Disposable**: PRDs, designs, and task lists drive implementation but expire when the initiative completes.
 2.  **Code is Truth**: The codebase is the only source of truth.
 3.  **Work is Coordinated**: Parallel initiatives and features are registered in a registry, allowing parallel work efforts to minimize overlap and clashes.
-4.  **Canon is Synthesized**: Authoritative documentation (`canon/`) is generated from the code + the intent of expired specs. It is never manually maintained.
+4.  **Canon is Synthesized**: Authoritative documentation (`canon/`) is generated from the code + the intent of expired specs. It is never manually maintained, and larger repos use a more selective canon structure than smaller ones.
 5.  **Reflect & Signal**: During development, we keep specs honest via **Reflect** (updating active specs to match code reality) and coordinate via **Signal** (broadcasting breaking changes to peer branches).
 
 ---
@@ -93,7 +93,7 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
 
 ### Phase 4: Completion (Synthesis)
 When all features are merged into the initiative branch, we merge to `main` and then:
-1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/` (including `canon/summary.md` — a 300–500 token snapshot used to inject context at branch start).
+1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/`. `canon/summary.md` remains the universal branch-start snapshot, while adaptive repo scans also maintain `repo.json`, `repo-tree.jsonl`, and `repo-context.md`. `normal-repo` projects keep the canon flat; `large-repo` and `mega-repo` projects seed lightweight `slices/` packs and reconcile only the touched canon at initiative completion.
     2.  **Archive**: Active specs are moved to `.cicadas/archive/`.
     - **1-PR Flow**: You can include the `archive` move and registry cleanup in your main PR for a single-commit finalization. If rework is needed, use `unarchive` to restore the state instantly.
 
@@ -102,7 +102,7 @@ When all features are merged into the initiative branch, we merge to `main` and 
 Cicadas treats branch starts, approved spec boundaries, and partition handoffs as **reset points**. The skill now tells the agent to:
 
 - Prefer approved file-backed state over prior chat history.
-- Reload from `canon/summary.md` plus spec front matter and indexed sections first.
+- Reload from `canon/summary.md`, then `canon/repo-context.md` when present, plus spec front matter and indexed sections first.
 - Opportunistically clear or compact conversational context when the host supports it, without relying on that behavior for correctness.
 
 
@@ -143,7 +143,12 @@ The **Cicadas** toolset manages the `.cicadas/` directory:
     ├── canon/                  # Authoritative, generated checks
     │   ├── product-overview.md
     │   ├── tech-overview.md
-    │   └── modules/            # Module-level snapshots
+    │   ├── summary.md
+    │   ├── repo.json           # Adaptive repo metadata when scan/classification is enabled
+    │   ├── repo-tree.jsonl     # Streamable machine inventory for deeper structural inspection
+    │   ├── repo-context.md     # Compact routing/reload artifact for agents
+    │   ├── modules/            # Module-level snapshots for regular repos when needed
+    │   └── slices/             # Seeded canon slices for large/mega repos
     ├── active/                 # Live specs for in-flight initiatives
     │   └── {name}/
     │       └── events.jsonl    # Append-only event log (lifecycle + agent events)

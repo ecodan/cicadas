@@ -3,7 +3,7 @@
 
 > Auto-generated during canon synthesis. Consumed by agents at branch start.
 > Target: 300–500 tokens. Optimize for density, not readability.
-> Branch-start rule: load this summary first, then active spec front matter and indexed sections only as needed.
+> Branch-start rule: load this summary first, then `canon/repo-context.md` when present, then active spec front matter and indexed sections only as needed.
 
 ## Purpose
 

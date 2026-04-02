@@ -253,10 +253,15 @@ python {cicadas-dir}/scripts/cicadas.py kickoff {initiative-name} --intent "desc
 - If lifecycle has PR at initiatives: open a PR from `initiative/{name}` to main, get review, merge the PR. Then delete the initiative branch locally and on remote.
 - Or merge directly: `git checkout main && git merge initiative/{name}`, push, then `git branch -d initiative/{name}` and `git push origin --delete initiative/{name}`.
 
-**Step 2 — Synthesize canon on main** (Agent Operation):
-- Read: codebase on `main`, active specs, existing canon, change ledger
-- Synthesize: create (greenfield) or update (brownfield) canon files
-- **Extract Key Decisions** from active specs and embed in canon
+**Step 2 — Reconcile canon on main** (Agent Operation):
+- Read: codebase on `main`, active specs, existing canon, change ledger, and repo metadata
+- If `repo_mode == normal-repo`: use the broad initiative-end synthesis flow
+- If `repo_mode == large-repo` or `mega-repo`: use **targeted canon reconcile**
+  - update touched slice packs by default
+  - update neighboring slices only when interfaces, boundaries, or invariants changed
+  - update `product-overview.md` / `tech-overview.md` only when durable repo-wide truth changed
+  - create a new slice only if the initiative proved the current slice is too broad for future safe work
+- **Extract Key Decisions** from active specs and embed in the affected canon files
 - Produce `canon/summary.md` — 300–500 token agent-optimized snapshot (purpose, architecture, modules, conventions); used for context injection at branch start
 - Present to Builder for review
 

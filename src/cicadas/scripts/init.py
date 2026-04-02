@@ -13,7 +13,7 @@ _HOOKS_SRC = Path(__file__).parent / "hooks"
 def init_cicadas(root: Path) -> None:
     cicadas = root / ".cicadas"
     cicadas.mkdir(exist_ok=True)
-    (cicadas / "canon/modules").mkdir(parents=True, exist_ok=True)
+    (cicadas / "canon").mkdir(parents=True, exist_ok=True)
     (cicadas / "active").mkdir(exist_ok=True)
     (cicadas / "drafts").mkdir(exist_ok=True)
     (cicadas / "archive").mkdir(exist_ok=True)

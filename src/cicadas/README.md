@@ -29,11 +29,11 @@ This is the orchestrator itself. It contains:
 - `implementation.md`: Guardrails for implementation agents (pause before commit, Reflect, tasks, Code Review on feat/).
 - `scripts/`: The repo-local CLI entrypoint `cicadas.py`, its command registry, and the underlying deterministic tools for project lifecycle operations (kickoff, branch, status, create_lifecycle, open_pr, review, tokens, emit_event, get_events, validate_skill, skill_publish, unarchive, etc.). `utils.py` includes `emit()` — a shared non-fatal event emitter (lazy-imports `emit_event`) used by kickoff, branch, archive, and open_pr.
 - `emergence/`: Instruction modules for the drafting phase. Includes `start-flow.md` — the mandatory sequence (name, draft folder, **LLMs and Evals?** and eval status, requirements source/pace, publish destination for skills, PR preference) run first for initiative, tweak, bug, and skill. `skill-create.md` — dialogue-driven Agent Skill authoring (clarifying dialogue, SKILL.md generation, bundled files, `eval_queries.json` draft, kickoff + validate). `skill-edit.md` — one-question diagnostic, minimum-change proposal, validate. When work involves LLMs, `eval-spec.md` guides creation of an eval spec (initiatives only); Approach asks eval placement. Tweaks/bugs get an optional eval/benchmark reminder. Choices stored in `emergence-config.json`. Cicadas does not run evals. `clarify.md` now refreshes approved front matter fields rather than older `steps_completed` metadata.
-- `templates/`: Standardized markdown templates for specs (including `eval-spec.md` for LLMs and Evals, `skill-SKILL.md` scaffold for Agent Skills), canon, and per-initiative lifecycle (`lifecycle-default.json`, `lifecycle-schema.md`). The five core initiative templates now share machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) to support compact context reloads. `canon-summary.md` is the template for the 300–500 token agent-optimized codebase snapshot produced during synthesis and now includes an explicit branch-start routing cue.
+- `templates/`: Standardized markdown templates for specs (including `eval-spec.md` for LLMs and Evals, `skill-SKILL.md` scaffold for Agent Skills), canon, and per-initiative lifecycle (`lifecycle-default.json`, `lifecycle-schema.md`). The five core initiative templates now share machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) to support compact context reloads. `canon-summary.md` is the template for the 300–500 token agent-optimized codebase snapshot produced during synthesis and now includes an explicit branch-start routing cue. Large and mega repos also use slice canon templates (`slice-summary.md`, `slice-boundaries.md`, `slice-architecture.md`, `slice-invariants.md`, `slice-change-guide.md`) for seeded local canon packs.
 
 ### 2. The `.cicadas/` Directory
 Located at your project root, this folder stores all project-specific state:
-- `canon/`: The authoritative, synthesized documentation (Product, UX, and Tech overviews).
+- `canon/`: The authoritative, synthesized documentation (Product, UX, and Tech overviews, plus adaptive repo metadata like `repo.json`, `repo-tree.jsonl`, `repo-context.md`, and seeded `slices/` packs for larger repos).
 - `drafts/`: Staging area for new initiatives before they are officially "kicked off".
 - `active/`: Live specs for work currently in progress.
 - `archive/`: Evidence trail of expired specs from completed initiatives.
@@ -66,7 +66,7 @@ Promote drafts to `active`, register the initiative, and create the `initiative/
 - **Signal**: Broadcast breaking changes to other active branches.
 
 ### 4. Completion & Synthesis
-Merge back to `main`. The agent then **synthesizes** new Canon docs from the code and active specs (including `canon/summary.md` — a 300–500 token agent-optimized snapshot used for context injection at branch start), then archives the specs.
+Merge back to `main`. The agent then updates Canon from the code and active specs (including `canon/summary.md` — a 300–500 token agent-optimized snapshot used for context injection at branch start), then archives the specs. `normal-repo` keeps the broad synthesis flow; `large-repo` and `mega-repo` use targeted reconcile over touched slices plus selective orientation refresh.
 
 ## Verification
 
