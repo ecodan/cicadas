@@ -109,6 +109,34 @@ def query_tests(target: str) -> tuple[int, str]:
         return 0, "\n".join(lines)
 
 
+def query_neighbors(target: str) -> tuple[int, str]:
+    if not graph_available():
+        return 1, _missing_graph_message()
+    with _connect() as conn:
+        file_row = _resolve_file(conn, target)
+        symbol_row = None if file_row is not None else _resolve_symbol(conn, target)
+        area_name = None
+        if file_row is not None:
+            area_name = file_row["area"]
+        elif symbol_row is not None:
+            area_name = symbol_row["area"]
+        else:
+            area_name = target
+
+        metadata = load_graph_metadata() or {}
+        seeded_areas = metadata.get("seeded_areas") or []
+        neighbors = [area for area in seeded_areas if area.get("name") != area_name]
+        lines = _header(f"Neighbors for `{target}`")
+        lines.append(f"- Owning area: {area_name or 'unknown'}")
+        if not neighbors:
+            lines.append("- No neighboring seeded areas found.")
+            return 0, "\n".join(lines)
+        for area in neighbors[:5]:
+            lines.append(f"- Neighbor: {area['name']} (paths: {', '.join(area.get('paths', []))})")
+        lines.append("- Note: neighbor results are currently seeded from canon routing areas.")
+        return 0, "\n".join(lines)
+
+
 def query_callers(target: str) -> tuple[int, str]:
     if not graph_available():
         return 1, _missing_graph_message()
@@ -221,6 +249,7 @@ def query_route(target: str) -> tuple[int, str]:
 def dispatch_query(command: str, target: str) -> tuple[int, str]:
     handlers = {
         "area": query_area,
+        "neighbors": query_neighbors,
         "tests": query_tests,
         "callers": query_callers,
         "callees": query_callees,

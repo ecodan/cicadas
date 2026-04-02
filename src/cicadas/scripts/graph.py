@@ -20,7 +20,7 @@ def _build_parser() -> argparse.ArgumentParser:
     build_parser.add_argument("--force", action="store_true", help="Rebuild even if graph artifacts already exist")
 
     subparsers.add_parser("status", help="Show graph availability and freshness")
-    for command in ("area", "tests", "callers", "callees", "signature-impact", "route"):
+    for command in ("area", "neighbors", "tests", "callers", "callees", "signature-impact", "route"):
         query_parser = subparsers.add_parser(command, help=f"Run the graph {command} query")
         query_parser.add_argument("target", help="Path, symbol, or description to analyze")
     return parser
@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> int:
         print(format_graph_status())
         return 0
 
-    if args.graph_command in {"area", "tests", "callers", "callees", "signature-impact", "route"}:
+    if args.graph_command in {"area", "neighbors", "tests", "callers", "callees", "signature-impact", "route"}:
         code, output = dispatch_query(args.graph_command, args.target)
         print(output)
         return code

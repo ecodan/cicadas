@@ -87,6 +87,31 @@ class TestGraphCli(CicadasTest):
         self.assertEqual(result.returncode, 0)
         self.assertIn("payments", result.stdout)
 
+    def test_graph_neighbors_reports_other_seeded_areas(self):
+        self.init_git()
+        (self.root / "src").mkdir()
+        (self.root / "src" / "demo.py").write_text("def demo():\n    return 1\n")
+        (self.cicadas_dir / "canon").mkdir(exist_ok=True)
+        (self.cicadas_dir / "canon" / "repo.json").write_text(
+            json.dumps(
+                {
+                    "candidate_slices": [
+                        {"name": "payments", "paths": ["src"], "status": "seeded"},
+                        {"name": "accounts", "paths": ["lib"], "status": "seeded"},
+                    ]
+                }
+            )
+        )
+        (self.cicadas_dir / "canon" / "repo-tree.jsonl").write_text(
+            json.dumps({"path": "src/demo.py", "kind": "file", "language": "python", "extension": ".py", "summary": "demo"}) + "\n"
+        )
+        self._run_cli("graph", "build")
+
+        result = self._run_cli("graph", "neighbors", "src/demo.py")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("accounts", result.stdout)
+
     def test_graph_signature_impact_reports_callers_and_tests_for_python(self):
         self.init_git()
         (self.root / "src").mkdir()
