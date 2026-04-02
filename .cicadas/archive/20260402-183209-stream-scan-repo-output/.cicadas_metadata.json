@@ -1,0 +1,24 @@
+{
+  "name": "stream-scan-repo-output",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Stream scan-repo inventory entries to disk during scanning to reduce peak memory usage on large repositories.",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-04-02T17:37:49.716550+00:00"
+  },
+  "timestamp": "20260402-183209",
+  "associated_branches": {
+    "tweak/stream-scan-repo-output": {
+      "intent": "Implement streaming scan-repo inventory writes with bounded in-memory aggregation.",
+      "modules": [
+        "tests/test_scan_repo.py",
+        "src/cicadas/scripts/scan_repo.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-02T17:38:17.813861+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-tweak-stream-scan-repo-output",
+      "initiative": "stream-scan-repo-output"
+    }
+  }
+}
