@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "scan_version": 1,
+  "generated_at": "2026-04-02T00:45:15.606800+00:00",
+  "repo_mode": "normal-repo",
+  "scan": {
+    "tree_path": "repo-tree.jsonl",
+    "context_path": "repo-context.md",
+    "repo_file_count": 1219,
+    "meaningful_file_count": 116,
+    "estimated_loc": 10881,
+    "top_level_entries": 4,
+    "dominant_languages": [
+      "python",
+      "markdown",
+      "json"
+    ],
+    "build_systems": [
+      "python"
+    ],
+    "declared_modules": [
+      "cicadas"
+    ],
+    "major_code_zones": [
+      "src",
+      "src/cicadas"
+    ],
+    "build_paths": [
+      "pyproject.toml"
+    ],
+    "test_paths": [
+      "tests"
+    ],
+    "runtime_package_surfaces": [
+      "pyproject.toml",
+      "src",
+      "src/cicadas"
+    ],
+    "runtime_paths": [
+      "pyproject.toml",
+      "src",
+      "src/cicadas"
+    ],
+    "ownership_zone_candidates": [
+      "src",
+      "src/cicadas"
+    ]
+  },
+  "classification": {
+    "decision": "normal-repo",
+    "scale_class": "normal-repo",
+    "topology_class": "normal-repo",
+    "confidence": "medium",
+    "heuristic_scores": {
+      "meaningful_file_count": 116,
+      "estimated_loc": 10881,
+      "declared_module_count": 1,
+      "major_code_zone_count": 2,
+      "test_surface_count": 1,
+      "runtime_surface_count": 3,
+      "build_system_count": 1,
+      "language_count": 8,
+      "topology_score": 1
+    },
+    "evidence": [
+      {
+        "signal": "scale_floor",
+        "observation": "Detected 116 meaningful files and 10881 estimated LoC, giving a scale floor of `normal-repo`.",
+        "weight": "high"
+      },
+      {
+        "signal": "build_structure",
+        "observation": "Detected build systems python and 1 declared modules.",
+        "weight": "high"
+      },
+      {
+        "signal": "routing_surfaces",
+        "observation": "Observed 2 major code zones, 1 test surfaces, and 3 runtime/package surfaces.",
+        "weight": "medium"
+      }
+    ],
+    "ambiguous_with": [],
+    "decision_note": "Auto-classified from build-first structural scan of cicadas."
+  },
+  "canon_plan": {
+    "strategy": "flat",
+    "orientation": [
+      "product-overview.md",
+      "tech-overview.md",
+      "summary.md"
+    ],
+    "historical_context": {
+      "hand_edit_recommended": false,
+      "why": "Preserve repo history, intent, and local rationale that scan evidence cannot infer safely."
+    },
+    "slice_dirs": [],
+    "seeded_slice_count": 0,
+    "minimum_slice_files": [],
+    "module_dirs": [
+      "modules/"
+    ],
+    "module_snapshots": "full",
+    "generated_targets": [
+      "product-overview.md",
+      "tech-overview.md",
+      "summary.md"
+    ]
+  },
+  "slice_strategy": {
+    "unit": "module",
+    "bootstrap_mode": "fuller-bootstrap",
+    "deepen_on": []
+  },
+  "candidate_slices": [],
+  "depth_policy": {
+    "seeded": [],
+    "deferred": []
+  },
+  "validation": {
+    "status": "pending",
+    "checks": [
+      "planned docs exist",
+      "orientation docs reflect real repo history and boundaries",
+      "module snapshots are generated only when needed"
+    ],
+    "autocorrections": []
+  },
+  "graph_follow_on": {
+    "status": "not_available",
+    "parking_lot_topics": [
+      "dependency adjacency traversal",
+      "blast-radius queries",
+      "inside-out symbol routing"
+    ]
+  }
+}
