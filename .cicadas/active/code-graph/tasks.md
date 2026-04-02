@@ -1,5 +1,5 @@
 ---
-summary: "Execute Code Graph in four partitions: the graph foundation and query CLI are complete, including area, neighbors, tests, callers, callees, route, and signature-impact with Python-backed semantics plus explicit analyzer availability for other languages. The remaining work is observability, then workflow integration and the initiative-level PR review."
+summary: "Execute Code Graph in four partitions: the graph foundation, query CLI, and observability are complete, including optional SQLite-backed graph builds, graph queries, and local usage logging/reporting with end-to-end timing. The remaining work is workflow integration and the initiative-level PR review."
 phase: "tasks"
 when_to_load:
   - "When selecting the next implementation task or reviewing partition completion for Code Graph."
@@ -20,7 +20,7 @@ index:
   partition_observability: "## Partition: feat/graph-observability"
   partition_integration: "## Partition: feat/graph-workflow-integration"
   initiative_boundary: "## Initiative Boundary"
-next_section: "## Partition: feat/graph-observability"
+next_section: "## Partition: feat/graph-workflow-integration"
 ---
 
 # Tasks: Code Graph
@@ -47,12 +47,12 @@ next_section: "## Partition: feat/graph-observability"
 
 ## Partition: feat/graph-observability
 
-- [ ] Add append-only graph usage logging under `.cicadas/graph/usage.jsonl` with the agreed JSONL schema <!-- id: 40 -->
-- [ ] Capture `operation_name` and required `end_to_end_ms` for every graph-backed command invocation, with optional narrower graph timing where isolatable <!-- id: 41 -->
-- [ ] Record initiative/work type, branch, query kind, freshness, coverage, and usefulness tags in each usage entry <!-- id: 42 -->
-- [ ] Add graph usage aggregation and filtering for initiative/time-scope reporting <!-- id: 43 -->
-- [ ] Implement `graph usage` output modes for table and JSON, plus HTML report generation if practical in the same partition <!-- id: 44 -->
-- [ ] Add tests for usage logging, timing fields, filtered summaries, and corrupt-log resilience <!-- id: 45 -->
+- [x] Add append-only graph usage logging under `.cicadas/graph/usage.jsonl` with the agreed JSONL schema <!-- id: 40 -->
+- [x] Capture `operation_name` and required `end_to_end_ms` for every graph-backed command invocation, with optional narrower graph timing where isolatable <!-- id: 41 -->
+- [x] Record initiative/work type, branch, query kind, freshness, coverage, and usefulness tags in each usage entry <!-- id: 42 -->
+- [x] Add graph usage aggregation and filtering for initiative/time-scope reporting <!-- id: 43 -->
+- [x] Implement `graph usage` output modes for table and JSON, plus HTML report generation if practical in the same partition <!-- id: 44 -->
+- [x] Add tests for usage logging, timing fields, filtered summaries, and corrupt-log resilience <!-- id: 45 -->
 
 ## Partition: feat/graph-workflow-integration
 
