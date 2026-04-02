@@ -49,6 +49,13 @@
       "summary": "Add optional code graph foundation with SQLite storage, explicit build/status commands, seeded area loading, and foundation tests.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:37:09.914698+00:00",
+      "branch": "feat/graph-query-cli",
+      "summary": "Add graph query commands for area, neighbors, tests, callers, callees, route, and signature-impact with Python-backed semantics and explicit analyzer coverage.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
