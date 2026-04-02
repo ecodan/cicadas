@@ -19,7 +19,7 @@
     {
       "id": "feature_work",
       "name": "Feature work (per feature)",
-      "description": "Task branches \u2192 implement \u2192 test \u2192 reflect \u2192 commit \u2192 push \u2192 PR (if enabled) \u2192 merge to feature"
+      "description": "Task branches -> implement -> test -> reflect -> commit -> push -> PR (if enabled) -> merge to feature"
     },
     {
       "id": "complete_feature",
@@ -33,5 +33,5 @@
       "opens_pr": true
     }
   ],
-  "initiative": "worktree-ergonomics"
+  "initiative": "stream-scan-repo-output"
 }

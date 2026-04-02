@@ -291,8 +291,7 @@ def _parse_toml(path: Path) -> dict:
         return {}
 
 
-def _detect_build_structure(root: Path, file_entries: list[dict]) -> tuple[list[str], list[str], list[str]]:
-    file_paths = {entry["path"] for entry in file_entries}
+def _detect_build_structure(root: Path, file_paths: set[str]) -> tuple[list[str], list[str], list[str]]:
     build_systems: set[str] = set()
     declared_modules: set[str] = set()
     build_paths: set[str] = set()
@@ -379,10 +378,9 @@ def _major_code_zones(directory_entries: list[dict]) -> list[str]:
     return inferred[:8]
 
 
-def _runtime_package_surfaces(file_entries: list[dict], directory_entries: list[dict]) -> list[str]:
+def _runtime_package_surfaces(file_paths: set[str], directory_entries: list[dict]) -> list[str]:
     surfaces: set[str] = set()
-    for entry in file_entries:
-        path = entry.get("path", "")
+    for path in file_paths:
         if path in {"Dockerfile", "package.json", "pyproject.toml", "Cargo.toml", "pom.xml"}:
             surfaces.add(path)
     surfaces.update(_major_code_zones(directory_entries))
@@ -492,6 +490,10 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
             file_paths.append(current_path / filename)
     reporter.phase(f"Discovered {len(file_paths)} files across {len(dir_paths)} directories")
 
+    relative_file_paths = {
+        path.relative_to(root).as_posix()
+        for path in file_paths
+    }
     relative_paths = [
         path.relative_to(root).as_posix()
         for path in sorted(file_paths + [path for path in dir_paths if path != root])
@@ -513,57 +515,53 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
     meaningful_file_count = 0
     estimated_loc = 0
 
-    file_entries: list[dict] = []
     reporter.phase(f"Scanning {len(file_paths)} files into {tree_path.name}")
     scan_started_at = time.monotonic()
-    with ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 4) * 2)) as pool:
-        for idx, result in enumerate(pool.map(lambda path: _summarize_file(path, root, gitignored_paths), file_paths), start=1):
-            if result:
-                file_entries.append(result)
-            reporter.progress("File scan", idx, len(file_paths), scan_started_at)
+    with tree_path.open("w", buffering=1) as tree_file:
+        with ThreadPoolExecutor(max_workers=min(32, (os.cpu_count() or 4) * 2)) as pool:
+            for idx, result in enumerate(pool.map(lambda path: _summarize_file(path, root, gitignored_paths), file_paths), start=1):
+                if result:
+                    tree_file.write(f"{json.dumps(result, sort_keys=True)}\n")
 
-    reporter.phase("Writing directory summaries")
-    with tree_path.open("w") as tree_file:
-        for entry in file_entries:
-            tree_file.write(json.dumps(entry, sort_keys=True))
-            tree_file.write("\n")
+                    language = result.get("language")
+                    if language:
+                        dominant_languages[language] += 1
 
-            language = entry.get("language")
-            if language:
-                dominant_languages[language] += 1
+                    rel = result["path"]
+                    if rel.startswith("tests"):
+                        test_paths.add(rel.split("/", 1)[0])
+                    if entry_counts_toward_complexity(result):
+                        meaningful_file_count += 1
+                        estimated_loc += int(result.get("estimated_loc", 0) or 0)
 
-            rel = entry["path"]
-            if rel.startswith("tests"):
-                test_paths.add(rel.split("/", 1)[0])
-            if entry_counts_toward_complexity(entry):
-                meaningful_file_count += 1
-                estimated_loc += int(entry.get("estimated_loc", 0) or 0)
+                    parent_rel = _parent_rel(rel)
+                    parent_stats = dir_stats.setdefault(parent_rel, DirectoryStats(path=parent_rel))
+                    parent_stats.file_count += 1
+                    ext = result.get("extension") or "unknown"
+                    type_name = ext.lstrip(".") or "unknown"
+                    parent_stats.direct_type_counts[type_name] = parent_stats.direct_type_counts.get(type_name, 0) + 1
+                    for ancestor_rel in _ancestor_chain(rel):
+                        dir_stats.setdefault(ancestor_rel, DirectoryStats(path=ancestor_rel)).total_bytes += result.get("bytes", 0)
 
-            parent_rel = _parent_rel(rel)
-            parent_stats = dir_stats.setdefault(parent_rel, DirectoryStats(path=parent_rel))
-            parent_stats.file_count += 1
-            ext = entry.get("extension") or "unknown"
-            type_name = ext.lstrip(".") or "unknown"
-            parent_stats.direct_type_counts[type_name] = parent_stats.direct_type_counts.get(type_name, 0) + 1
-            for ancestor_rel in _ancestor_chain(rel):
-                dir_stats.setdefault(ancestor_rel, DirectoryStats(path=ancestor_rel)).total_bytes += entry.get("bytes", 0)
+                reporter.progress("File scan", idx, len(file_paths), scan_started_at)
+
+        reporter.phase("Writing directory summaries")
 
         directory_entries = [
             _summarize_directory_from_stats(rel_path, stats, gitignored_paths)
             for rel_path, stats in sorted(dir_stats.items())
         ]
         for entry in directory_entries:
-            tree_file.write(json.dumps(entry, sort_keys=True))
-            tree_file.write("\n")
+            tree_file.write(f"{json.dumps(entry, sort_keys=True)}\n")
 
     top_level_entries = [
         entry["path"]
         for entry in directory_entries
         if entry.get("path") != "." and "/" not in entry.get("path", "").strip(".") and entry_counts_toward_complexity(entry)
     ]
-    build_systems, declared_modules, build_paths = _detect_build_structure(root, file_entries)
+    build_systems, declared_modules, build_paths = _detect_build_structure(root, relative_file_paths)
     major_code_zones = _major_code_zones(directory_entries)
-    runtime_package_surfaces = _runtime_package_surfaces(file_entries, directory_entries)
+    runtime_package_surfaces = _runtime_package_surfaces(relative_file_paths, directory_entries)
     scale_class, topology_class, mode, canon_strategy, evidence, heuristic_scores = _classify_repo(
         meaningful_file_count=meaningful_file_count,
         estimated_loc=estimated_loc,
