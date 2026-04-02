@@ -1,5 +1,5 @@
 ---
-summary: "Adapt Cicadas bootstrap and canon synthesis to classify repositories by scale and produce canon shapes that are operationally useful for brownfield work, especially routing changes safely in large and mega repos."
+summary: "Adapt Cicadas bootstrap and canon synthesis so larger repos use minimal orientation plus seeded slice packs that help agents plan the next local change safely, while small repos keep the simpler narrative-plus-modules canon."
 phase: "clarify"
 when_to_load:
   - "When defining or reviewing initiative goals, users, scope, success criteria, and risks."
@@ -39,12 +39,13 @@ next_section: "Builder review"
 
 ## Executive Summary
 
-Cicadas needs an adaptive canon model that changes with repository scale so bootstrap produces documentation that helps agents route and implement brownfield work safely, not just understand the product at a high level. This initiative adds repo-scale classification, canon-mode selection, scale-specific artifact shapes, and evaluation criteria that test whether canon helps an agent find the right owning area, files, tests, and runtime paths quickly.
+Cicadas needs an adaptive canon model that changes with repository scale so bootstrap produces documentation that helps agents route and implement brownfield work safely, not just understand the product at a high level. This initiative keeps small repos simple, but for larger repos shifts from taxonomy-heavy canon toward minimal orientation plus seeded slice packs that help an agent decide where to start, what boundaries matter, and how to validate the next local change.
 
 ### What Makes This Special
 
 - **Operational canon instead of uniform canon** — The initiative optimizes canon for safe action in brownfield repos, especially where routing is harder than product understanding.
 - **Scale-aware bootstrap** — Bootstrap will classify repos as `normal-repo`, `large-repo`, or `mega-repo` before synthesis, so Cicadas can generate the right depth and artifact mix.
+- **Seeded slices for larger repos** — `large-repo` and `mega-repo` modes should bias toward a few strong local slice packs instead of broad parallel hierarchies.
 - **Brownfield usefulness as the acceptance bar** — Success is defined by whether an agent can answer “where do I start and what do I inspect next?” for real maintenance tasks.
 
 ## Project Classification
@@ -71,8 +72,8 @@ A user achieves success when they can:
 The system is successful when:
 
 1. Bootstrap records repo-scale classification, evidence, and expected canon shape in durable workflow artifacts.
-2. Canon synthesis supports scale-specific artifact families such as routing guides, area maps, area docs, and playbooks where appropriate.
-3. Templates and guidance define selective depth so Cicadas can mark deep-canoned, shallow-canoned, and deferred areas explicitly.
+2. Canon synthesis supports scale-specific artifact families, especially seeded `slices/` packs for larger repos.
+3. Templates and guidance define selective depth so Cicadas can seed a few slices, defer most local canon, and deepen it from real work later.
 4. The project defines measurable evaluation criteria and benchmark-style validation for brownfield usefulness by repo scale.
 
 ### Measurable Outcomes
@@ -89,15 +90,15 @@ The system is successful when:
 
 A Builder brings Cicadas into a large brownfield repository where the codebase spans several architectural layers and product areas. They do not primarily need a polished narrative summary; they need to know where a bug fix or small feature should start, which neighboring areas are likely involved, and which tests and runtime paths matter first. During bootstrap, Cicadas classifies the repo as large, explains the evidence, and produces orientation plus routing artifacts that let the Builder route work confidently without spelunking the entire repository. Success feels like opening the right area docs first and avoiding a day of wrong turns.
 
-**Requirements Revealed:** repo-scale classification, evidence capture, routing guide generation, area canon generation, neighboring-area guidance, test/runtime path guidance.
+**Requirements Revealed:** repo-scale classification, evidence capture, seeded slice generation, neighboring-slice guidance, test/runtime path guidance.
 
 ---
 
 ### Journey 2: Agent in a Mega Repo — Finding Ownership Before Coding
 
-An implementation agent is asked to handle a brownfield change in a mega-repo where similar concepts exist in multiple packages, platforms, and plugin surfaces. A single broad tech overview is not enough because the main risk is starting in the wrong ownership zone and touching the wrong layer casually. Cicadas’ mega-repo canon gives the agent a routing-first area map, area docs, and task-oriented playbooks that point to likely owners, likely neighbors, first files, first tests, and common traps. Success feels like getting to a plausible owner quickly with fewer wrong-area starts and safer initial file inspection.
+An implementation agent is asked to handle a brownfield change in a mega-repo where similar concepts exist in multiple packages, platforms, and plugin surfaces. A single broad tech overview is not enough because the main risk is starting in the wrong local slice and touching the wrong layer casually. Cicadas’ mega-repo canon gives the agent a small, trustworthy slice pack that points to likely ownership boundaries, likely neighbors, first files, first tests, and common traps. Success feels like getting to a plausible owner quickly with fewer wrong-area starts and safer initial file inspection.
 
-**Requirements Revealed:** mega-repo mode, area maps, playbooks, common failure-mode guidance, compact area reload artifacts, guardrails for high-risk areas.
+**Requirements Revealed:** mega-repo mode, seeded local slices, local traps and invariants, compact reload artifacts, guardrails for high-risk areas.
 
 ---
 
@@ -113,8 +114,8 @@ A Cicadas maintainer wants canon quality to improve as the tool is used on real 
 
 | User Type | Key Requirements |
 |-----------|-----------------|
-| **Builder on a large repo** | repo classification, evidence capture, routing guide, area docs, nearby-area guidance, first-test and runtime-path guidance |
-| **Implementation agent on a mega repo** | area map, playbooks, compact reload artifacts, likely owning areas, local traps, safe-start guidance |
+| **Builder on a large repo** | repo classification, evidence capture, seeded slices, neighboring-slice guidance, first-test and runtime-path guidance |
+| **Implementation agent on a mega repo** | seeded slices, compact reload artifacts, likely owning slices, local traps, safe-start guidance |
 | **Cicadas maintainer** | evaluation criteria, benchmark corpus guidance, selective depth policy, migration guidance, iterative deepening strategy |
 
 ---
@@ -128,9 +129,11 @@ A Cicadas maintainer wants canon quality to improve as the tool is used on real 
 - Define repo-scale detection heuristics that use structural and operational signals beyond line count.
 - Record selected scale, supporting evidence, and expected canon shape during bootstrap.
 - Update canon generation guidance and templates so outputs differ by repo mode.
-- Introduce routing-oriented canon artifacts for large and mega repos, including `routing-guide.md`, `areas/*.md`, and for mega repos `area-map.md` and `playbooks/*.md`.
+- Introduce slice-oriented canon artifacts for large and mega repos under `slices/{slice-name}/`, seeded lazily during bootstrap.
 - Define selective-depth guidance for deep-canoned, shallow-canoned, and deferred areas.
+- Define contiguous-by-default slice selection, with multi-path slices allowed only when repeated real work shows strong co-change.
 - Add brownfield usefulness acceptance criteria and benchmark-task guidance by repo scale.
+- Encourage human hand-editing of the first large/mega orientation docs so repo history, intent, and "why" context are preserved and carried forward.
 - Document migration guidance from the current canon model to the adaptive one.
 - Keep the canon model forward-compatible with a follow-on graph-backed routing layer so machine navigation can move out of prose if that project succeeds.
 
@@ -142,8 +145,8 @@ A Cicadas maintainer wants canon quality to improve as the tool is used on real 
 ### Growth Features (Post-MVP)
 
 **v2: Feedback-Driven Refinement**
-- Support “validated by recent change” style updates so canon depth can improve from actual maintenance work.
-- Add stronger workflows for refining area docs and playbooks after successful real-world changes.
+- Support “validated by recent change” style updates so slice depth can improve from actual maintenance work.
+- Add stronger workflows for refining seeded slices after successful real-world changes.
 
 **v3: Graph-Backed Routing**
 - Integrate a graph-backed code understanding layer for dependency traversal, interaction mapping, blast-radius analysis, and inside-out brownfield routing.
@@ -186,14 +189,13 @@ A Cicadas maintainer wants canon quality to improve as the tool is used on real 
 
 **FR-2.1:** Cicadas must define required canon artifacts per repo scale.
 - `normal-repo` requires `product-overview.md`, `tech-overview.md`, optional `ux-overview.md`, `modules/*.md`, and a compact canon summary.
-- `large-repo` requires `product-overview.md`, `tech-overview.md`, `routing-guide.md`, `areas/*.md`, optional `modules/*.md`, and a compact canon summary.
-- `mega-repo` requires `product-overview.md`, `tech-overview.md`, `routing-guide.md`, `area-map.md`, `areas/*.md`, `playbooks/*.md`, and compact area-level reload artifacts.
+- `large-repo` requires `product-overview.md`, `tech-overview.md`, `summary.md`, and a few seeded `slices/{slice-name}/` packs.
+- `mega-repo` requires `product-overview.md`, `tech-overview.md`, `summary.md`, and a few seeded `slices/{slice-name}/` packs, with neighboring-slice guidance and stronger local invariants.
 
 **FR-2.2:** Cicadas must distinguish canon layers and describe their purpose.
 - Orientation canon explains product, repo shape, architectural layers, and major build/test/package/runtime paths.
-- Routing canon explains where to start for specific change types, nearby areas, common wrong turns, and path implications.
-- Area canon explains local entrypoints, interfaces, models, neighbors, tests, change patterns, and traps.
-- Change-playbook canon explains recurring brownfield task types with likely owners, neighboring areas, first files, first tests, and common failure modes.
+- Slice canon explains what a local region is for, what belongs there, what must remain true, where changes usually start, and what nearby slices matter.
+- Change guidance should live inside slice packs by default instead of in a separate always-on playbook hierarchy.
 
 **FR-2.3:** Canon guidance must optimize for operational usefulness, not uniform completeness.
 - Small repos should stay mostly narrative and explanatory.
@@ -230,7 +232,7 @@ A Cicadas maintainer wants canon quality to improve as the tool is used on real 
 - Metrics should include top-1 owning-area accuracy, top-3 owning-area accuracy, time to first plausible area, time to first useful file, wrong-area starts, files opened before correct owner, time to first relevant test, and human usefulness rating.
 
 **FR-4.4:** The initiative must document how canon quality can improve through real maintenance work over time.
-- Guidance should support refining area docs and playbooks from recent successful changes without requiring full re-documentation of every area.
+- Guidance should support refining seeded slices from recent successful changes without requiring full re-documentation of every local area.
 
 **FR-4.5:** This initiative must explicitly treat graph-backed machine navigation as a dependent follow-on direction, not an MVP assumption.
 - If the graph-backed follow-on succeeds, canon should evolve to become more human-centric while the graph handles inside-out traversal, adjacency, and dependency-oriented routing.

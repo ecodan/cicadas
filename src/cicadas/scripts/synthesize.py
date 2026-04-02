@@ -11,9 +11,11 @@ from pathlib import Path
 from scan_repo import run_scan
 from utils import (
     build_canon_plan,
+    build_reconcile_scope,
     canon_dir,
     collect_code_context,
     enumerate_canon_targets,
+    changed_paths_since_last_commit,
     get_project_root,
     load_json,
     load_repo_context,
@@ -34,21 +36,27 @@ def _ensure_repo_metadata(root: Path) -> tuple[dict | None, list[dict] | None, s
     return metadata, tree, context
 
 
-def _gather_canon_docs(canon_root: Path, plan: dict) -> dict[str, str]:
+def _gather_canon_docs(canon_root: Path, plan: dict, allowed_scope: set[str] | None = None) -> dict[str, str]:
     canon_docs: dict[str, str] = {}
     for doc in sorted(canon_root.glob("*.md")):
+        if allowed_scope is not None and doc.name not in allowed_scope:
+            continue
         canon_docs[doc.name] = doc.read_text()
     for target in enumerate_canon_targets(plan):
         if target.endswith("/"):
             directory = canon_root / target.rstrip("/")
             if not directory.exists():
                 continue
-            for doc in sorted(directory.glob("*.md")):
+            for doc in sorted(directory.rglob("*.md")):
                 rel = doc.relative_to(canon_root).as_posix()
+                if allowed_scope is not None and rel not in allowed_scope:
+                    continue
                 canon_docs[rel] = doc.read_text()
             continue
         doc_path = canon_root / target
         if doc_path.exists():
+            if allowed_scope is not None and target not in allowed_scope:
+                continue
             canon_docs[target] = doc_path.read_text()
     return canon_docs
 
@@ -75,15 +83,37 @@ def gather_context(name, is_initiative=False):
         for doc in source_dir.glob("*.md"):
             context["active_docs"][doc.name] = doc.read_text()
 
+    reconcile_scope = {
+        "mode": "full",
+        "repo_mode": (metadata or {}).get("repo_mode", "unknown"),
+        "reason": "default broad synthesis scope",
+        "touched_paths": [],
+        "touched_slices": [],
+        "neighbor_slices": [],
+        "global_docs": [],
+        "canon_doc_scope": [],
+        "code_scope": [],
+    }
+    if is_initiative:
+        reconcile_scope = build_reconcile_scope(
+            metadata,
+            context["active_docs"],
+            changed_paths_since_last_commit(root),
+        )
+    context["reconcile_scope"] = reconcile_scope
+
     modules = []
     if not is_initiative:
         branch_info = registry.get("branches", {}).get(name, {})
         modules = branch_info.get("modules", [])
+    else:
+        modules = reconcile_scope.get("code_scope", [])
     context["code_context"] = collect_code_context(root, modules, repo_tree)
 
     canon_root = canon_dir(root)
     if canon_root.exists():
-        context["canon_docs"] = _gather_canon_docs(canon_root, plan)
+        allowed_scope = set(reconcile_scope.get("canon_doc_scope", [])) if reconcile_scope.get("mode") == "targeted" else None
+        context["canon_docs"] = _gather_canon_docs(canon_root, plan, allowed_scope=allowed_scope)
 
     context["index"] = load_json(cicadas / "index.json")
     return context
@@ -103,6 +133,10 @@ def generate_prompt(context):
     if context.get("repo_context"):
         prompt += "#### REPO CONTEXT ####\n"
         prompt += f"```markdown\n{context['repo_context']}\n```\n\n"
+
+    if context.get("reconcile_scope"):
+        prompt += "#### RECONCILE SCOPE ####\n"
+        prompt += f"```json\n{json.dumps(context['reconcile_scope'], indent=2)}\n```\n\n"
 
     if context.get("repo_tree"):
         prompt += "#### REPO TREE SAMPLE ####\n"

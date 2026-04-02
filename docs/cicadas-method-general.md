@@ -42,7 +42,7 @@ Traditional Spec-Driven Development (SDD) works well on the first pass but degra
 | **Coordination Unit** | **Initiative** | A set of related features with shared context (PRD, UX, Architecture). |
 | **Drafting Area** | **Drafts** | Where specs are authored before work begins (`.cicadas/drafts/`). |
 | **Live Requirements** | **Active Specs** | The living requirements driving current work (`.cicadas/active/`). Updated by Reflect during development. |
-| **Generated Docs** | **Canon** | Authoritative canon, reverse-engineered from code on `main` (`.cicadas/canon/`). |
+| **Generated Docs** | **Canon** | Authoritative canon, reverse-engineered from code on `main` (`.cicadas/canon/`). Smaller repos can stay flat; larger repos can use adaptive metadata and localized slice packs. |
 | **Activation** | **Kickoff** | Promoting drafts to active status, registering the initiative, and creating the initiative branch. |
 | **Outer Integration** | **Initiative Branch** | A long-lived git branch (`initiative/{name}`) that integrates all feature branches. Pure code — never touches canon. Merges to `main` once at initiative completion. |
 | **Inner Integration** | **Feature Branch** | A registered git branch for a partition of the initiative. Forks from and merges back to the initiative branch. |
@@ -96,8 +96,12 @@ project-root/
     │   ├── product-overview.md       # What the product does, goals, personas
     │   ├── ux-overview.md            # Design principles, patterns, flows
     │   ├── tech-overview.md          # Architecture, components, API, schema
-    │   └── modules/                  # Module-level snapshots
-    │       └── {module-name}.md
+    │   ├── summary.md                # Compact branch-start snapshot
+    │   ├── repo.json                 # Repo scale + canon planning metadata when adaptive scan is used
+    │   ├── repo-tree.jsonl           # Streamable structural inventory
+    │   ├── repo-context.md           # Compact orientation and routing context
+    │   ├── modules/                  # Module-level snapshots for regular repos when useful
+    │   └── slices/                   # Localized canon packs for large/mega repos
     ├── drafts/                       # Pre-kickoff staging area
     │   └── {initiative-name}/
     │       ├── prd.md
@@ -181,7 +185,7 @@ main
     └── feat/{partition-3}         ← registered, forks from initiative
 ```
 
-**Key**: The initiative branch is a *pure code integration branch*. It never touches canon. Canon is synthesized on `main` after the initiative branch merges (see Phase 5).
+**Key**: The initiative branch is a *pure code integration branch*. It never touches canon. Canon is updated on `main` after the initiative branch merges (see Phase 5).
 
 ### Phase 3: Execution (The Dual Loop)
 
@@ -220,7 +224,7 @@ The reset rule is behavioral guidance, not a hard dependency. Correctness must s
 1. **Update index (Script)**: `python src/cicadas/scripts/cicadas.py update-index --branch {name} --summary "..."` — logs to the change ledger.
 2. **Merge to initiative**: `git checkout initiative/{name} && git merge {branch-name}` — merges into the initiative branch, **not** `main`.
 
-**Key**: No synthesis, no archiving at this step. Active specs stay active — they're the living document for the rest of the initiative, continuously updated by Reflect. Canon is produced only at initiative completion (Phase 5).
+**Key**: No synthesis, no archiving at this step. Active specs stay active — they're the living document for the rest of the initiative, continuously updated by Reflect. Canon is updated only at initiative completion (Phase 5).
 
 #### Inner Loop: Task Branches (Unregistered)
 
@@ -274,7 +278,7 @@ As with Branch Reset, the method may ask the host to clear or compact context wh
 - `python src/cicadas/scripts/cicadas.py status` surfaces unacknowledged signals.
 - The Agent should check for signals when performing a **Check Status** operation and assess their relevance.
 
-### Phase 5: Initiative Completion (Outer Loop: Synthesis & Archive)
+### Phase 5: Initiative Completion (Outer Loop: Canon Update & Archive)
 
 **Trigger**: All feature branches for the initiative are merged into the initiative branch.
 
@@ -287,7 +291,7 @@ Synthesis and archiving are **outer loop functions** — they happen once, when 
 
 **Why merge first, then synthesize**: Canon is meant to *replace*, not *merge*. If synthesis happened on the initiative branch, merging canon files to `main` would use git's 3-way merge — which could conflict with previous canon versions. By synthesizing directly on `main`, canon is a simple file write (overwrite old, create new). No merge strategy needed, ever.
 
-#### Step 2: Synthesize Canon on Main (Agent Operation)
+#### Step 2: Update Canon on Main (Agent Operation)
 
 **Inputs**:
 - The complete codebase on `main` (now includes all initiative code)
@@ -299,11 +303,16 @@ Synthesis and archiving are **outer loop functions** — they happen once, when 
 - `canon/product-overview.md` (Goals, Personas, Metrics)
 - `canon/ux-overview.md` (Design Principles, Patterns, Flows)
 - `canon/tech-overview.md` (Architecture, Components, API, Schema)
-- Module-level snapshots in `canon/modules/`
+- `canon/summary.md` for compact branch-start context
+- For adaptive repos: `canon/repo.json`, `canon/repo-tree.jsonl`, and `canon/repo-context.md`
+- Module-level snapshots in `canon/modules/` for regular repos when useful
+- Slice packs in `canon/slices/` for large and mega repos
 
 **Protocol**:
 1. **Read**: Code on `main`, active specs, existing canon, change ledger.
 2. **Synthesize**: Write canon to reflect the *new reality* of the code. On greenfield, create from scratch. On subsequent initiatives, update existing canon.
+   - `normal-repo`: broad canon synthesis remains the default.
+   - `large-repo` / `mega-repo`: use targeted reconcile. Update touched slices first, expand to neighboring slices only when boundaries, interfaces, or invariants changed, and refresh top-level orientation docs only when durable repo-wide truth changed.
 3. **Crucial**: Extract "Key Decisions" from the active specs and embed them in canon. This preserves the "why" before the specs are archived.
 4. **Verify**: Ensure the new canon accurately describes the code as it exists *now* on `main`.
 
@@ -330,8 +339,9 @@ When starting Cicadas on a codebase that already has code:
 2. **Reverse Engineer**: Follow `src/cicadas/REVERSE_ENGINEERING.md` for disciplined code discovery.
 3. **Analyze**: Identify core modules and architectural patterns.
 4. **Draft Canon**:
-    - Create `.cicadas/canon/product-overview.md` using the template.
-    - Create module snapshots in `.cicadas/canon/modules/` for key components.
+    - Run adaptive scan/bootstrap to classify the repo and seed orientation docs.
+    - For `normal-repo`, keep the canon flat and add module snapshots only where they improve local understanding.
+    - For `large-repo` / `mega-repo`, seed a small set of lazy `slices/` packs and deepen them later on first real use.
 5. **Seed Index**:
     - Run `python src/cicadas/scripts/cicadas.py update-index --branch "bootstrap" --summary "Initial bootstrap"`.
 
@@ -350,7 +360,8 @@ When starting Cicadas on a codebase that already has code:
     - On subsequent initiatives: update existing canon — overwrite, don't merge.
     - Update `product-overview.md` if product scope changed.
     - Update `tech-overview.md` if architecture changed.
-    - Update relevant `modules/{name}.md` files.
+    - For `normal-repo`, update relevant `modules/{name}.md` files when needed.
+    - For `large-repo` / `mega-repo`, reconcile touched `slices/{name}/` packs first and expand only when the initiative changed interfaces, boundaries, or invariants.
     - **Crucial**: Extract "Key Decisions" from the active specs and embed them in canon. This preserves the "why" before the specs are archived.
 3. **Verify**: Ensure the new canon accurately describes the code as it exists *now* on `main`.
 4. **Builder review**: Present canon for review before archiving and committing.
@@ -371,7 +382,7 @@ Run: `python src/cicadas/scripts/cicadas.py check`
 4. **Tool Mandate**: NEVER manually edit `registry.json`. ALWAYS use the scripts.
 5. **Merge Boundaries**: A per-initiative `lifecycle.json` defines PR boundaries and step lists, with `python src/cicadas/scripts/cicadas.py open-pr` handling code review validation through `review.md` artifacts.
 6. **Reflect Before PR**: Always run the Reflect operation before opening a PR for a task branch. Include Reflect findings in the PR description.
-7. **No Canon on Branches**: Never write to `.cicadas/canon/` on any branch. Canon is only synthesized on `main` at initiative completion.
+7. **No Canon on Branches**: Never write to `.cicadas/canon/` on any branch. Canon is only updated on `main` at initiative completion.
 
 ### Guide 5: Agent Autonomy Boundaries
 The Agent handles all ceremony behind natural-language commands from the Builder. Some actions are autonomous; others require Builder confirmation.
@@ -396,7 +407,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 - **"Implement task {X}"**: Creates task branch, implements, Reflects, opens PR with findings.
 - **"Signal {message}"**: Runs `python src/cicadas/scripts/cicadas.py signal`. Broadcasts change to initiative.
 - **"Complete feature {name}"**: Runs `python src/cicadas/scripts/cicadas.py update-index`. Merges feature branch into initiative branch.
-- **"Complete initiative {name}"**: Merges initiative to `main`, synthesizes canon on `main`, archives specs, commits.
+- **"Complete initiative {name}"**: Merges initiative to `main`, updates canon on `main`, archives specs, commits.
 
 ---
 
@@ -424,7 +435,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 | **Semantic Intent Check** | Before starting a feature branch | Analyze registry intents for logical conflicts |
 | **Reflect** | After significant code changes, before PR | Update active specs to match code reality. Include findings in PR. |
 | **Signal Assessment** | After Reflect, during status check | Evaluate cross-branch impact. Signal autonomously if needed. |
-| **Synthesis** | At initiative completion, on `main` | Generate canon from code + active specs. Requires Builder review. |
+| **Synthesis** | At initiative completion, on `main` | Update canon from code + active specs. Full for normal repos; targeted reconcile for large/mega repos. Requires Builder review. |
 
 ### File Locations
 - Orchestrator: `src/cicadas/`

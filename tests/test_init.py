@@ -22,7 +22,8 @@ class TestInit(CicadasTest):
 
         cicadas_dir = new_root / ".cicadas"
         self.assertTrue(cicadas_dir.exists())
-        self.assertTrue((cicadas_dir / "canon/modules").exists())
+        self.assertTrue((cicadas_dir / "canon").exists())
+        self.assertFalse((cicadas_dir / "canon/modules").exists())
         self.assertTrue((cicadas_dir / "active").exists())
         self.assertTrue((cicadas_dir / "drafts").exists())
         self.assertTrue((cicadas_dir / "archive").exists())

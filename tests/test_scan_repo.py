@@ -41,6 +41,8 @@ class TestScanRepo(CicadasTest):
         self.assertIn("heuristic_scores", metadata["classification"])
         self.assertEqual(metadata["scan"]["tree_path"], REPO_TREE_FILENAME)
         self.assertEqual(metadata["scan"]["context_path"], REPO_CONTEXT_FILENAME)
+        self.assertIn("meaningful_file_count", metadata["scan"])
+        self.assertIn("estimated_loc", metadata["scan"])
 
         lines = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
         self.assertTrue(any(line["kind"] == "directory" for line in lines))
@@ -65,14 +67,14 @@ class TestScanRepo(CicadasTest):
 
         _tree_path, metadata_path, context_path = scan_repo.run_scan()
         metadata = json.loads(metadata_path.read_text())
-        ownership = metadata["scan"]["ownership_zone_candidates"]
+        zones = metadata["scan"]["major_code_zones"]
 
-        self.assertNotIn(".agents", ownership)
-        self.assertNotIn(".claude", ownership)
-        self.assertNotIn(".idea", ownership)
-        self.assertNotIn(".venv", ownership)
-        self.assertNotIn(".cicadas/archive", ownership)
-        self.assertIn("src", metadata["scan"]["runtime_paths"])
+        self.assertNotIn(".agents", zones)
+        self.assertNotIn(".claude", zones)
+        self.assertNotIn(".idea", zones)
+        self.assertNotIn(".venv", zones)
+        self.assertNotIn(".cicadas/archive", zones)
+        self.assertIn("src", metadata["scan"]["major_code_zones"])
         self.assertNotIn(".agents", context_path.read_text())
         self.assertNotIn(".idea", context_path.read_text())
 
@@ -103,8 +105,75 @@ class TestScanRepo(CicadasTest):
         self.assertFalse(entries["build"]["counts_toward_scale"])
         self.assertEqual(entries["build"]["scale_exclusion_reason"], "generated-or-local")
 
-        self.assertIn("src", metadata["scan"]["runtime_paths"])
-        self.assertEqual(metadata["scan"]["ownership_zone_candidates"], ["src", "src/pkg"])
+        self.assertIn("src", metadata["scan"]["major_code_zones"])
+        self.assertEqual(metadata["scan"]["major_code_zones"], ["src", "src/pkg"])
+
+    def test_scan_detects_supported_build_systems_and_declared_modules(self):
+        (self.root / "pom.xml").write_text("<project><modules><module>services/api</module></modules></project>")
+        (self.root / "package.json").write_text(json.dumps({"workspaces": ["packages/*"]}))
+        (self.root / "pyproject.toml").write_text("[project]\nname='demo-py'\n[tool.uv]\n")
+        (self.root / "Cargo.toml").write_text("[workspace]\nmembers = ['crates/core']\n")
+        (self.root / "src" / "pkg").mkdir(parents=True)
+        (self.root / "src" / "pkg" / "mod.py").write_text("print('demo')\n")
+
+        _tree_path, metadata_path, context_path = scan_repo.run_scan()
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertIn("maven", metadata["scan"]["build_systems"])
+        self.assertIn("node", metadata["scan"]["build_systems"])
+        self.assertIn("python", metadata["scan"]["build_systems"])
+        self.assertIn("cargo", metadata["scan"]["build_systems"])
+        self.assertIn("services/api", metadata["scan"]["declared_modules"])
+        self.assertIn("packages/*", metadata["scan"]["declared_modules"])
+        self.assertIn("demo-py", metadata["scan"]["declared_modules"])
+        self.assertIn("crates/core", metadata["scan"]["declared_modules"])
+        self.assertIn("Build systems:", context_path.read_text())
+
+    def test_scan_uses_scale_floor_to_force_mega_repo(self):
+        src_dir = self.root / "src" / "pkg"
+        src_dir.mkdir(parents=True)
+        for idx in range(1005):
+            (src_dir / f"file_{idx}.py").write_text("print('x')\n" * 2500)
+
+        _tree_path, metadata_path, _context_path = scan_repo.run_scan()
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertEqual(metadata["classification"]["scale_class"], "mega-repo")
+        self.assertEqual(metadata["repo_mode"], "mega-repo")
+        self.assertEqual(metadata["canon_plan"]["strategy"], "locality-first")
+        self.assertEqual(metadata["slice_strategy"]["unit"], "slice")
+        self.assertTrue(metadata["candidate_slices"])
+
+    def test_scan_seeds_slices_for_large_repo_modes(self):
+        src_dir = self.root / "src" / "pkg"
+        src_dir.mkdir(parents=True)
+        for idx in range(1005):
+            (src_dir / f"file_{idx}.py").write_text("print('x')\n")
+
+        _tree_path, metadata_path, context_path = scan_repo.run_scan()
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertEqual(metadata["repo_mode"], "large-repo")
+        self.assertEqual(metadata["canon_plan"]["strategy"], "locality-first")
+        self.assertEqual(metadata["canon_plan"]["slice_dirs"], ["slices/"])
+        self.assertEqual(
+            metadata["canon_plan"]["minimum_slice_files"],
+            ["summary.md", "boundaries.md", "architecture.md", "invariants.md", "change-guide.md"],
+        )
+        self.assertIn("Seeded slices:", context_path.read_text())
+
+    def test_normal_repo_does_not_seed_slices(self):
+        src_dir = self.root / "src" / "pkg"
+        src_dir.mkdir(parents=True)
+        (src_dir / "mod.py").write_text("print('hello')\n")
+
+        _tree_path, metadata_path, context_path = scan_repo.run_scan()
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertEqual(metadata["repo_mode"], "normal-repo")
+        self.assertEqual(metadata["candidate_slices"], [])
+        self.assertEqual(metadata["slice_strategy"]["unit"], "module")
+        self.assertNotIn("Seeded slices:", context_path.read_text())
 
     def test_scan_spools_tree_to_disk_during_inventory_build(self):
         src_dir = self.root / "src" / "pkg"

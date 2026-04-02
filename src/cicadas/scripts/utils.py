@@ -226,6 +226,203 @@ def _match_path_prefix(rel_path: str, prefixes: list[str]) -> bool:
     return False
 
 
+def _extract_frontmatter(text: str) -> str:
+    if not text.startswith("---\n"):
+        return ""
+    end = text.find("\n---\n", 4)
+    if end == -1:
+        return ""
+    return text[4:end]
+
+
+def _parse_frontmatter_list(frontmatter: str, key: str) -> list[str]:
+    if not frontmatter:
+        return []
+    lines = frontmatter.splitlines()
+    values: list[str] = []
+    collecting = False
+    indent = None
+    for line in lines:
+        if not collecting:
+            if re.match(rf"^{re.escape(key)}:\s*$", line):
+                collecting = True
+                continue
+            inline = re.match(rf"^{re.escape(key)}:\s*\[(.*?)\]\s*$", line)
+            if inline:
+                raw = inline.group(1).strip()
+                if not raw:
+                    return []
+                return [item.strip().strip("\"'") for item in raw.split(",") if item.strip()]
+            continue
+        if not line.strip():
+            continue
+        current_indent = len(line) - len(line.lstrip(" "))
+        if indent is None:
+            indent = current_indent
+        if current_indent < indent or not line.lstrip().startswith("- "):
+            break
+        values.append(line.lstrip()[2:].strip().strip("\"'"))
+    return values
+
+
+def extract_modules_from_doc(text: str) -> list[str]:
+    return _parse_frontmatter_list(_extract_frontmatter(text), "modules")
+
+
+def changed_paths_since_last_commit(root: Path) -> list[str]:
+    try:
+        output = subprocess.check_output(
+            ["git", "diff", "--name-only", "HEAD~1", "HEAD"],
+            cwd=root,
+            stderr=subprocess.DEVNULL,
+        ).decode()
+    except Exception:
+        return []
+    return [line.strip() for line in output.splitlines() if line.strip()]
+
+
+def _normalize_scope_paths(paths: list[str]) -> list[str]:
+    seen: set[str] = set()
+    normalized: list[str] = []
+    for path in paths:
+        candidate = path.strip().strip("/")
+        if not candidate or candidate in seen:
+            continue
+        seen.add(candidate)
+        normalized.append(candidate)
+    return normalized
+
+
+def _slice_paths(slice_info: dict) -> list[str]:
+    return _normalize_scope_paths(slice_info.get("paths", []))
+
+
+def _doc_matches_scope(doc_path: str, scope: set[str]) -> bool:
+    if not scope:
+        return True
+    normalized = doc_path.strip("/")
+    if normalized in scope:
+        return True
+    for prefix in scope:
+        if normalized == prefix or normalized.startswith(f"{prefix}/"):
+            return True
+    return False
+
+
+def _slice_doc_scope(slice_names: list[str], minimum_slice_files: list[str]) -> set[str]:
+    scope: set[str] = set()
+    for name in slice_names:
+        for file_name in minimum_slice_files:
+            scope.add(f"slices/{name}/{file_name}")
+        scope.add(f"slices/{name}")
+    return scope
+
+
+def should_refresh_global_orientation(active_docs: dict[str, str], changed_paths: list[str], touched_slice_names: list[str]) -> bool:
+    broad_keywords = (
+        "repo-wide",
+        "global",
+        "system-wide",
+        "cross-cutting",
+        "architecture",
+        "convention",
+        "workflow",
+        "bootstrap",
+        "migration",
+    )
+    combined = "\n".join(active_docs.values()).lower()
+    if any(keyword in combined for keyword in broad_keywords):
+        return True
+    if any(path in {"README.md", "pyproject.toml"} for path in changed_paths):
+        return True
+    return len(touched_slice_names) > 1
+
+
+def should_expand_to_neighboring_slices(active_docs: dict[str, str], changed_paths: list[str]) -> bool:
+    boundary_keywords = ("boundary", "interface", "invariant", "neighbor", "adjacent", "cross-slice", "compatibility")
+    combined = "\n".join(active_docs.values()).lower()
+    return any(keyword in combined for keyword in boundary_keywords)
+
+
+def build_reconcile_scope(
+    repo_metadata: dict | None,
+    active_docs: dict[str, str],
+    changed_paths: list[str],
+) -> dict:
+    repo_mode = (repo_metadata or {}).get("repo_mode", "normal-repo")
+    if repo_mode not in {"large-repo", "mega-repo"}:
+        return {
+            "mode": "full",
+            "repo_mode": repo_mode,
+            "reason": "normal-repo uses full initiative-end synthesis",
+            "touched_paths": changed_paths,
+            "touched_slices": [],
+            "neighbor_slices": [],
+            "global_docs": ["product-overview.md", "tech-overview.md", "summary.md"],
+            "canon_doc_scope": [],
+            "code_scope": [],
+        }
+
+    canon_plan = (repo_metadata or {}).get("canon_plan", {})
+    minimum_slice_files = canon_plan.get("minimum_slice_files") or [
+        "summary.md",
+        "boundaries.md",
+        "architecture.md",
+        "invariants.md",
+        "change-guide.md",
+    ]
+    candidate_slices = (repo_metadata or {}).get("candidate_slices") or []
+    module_hints = _normalize_scope_paths(
+        [
+            module
+            for text in active_docs.values()
+            for module in extract_modules_from_doc(text)
+        ]
+    )
+    scope_paths = _normalize_scope_paths(changed_paths + module_hints)
+    touched_slice_names: list[str] = []
+    touched_code_scope: list[str] = []
+    for slice_info in candidate_slices:
+        slice_name = slice_info.get("name")
+        slice_paths = _slice_paths(slice_info)
+        if not slice_name or not slice_paths:
+            continue
+        if any(_doc_matches_scope(path, set(slice_paths)) for path in scope_paths):
+            touched_slice_names.append(slice_name)
+            touched_code_scope.extend(slice_paths)
+
+    if not touched_slice_names and candidate_slices:
+        first = candidate_slices[0]
+        touched_slice_names = [first.get("name")]
+        touched_code_scope = _slice_paths(first)
+
+    neighbor_slices: list[str] = []
+    if should_expand_to_neighboring_slices(active_docs, changed_paths):
+        for slice_info in candidate_slices:
+            name = slice_info.get("name")
+            if name and name not in touched_slice_names:
+                neighbor_slices.append(name)
+                break
+
+    global_docs = ["summary.md"]
+    if should_refresh_global_orientation(active_docs, changed_paths, touched_slice_names):
+        global_docs = ["product-overview.md", "tech-overview.md", "summary.md"]
+
+    canon_scope = set(global_docs)
+    canon_scope.update(_slice_doc_scope(touched_slice_names + neighbor_slices, minimum_slice_files))
+    return {
+        "mode": "targeted",
+        "repo_mode": repo_mode,
+        "reason": "large/mega repo initiative completion uses targeted canon reconcile",
+        "touched_paths": scope_paths,
+        "touched_slices": touched_slice_names,
+        "neighbor_slices": neighbor_slices,
+        "global_docs": global_docs,
+        "canon_doc_scope": sorted(canon_scope),
+        "code_scope": _normalize_scope_paths(touched_code_scope),
+    }
+
+
 def scale_exclusion_reason(rel_path: str) -> str | None:
     normalized = rel_path.strip("/")
     if not normalized or normalized in {".git", "__pycache__"}:
@@ -339,6 +536,7 @@ def build_canon_plan(repo_metadata: dict | None) -> dict:
     if not repo_metadata:
         return {
             "repo_mode": "legacy",
+            "strategy": "flat",
             "top_level": ["product-overview.md", "ux-overview.md", "tech-overview.md", "summary.md"],
             "directories": ["modules"],
             "prefer_context": False,
@@ -346,20 +544,25 @@ def build_canon_plan(repo_metadata: dict | None) -> dict:
         }
 
     canon_plan = repo_metadata.get("canon_plan", {})
-    top_level = list(dict.fromkeys((canon_plan.get("orientation") or []) + (canon_plan.get("routing") or [])))
-    playbooks = canon_plan.get("playbooks") or []
+    top_level = list(
+        dict.fromkeys(
+            (canon_plan.get("orientation") or [])
+            + (canon_plan.get("root_docs") or [])
+        )
+    )
     directories: list[str] = []
-    if canon_plan.get("area"):
-        directories.append("areas")
-    if playbooks:
-        directories.append("playbooks")
+    if canon_plan.get("slice_dirs"):
+        directories.extend([directory.rstrip("/") for directory in canon_plan.get("slice_dirs", [])])
+    if canon_plan.get("module_dirs"):
+        directories.extend([directory.rstrip("/") for directory in canon_plan.get("module_dirs", [])])
     module_policy = canon_plan.get("module_snapshots", "full")
-    if module_policy != "minimal":
+    if module_policy != "minimal" and "modules" not in directories:
         directories.append("modules")
     return {
         "repo_mode": repo_metadata.get("repo_mode", "normal-repo"),
+        "strategy": canon_plan.get("strategy", "flat"),
         "top_level": top_level or ["product-overview.md", "tech-overview.md", "summary.md"],
-        "directories": directories,
+        "directories": list(dict.fromkeys(directories)),
         "prefer_context": True,
         "module_snapshot_policy": module_policy,
     }
@@ -404,32 +607,42 @@ def generate_repo_context(repo_metadata: dict, repo_tree: list[dict] | None = No
     repo_mode = repo_metadata.get("repo_mode", "unknown")
     scan = repo_metadata.get("scan", {})
     dominant_languages = scan.get("dominant_languages", [])
+    build_systems = scan.get("build_systems", [])
     build_paths = scan.get("build_paths", [])
     test_paths = scan.get("test_paths", [])
-    runtime_paths = scan.get("runtime_paths", [])
-    ownership = scan.get("ownership_zone_candidates", [])
+    runtime_paths = scan.get("runtime_package_surfaces") or scan.get("runtime_paths", [])
+    major_code_zones = scan.get("major_code_zones") or scan.get("ownership_zone_candidates", [])
+    declared_modules = scan.get("declared_modules", [])
     lines = [
         "# Repo Context",
         "",
         f"- Repo mode candidate: `{repo_mode}`",
         f"- Dominant languages: {', '.join(f'`{lang}`' for lang in dominant_languages) if dominant_languages else '`unknown`'}",
-        "- Highest-signal areas:",
+        f"- Build systems: {', '.join(f'`{item}`' for item in build_systems) if build_systems else '`unknown`'}",
+        f"- Declared modules: {', '.join(f'`{item}`' for item in declared_modules[:6]) if declared_modules else '`none detected`'}",
+        "- Major code zones:",
     ]
-    if ownership:
-        for path in ownership[:5]:
+    if major_code_zones:
+        for path in major_code_zones[:5]:
             lines.append(f"  - `{path}`")
     else:
         lines.append("  - `unknown`")
     lines.extend(
         [
-            "- Build/test/runtime paths:",
+            "- Build/test/runtime surfaces:",
             f"  - Build: {', '.join(f'`{path}`' for path in build_paths) if build_paths else '`unknown`'}",
             f"  - Test: {', '.join(f'`{path}`' for path in test_paths) if test_paths else '`unknown`'}",
             f"  - Runtime: {', '.join(f'`{path}`' for path in runtime_paths) if runtime_paths else '`unknown`'}",
         ]
     )
-    if ownership:
-        lines.append(f"- Routing note: Start with `{ownership[0]}` and expand to neighboring areas only if needed.")
+    candidate_slices = repo_metadata.get("candidate_slices") or []
+    if repo_mode in {"large-repo", "mega-repo"} and candidate_slices:
+        lines.append("- Seeded slices:")
+        for slice_info in candidate_slices[:3]:
+            paths = ", ".join(f"`{path}`" for path in slice_info.get("paths", [])[:3]) or "`unknown`"
+            lines.append(f"  - `{slice_info.get('name', 'unknown')}` -> {paths}")
+    if major_code_zones:
+        lines.append(f"- Routing note: Start with `{major_code_zones[0]}` and expand to neighboring areas only if needed.")
     elif repo_tree:
         first = next(
             (

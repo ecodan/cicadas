@@ -1,5 +1,5 @@
 ---
-summary: "Extend Cicadas bootstrap and synthesis around an explicit canon-mode model, scale-classification metadata, and a richer canon artifact registry so normal, large, and mega repos can produce different artifact families while preserving a future seam for graph-backed routing."
+summary: "Evolve scan-repo into Bootstrap V3: build-first evidence gathering, scale-floor classification, strategy planning in repo.json, and orientation-plus-seeded-slices canon generation for larger repos."
 phase: "tech"
 when_to_load:
   - "When implementing or reviewing architecture, interfaces, data models, conventions, and sequencing."
@@ -43,44 +43,56 @@ next_section: "Builder review"
 
 ## Overview & Context
 
-**Summary:** This initiative extends Cicadas’ current bootstrap-and-synthesis architecture from a mostly uniform canon model to an adaptive one driven by explicit repo-scale classification. The design adds a durable classification artifact, introduces a fast structural repo scan, expands the canon artifact vocabulary beyond `modules/*.md`, updates bootstrap guidance and synthesis prompts to be mode-aware, and teaches downstream workflows how to surface the right routing artifact first. The implementation deliberately keeps machine-navigation depth lightweight and document-centric for now, while preserving a clean boundary where a future graph-backed layer can later own mechanically derivable traversal.
+**Summary:** This initiative evolves Cicadas from a mostly uniform bootstrap flow into Bootstrap V3: a staged brownfield workflow that gathers structural evidence, prefers declared build/workspace structure over directory heuristics, enforces scale floors, chooses a canon strategy explicitly, generates minimal orientation plus seeded slices for larger repos, and validates the output before completion. The design keeps graph-backed routing out of scope for now, but preserves the seam for that follow-on work.
 
-The architectural pattern is “classification + artifact plan + synthesis contract.” Bootstrap (or bootstrap guidance) first determines repo mode and records the reasoning. That mode then selects a canon plan that defines which artifact families exist and how deeply they are populated. Synthesis consumes the plan, existing canon, active specs, and code context to generate the corresponding markdown artifacts. Downstream branch/context workflows continue to use compact file-backed context, but may route to different artifact types depending on the selected mode.
+The architectural pattern is “evidence + classification + strategy plan + synthesis + validation.” `scan-repo` becomes the reusable engine for evidence gathering, structure detection, planning, and metadata refresh. `repo.json` becomes the durable machine-readable record for scale findings, detected build systems, candidate slices, chosen canon strategy, generation targets, deferred slices, and validation results. Synthesis then consumes that plan instead of improvising canon shape from a few heuristics.
 
 ### Cross-Cutting Concerns
 
-1. **Durable classification evidence** — Repo mode and its evidence must live in a stable file-backed artifact so later synthesis, maintenance, and human review can rely on it.
+1. **Durable evidence and planning** — Repo mode, build discovery, canon strategy, and validation results must live in stable file-backed metadata so later synthesis and maintenance can rely on them.
 2. **Backward compatibility** — Existing flows that expect `product-overview.md`, `tech-overview.md`, and `canon/summary.md` must continue to work even as new artifact families appear.
 3. **Human-versus-machine seam** — The design must not overfit prose canon to tasks that a future graph layer should answer mechanically.
-4. **Template-driven consistency** — New canon artifact families need templates and naming rules so different agents produce compatible outputs.
-5. **Selective depth** — Large and mega repos must not force equal documentation depth across every subtree.
-6. **Fast structural discovery** — Bootstrap needs a reusable, high-speed repo inventory for classification and navigation without repeated expensive crawls.
+4. **Build-first structure discovery** — Build/workspace/module definitions should win over directory-shape inference when present.
+5. **Template-driven consistency** — New canon artifact families need templates and naming rules so different agents produce compatible outputs.
+6. **Selective depth** — Large and mega repos must not force equal documentation depth across every subtree.
+7. **Fast structural discovery** — Bootstrap needs a reusable, high-speed repo inventory for classification and navigation without repeated expensive crawls.
 
-### Repo-Scale Heuristic
+### Repo Classification And Strategy Heuristic
 
-Classification should use a two-step heuristic: gather structural evidence first, then choose the mode from explicit rules.
+Classification should use explicit scale floors plus structural promotion. The final rule is conceptually:
+
+`repo_mode = max(scale_class, topology_class)`
 
 1. Gather evidence from a fast repo scan:
-   - top-level packages/modules and their relative size
-   - second- and third-layer aggregators
-   - dominant file types and languages
-   - build, test, packaging, and runtime path diversity
-   - likely ownership/routing zones inferred from tree boundaries
-2. Score five dimensions from `1` to `5`:
-   - `subsystem_breadth`
-   - `layer_diversity`
-   - `ownership_zone_count`
-   - `path_diversity`
-   - `routing_difficulty`
-3. Choose the mode:
-   - `normal-repo` when most scores are low, the repo has a small number of meaningful subsystems, and most brownfield work can localize after orientation plus modest module docs.
-   - `large-repo` when breadth, layers, and routing difficulty are medium-to-high, but a bounded set of area docs can still cover most work without a broad ownership map.
-   - `mega-repo` when routing difficulty and ownership-zone count are high, similar concepts appear in multiple layers or product families, and packaging/runtime/test paths vary enough that linear canon would not safely guide common brownfield work.
-4. Resolve ambiguous cases by choosing the canon shape that best supports the repo’s expected maintenance tasks, then record the ambiguity and rationale in `repo.json` instead of pretending certainty.
+   - repo file count, meaningful file count, and estimated LoC
+   - dominant languages and top-level fanout
+   - detected build/workspace systems
+   - declared modules/workspaces/subprojects
+   - major code zones, test surfaces, and runtime/package surfaces
+   - existing docs and easy-to-detect tool/runtime versions
+2. Compute scale class floors:
+   - `normal-repo` below `1K` meaningful files and below `100K` LoC
+   - `large-repo` at `1K+` meaningful files or `100K+` LoC
+   - `mega-repo` at `25K+` meaningful files or `2M+` LoC
+3. Compute topology/routing promotion signals:
+   - build-defined module count
+   - number of major code zones
+   - test/runtime/package surface count
+   - language/build-system diversity
+   - routing complexity for brownfield work
+4. Build-defined structure wins when present:
+   - Maven/Gradle/Bazel definitions outrank folder-name guesses for Java repos
+   - npm/pnpm/yarn workspace declarations outrank simple package-folder inference
+   - Python and Rust workspace/build declarations should shape routing and strategy when available
+5. Choose canon strategy from the resulting mode:
+   - `normal-repo` defaults to flat canon with top-level orientation plus module snapshots
+   - `large-repo` defaults to locality-first canon with top-level orientation plus a few seeded slice packs
+   - `mega-repo` also defaults to locality-first canon, but with stronger slice boundaries and more careful neighboring-slice guidance
+6. Record classifier uncertainty, candidate slices, deferred slices, and strategy rationale in `repo.json` rather than pretending certainty.
 
 ### Brownfield Notes
 
-This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/emergence/bootstrap.md), synthesis plumbing in [synthesize.py](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/scripts/synthesize.py), canon templates under [templates](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/templates), and downstream documentation/canon conventions. It must preserve the current compact-context contract around `canon/summary.md`, keep the top-level canon docs stable, and avoid breaking current module-snapshot consumers while new area/playbook artifacts are introduced.
+This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/emergence/bootstrap.md), scan and classification plumbing in [scan_repo.py](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/scripts/scan_repo.py), synthesis plumbing in [synthesize.py](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/scripts/synthesize.py), canon templates under [templates](/Users/dcripe/dev/code/thirdparty/cicadas/src/cicadas/templates), and downstream documentation/canon conventions. It must preserve the compact-context contract around `canon/summary.md`, keep top-level canon docs stable, and avoid breaking current repos while richer strategy-driven canon is added.
 
 ---
 
@@ -118,22 +130,22 @@ This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev
 │   ├── utils.py                     # [MODIFIED] Shared helpers for repo metadata loading, canon-plan loading, path enumeration, and validation
 │   └── command_registry.py          # [MODIFIED] Register the new scan command
 ├── src/cicadas/templates/
-│   ├── routing-guide.md             # [NEW] Template for routing-first guidance
-│   ├── area-map.md                  # [NEW] Template for mega-repo ownership/routing map
-│   ├── area.md                      # [NEW] Template for `canon/areas/*.md`
-│   ├── playbook.md                  # [NEW] Template for `canon/playbooks/*.md`
+│   ├── slice-summary.md             # [NEW] Template for seeded slice orientation
+│   ├── slice-boundaries.md          # [NEW] Template for slice ownership/boundaries
+│   ├── slice-architecture.md        # [NEW] Template for local implementation model
+│   ├── slice-invariants.md          # [NEW] Template for local invariants
+│   ├── slice-change-guide.md        # [NEW] Template for practical local change guidance
 │   ├── canon-plan.json              # [NEW] Optional schema/example for artifact families by mode
 │   ├── synthesis-prompt.md          # [MODIFIED] Teach synthesis to respect canon mode and new artifact families
-│   └── canon-summary.md             # [MODIFIED] Add cues for routing-first canon when relevant
+│   └── canon-summary.md             # [MODIFIED] Add cues for compact orientation plus local slice loading
 └── .cicadas/
     └── canon/
         ├── repo.json                # [NEW] Durable repo-scale, scan summary, and canon-plan metadata
         ├── repo-tree.jsonl          # [NEW] Streamable machine inventory for classification and tooling
         ├── repo-context.md          # [NEW] Token-efficient reload artifact derived from repo metadata and scan results
-        ├── routing-guide.md         # [NEW for large/mega]
-        ├── area-map.md              # [NEW for mega]
-        ├── areas/                   # [NEW] Area canon family
-        └── playbooks/               # [NEW] Playbook canon family
+        ├── product-overview.md      # [UPDATED] Hand-edit encouraged for large/mega history and why
+        ├── tech-overview.md         # [UPDATED] Hand-edit encouraged for large/mega rationale and constraints
+        └── slices/                  # [NEW for large/mega] Seeded local canon packs
 ```
 
 **Key structural decisions:**
@@ -155,11 +167,11 @@ This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev
 
 ---
 
-### ADR-2: Extend canon by artifact families instead of replacing existing top-level docs
+### ADR-2: Keep top-level orientation docs and add seeded slices for larger repos
 
-**Decision:** Preserve `product-overview.md`, `tech-overview.md`, and `canon/summary.md` for all modes, and add `routing-guide.md`, `area-map.md`, `areas/*.md`, and `playbooks/*.md` as optional families selected by repo mode.
+**Decision:** Preserve `product-overview.md`, `tech-overview.md`, and `canon/summary.md` for all modes, and add `slices/{slice-name}/` as the primary operational canon family for `large-repo` and `mega-repo`.
 
-**Rationale:** Existing Cicadas flows and human expectations already rely on the top-level canon docs. Extending rather than replacing them minimizes breakage while letting adaptive canon become richer for large and mega repos.
+**Rationale:** Existing Cicadas flows and human expectations already rely on the top-level canon docs. Keeping them stable while moving local working canon into slices minimizes breakage, preserves human-readable history and "why," and better matches how brownfield work actually starts.
 
 **Affects:** Templates, synthesis prompt, `synthesize.py`, branch context guidance, documentation.
 
@@ -195,11 +207,11 @@ This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev
 
 ---
 
-### ADR-6: Prefer area-oriented canon over proliferating module snapshots in large and mega repos
+### ADR-6: Prefer slice-oriented canon over proliferating module snapshots in large and mega repos
 
-**Decision:** In `large-repo` and `mega-repo` modes, treat `areas/*.md` as the primary operational docs and make `modules/*.md` optional or selective.
+**Decision:** In `large-repo` and `mega-repo` modes, treat seeded slice packs as the primary operational docs and make `modules/*.md` optional or selective.
 
-**Rationale:** The problem statement is about safe routing and operational ownership, not documenting every leaf module uniformly. Area docs better match the Builder and agent journeys for large repos, while module snapshots remain useful where a subsystem is broad and stable.
+**Rationale:** The problem statement is about safe routing and operational ownership, not documenting every leaf module uniformly. Slice packs better match the Builder and agent journeys for large repos, while module snapshots remain useful where a subsystem is already a strong local reasoning unit.
 
 **Affects:** Bootstrap guidance, synthesis prompt, template set, branch-start context guidance.
 
@@ -242,19 +254,30 @@ This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev
       }
     ],
     "ambiguous_with": ["mega-repo"],
-    "decision_note": "Routing matters, but a bounded set of area docs should still cover common work."
+    "decision_note": "Routing matters, but a few strong local slices should cover common work better than a broad parallel hierarchy."
   },
   "canon_plan": {
     "orientation": ["product-overview.md", "tech-overview.md", "summary.md"],
-    "routing": ["routing-guide.md"],
-    "area": ["areas/"],
-    "playbooks": [],
-    "module_snapshots": "selective"
+    "slice_dirs": ["slices/"],
+    "seeded_slice_count": 3,
+    "minimum_slice_files": ["summary.md", "boundaries.md", "architecture.md", "invariants.md", "change-guide.md"],
+    "module_snapshots": "minimal"
   },
+  "slice_strategy": {
+    "unit": "slice",
+    "bootstrap_mode": "seeded-lazy",
+    "path_policy": "contiguous-by-default",
+    "allow_multi_path_when": "Only when repeated real work shows strong co-change across paths.",
+    "deepen_on": ["initiative-start", "tweak-start", "bug-start"]
+  },
+  "candidate_slices": [
+    {"name": "bootstrap", "paths": ["src/cicadas/emergence"], "status": "seeded"},
+    {"name": "scripts", "paths": ["src/cicadas/scripts"], "status": "seeded"},
+    {"name": "templates", "paths": ["src/cicadas/templates"], "status": "deferred"}
+  ],
   "depth_policy": {
-    "deep": ["bootstrap", "synthesis", "branch-context"],
-    "shallow": ["installer"],
-    "deferred": ["legacy-integrations"]
+    "seeded": ["bootstrap", "scripts"],
+    "deferred": ["templates"]
   },
   "graph_follow_on": {
     "status": "not_available",
@@ -268,12 +291,14 @@ This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev
 ```
 
 **Key field decisions:**
-- `scan` — provides a compact summary of the fast crawler output and points to the durable tree artifact.
+- `scan` — provides a compact summary of the evidence-gathering pass and points to the durable inventory and context artifacts.
 - `repo_mode` — explicit top-level field so downstream readers do not have to inspect nested decision data.
-- `classification.heuristic_scores` — makes the scale heuristic inspectable and testable instead of implicit.
+- `classification.scale_class` and `classification.topology_class` — make it obvious how the final mode was chosen.
 - `classification.evidence` — structured as signal/observation pairs so scripts and humans can both inspect why a mode was chosen.
-- `canon_plan` — enumerates artifact families and keeps optional families explicit instead of inferred only from prose.
-- `depth_policy` — supports the PRD requirement to mark deep, shallow, and deferred areas.
+- `build_systems` and `declared_modules` — capture build-first structure directly rather than burying it inside weak path heuristics.
+- `canon_plan` — records chosen strategy, targets, seeded slices, and validation steps so generation is plan-driven.
+- `slice_strategy` and `candidate_slices` — encode the canon unit for larger repos, the lazy-deepening policy, and the initial set of slices bootstrap should seed.
+- `validation` — stores best-effort QA results and any autocorrections performed.
 - `graph_follow_on` — records the seam and parking-lot status without pretending graph functionality exists.
 
 ```jsonl
@@ -305,8 +330,8 @@ This touches the existing bootstrap guidance in [bootstrap.md](/Users/dcripe/dev
 
 | Model | Change | Migration Required? |
 |-------|--------|-------------------|
-| `canon/` artifact set | Add `repo.json`, `repo-tree.jsonl`, `repo-context.md`, and optionally `routing-guide.md`, `area-map.md`, `areas/`, `playbooks/` | No code migration; docs/template generation change only |
-| Synthesis response format | Expand accepted `File: canon/...` blocks to include `areas/*.md`, `playbooks/*.md`, and new top-level canon files | No stored data migration; parser update only |
+| `canon/` artifact set | Add `repo.json`, `repo-tree.jsonl`, `repo-context.md`, and for larger repos `slices/` | No code migration; docs/template generation change only |
+| Synthesis response format | Expand accepted `File: canon/...` blocks to include `slices/{slice-name}/*.md` and new top-level canon files | No stored data migration; parser update only |
 | Bootstrap mental model | Move from fixed module-oriented outputs to mode-aware canon plans | No data migration; documentation and workflow update |
 
 ### Schema / Migration Notes
@@ -319,17 +344,20 @@ The migration path is additive. Existing repos without `repo.json` should be tre
 
 ### New Endpoints / Commands
 
-This initiative should add one explicit user-facing helper command for fast structural discovery:
+This initiative should evolve the explicit user-facing `scan-repo` helper command into the Bootstrap V3 engine for evidence gathering, planning, and metadata refresh:
 
 ```text
 python src/cicadas/scripts/cicadas.py scan-repo [--root PATH] [--output PATH] [--summary-depth N]
 Behavior:
-  - crawls the repo tree concurrently
-  - records file and directory sizes, kinds, extensions, and dominant types
-  - emits cheap summaries for high-value directories and selected files
+  - crawls the repo tree concurrently with streamed inventory output
+  - computes meaningful file count, estimated LoC, language distribution, and top-level fanout
+  - detects supported build/workspace systems for Java, Node/TS, Python, and Rust
+  - records declared modules, major code zones, test surfaces, and runtime/package surfaces
+  - chooses `scale_class`, `topology_class`, `repo_mode`, and canon strategy
   - writes `.cicadas/canon/repo-tree.jsonl`
-  - updates `.cicadas/canon/repo.json` scan summary fields
+  - updates `.cicadas/canon/repo.json` with evidence, plan, slice strategy, candidate slices, and validation metadata
   - writes `.cicadas/canon/repo-context.md` as the compact reload artifact
+  - surfaces progress in phases with throughput/ETA during scanning
 Errors:
   - inaccessible paths are skipped and reported
   - output write failures are fatal
@@ -344,8 +372,9 @@ Behavior:
   - if canon/repo.json is missing, runs a lightweight scan/classification backfill before continuing
   - may read canon/repo-tree.jsonl when present
   - should prefer canon/repo-context.md for prompt-efficient reloads when present
+  - generates canon from the explicit strategy plan in repo.json
   - falls back to legacy canon shape when absent
-  - accepts and applies new canon artifact families
+  - accepts and applies new canon artifact families, including seeded slice outputs
 Errors:
   - missing repo.json is not fatal
   - invalid repo.json reports actionable schema errors
@@ -365,16 +394,20 @@ class ClassificationEvidence:
 
 @dataclass
 class RepoScanSummary:
-    top_level_entries: int
+    meaningful_file_count: int
+    estimated_loc: int
     dominant_languages: list[str]
-    ownership_zone_candidates: list[str]
+    build_systems: list[str]
+    major_code_zones: list[str]
 
 @dataclass
 class CanonPlan:
     repo_mode: str
+    strategy: str
     required_files: list[str]
     optional_files: list[str]
-    area_dirs: list[str]
+    slice_dirs: list[str]
+    module_dirs: list[str]
     module_snapshot_policy: str  # "full" | "selective" | "minimal"
 
 def load_repo_metadata(canon_dir: Path) -> dict: ...
@@ -385,7 +418,7 @@ def build_canon_plan(repo_metadata: dict | None) -> CanonPlan: ...
 def enumerate_canon_targets(plan: CanonPlan) -> list[str]: ...
 ```
 
-The key contract is that synthesis should no longer hardcode only top-level docs plus `modules/`. Instead, a plan-driven enumerator should decide which canon files are gathered from existing canon and which output paths are valid targets during apply.
+The key contract is that synthesis should no longer hardcode only top-level docs plus `modules/`. Instead, a plan-driven enumerator should decide which canon files are gathered from existing canon and which output paths are valid targets during apply, including seeded `slices/{slice-name}/` layouts for larger repos.
 
 ### Backward Compatibility
 
@@ -409,8 +442,8 @@ Existing canon consumers remain supported:
 | Python helpers | `snake_case` | `load_repo_metadata()` |
 | Data artifact keys | `snake_case` | `graph_follow_on` |
 | Repo modes | `kebab-case` string values | `large-repo` |
-| Canon artifact families | directory or file nouns | `areas/`, `playbooks/`, `routing-guide.md` |
-| Templates | canonical artifact name | `area-map.md` |
+| Canon artifact families | directory or file nouns | `slices/`, `modules/`, `routing-guide.md` |
+| Templates | canonical artifact name | `slice-summary.md` |
 | Scan commands | verb-noun kebab case | `scan-repo` |
 
 ### Error Handling Pattern
@@ -438,10 +471,9 @@ def load_repo_metadata(canon_dir: Path) -> dict | None:
 def test_synthesize_supports_large_repo_artifacts(tmp_path):
     repo = init_temp_repo(tmp_path)
     write_repo_metadata(repo, mode="large-repo")
-    write_existing_canon(repo, ["product-overview.md", "routing-guide.md", "areas/api.md"])
+    write_existing_canon(repo, ["product-overview.md", "slices/api/summary.md"])
     context = gather_context("initiative-name", is_initiative=True)
-    assert "routing-guide.md" in context["canon_docs"]
-    assert "areas/api.md" in context["canon_docs"]
+    assert "slices/api/summary.md" in context["canon_docs"]
 ```
 
 **Coverage expectations:** Add focused unit coverage for heuristic scoring, repo scan output, plan loading/enumeration, and integration-style tests for synthesis gather/apply behavior across legacy, large-repo, and mega-repo cases.
@@ -467,7 +499,7 @@ def test_synthesize_supports_large_repo_artifacts(tmp_path):
 | Bootstrap classification overhead | Stay within the same general cost class as current deep discovery | Use structural heuristics and selected artifact planning, not exhaustive per-file semantic indexing. |
 | Repo crawl speed | Complete fast enough to feel interactive on large repos | Use concurrent directory walking and cheap per-file metadata collection, with summaries limited to selected nodes and streamed JSONL output. |
 | Synthesis context size | Avoid unbounded prompt growth for large/mega repos | Gather canon artifacts by plan and selected directories instead of indiscriminately loading every possible future file. |
-| Branch-start context utility | Keep first-hop context concise | Preserve `canon/summary.md` and add `repo-context.md` as compact defaults, then link outward to routing/area artifacts. |
+| Branch-start context utility | Keep first-hop context concise | Preserve `canon/summary.md` and add `repo-context.md` as compact defaults, then link outward to seeded slice artifacts. |
 
 ### Observability
 
@@ -479,21 +511,21 @@ def test_synthesize_supports_large_repo_artifacts(tmp_path):
 
 ## Implementation Sequence
 
-1. **Foundation** *(blocking)* — Define `repo.json`, `repo-tree.jsonl`, and `repo-context.md` contracts, the explicit heuristic-scoring model, canon-plan helpers, and artifact-family enumeration rules.
-2. **Repo scan utility** *(depends on 1)* — Add `scan-repo` command, concurrent crawling, summary generation rules, and metadata writers.
-3. **Template layer** *(depends on 1)* — Add templates for routing guide, area map, area docs, and playbooks; update canon summary and synthesis prompt wording.
-4. **Synthesis plumbing** *(depends on 1-3)* — Extend `synthesize.py` gather/apply logic and shared helpers so adaptive artifacts are recognized and written correctly.
-5. **Bootstrap guidance** *(depends on 1-3)* — Update `bootstrap.md` so discovery, classification, scan usage, and canon planning produce the right artifact expectations.
-6. **Compatibility and docs** *(depends on 2-5)* — Update canon/README guidance so legacy and adaptive modes are both documented clearly.
-7. **Testing** *(parallel with 2-6 once 1 exists)* — Add real-filesystem tests for JSONL scan shape, repo-context generation, heuristic classification, legacy fallback, large-repo artifacts, mega-repo artifacts, and invalid-metadata handling.
-8. **Polish** *(depends on 4-7)* — Refine copy, fallback warnings, and graph-follow-on parking-lot language.
+1. **Evidence foundation** *(blocking)* — Expand `scan-repo` so it gathers scale metrics, build/workspace structure, major code zones, and routed surfaces while preserving streamed output and fast progress reporting.
+2. **Classification and strategy planning** *(depends on 1)* — Add explicit `scale_class`, `topology_class`, `repo_mode`, and canon strategy selection, then record generation/validation plans in `repo.json`.
+3. **Synthesis plumbing** *(depends on 1-2)* — Extend `synthesize.py` so canon generation is driven by the recorded plan rather than ad hoc mode logic.
+4. **Template and guidance layer** *(depends on 2)* — Update bootstrap guidance, prompts, and templates to explain Bootstrap V3 in clear human language and support seeded slice output.
+5. **Validation and autocorrection** *(depends on 3-4)* — Validate generated canon against the selected plan and structural evidence, fixing cheap issues automatically when safe.
+6. **Compatibility and docs** *(depends on 1-5)* — Preserve lazy backfill for older repos and update README/canon guidance so the evolved workflow is understandable.
+7. **Testing** *(parallel with 2-6 once 1 exists)* — Add real-filesystem tests for build detection, scale floors, strategy planning, seeded-slice generation, best-effort validation, and legacy fallback.
+8. **Polish** *(depends on 3-7)* — Refine explanations, completion summaries, and graph-follow-on parking-lot language.
 
-Legacy upgrade behavior should be implemented during synthesis plumbing: when `repo.json` is absent, run the lightweight scan path, write backfilled metadata plus `repo-tree.jsonl` and `repo-context.md`, and proceed with the resulting plan instead of blocking the workflow.
+Legacy upgrade behavior should be implemented through the evolved `scan-repo` path: when `repo.json` is absent, run the evidence/classification/strategy pass, write backfilled metadata plus `repo-tree.jsonl` and `repo-context.md`, and proceed with the resulting plan instead of blocking the workflow.
 
-**Parallel work opportunities:** Once the schemas and heuristic contract are settled, scan implementation, template creation, synthesis parser updates, and documentation updates can proceed in parallel. Tests can also be developed alongside scan and synthesis changes using temp repos.
+**Parallel work opportunities:** Once the evidence schema and planning contract are settled, synthesis changes and template/guidance updates can proceed in parallel. Tests can also be developed alongside scan and synthesis changes using temp repos.
 
 **Known implementation risks:**
-- The current synthesis prompt/apply format may need small contract changes to handle a broader set of canon paths consistently.
-- If `repo.json` or the heuristic scores are underspecified, agents may diverge in how they classify or plan artifacts.
+- Build-system detection could underfit real monorepos if supported patterns are too shallow, so the MVP must prioritize strong Java, Node/TS, Python, and Rust detection.
+- If `repo.json` under-specifies scale class, topology class, or strategy rationale, agents may diverge in how they classify or plan artifacts.
 - A naive repo scanner could become I/O-bound or generate noisy summaries, so JSONL output and context-summary generation must stay cheap and selective.
-- There is a risk of making area docs too similar to module snapshots unless template differences are made explicit.
+- There is a risk of making orientation docs and slice docs too similar unless template differences are made explicit.

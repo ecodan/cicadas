@@ -1,5 +1,5 @@
 ---
-summary: "Design the adaptive-canon experience as a CLI-first workflow that helps Builders and agents understand repo classification, trust the evidence, and choose the right routing artifacts without turning canon into a mechanically exhaustive navigation dump."
+summary: "Design the adaptive-canon experience as a CLI-first workflow that helps Builders and agents trust repo classification, start from compact orientation, and then load the smallest useful seeded slice pack for the next local change."
 phase: "ux"
 when_to_load:
   - "When designing or reviewing journeys, flows, states, copy, and interaction constraints."
@@ -61,7 +61,7 @@ next_section: "Builder review"
 **Entry point:** Builder starts bootstrap on a brownfield repo and wants confidence that Cicadas understands the repo’s operational shape.
 **First touchpoint:** CLI or generated bootstrap summary reports the selected scale, evidence, and expected canon outputs.
 **Key moment:** The Builder sees a classification explanation that sounds grounded in repo structure and maintenance reality, not just vague size language.
-**Exit state:** The Builder can accept the mode, understand what artifacts will be created, and use the routing guide or area docs as the next step.
+**Exit state:** The Builder can accept the mode, understand what artifacts will be created, and use the first seeded slice pack as the next step.
 **Pain points to design around:** Opaque heuristics, overconfident classification, too much prose before actionable next steps, and uncertainty about what to read first.
 
 ---
@@ -69,8 +69,8 @@ next_section: "Builder review"
 ### Implementation Agent on a Mega Repo — Start Safely from Symptoms
 
 **Entry point:** Agent is asked to fix or change something from the inside out, starting from a symptom, endpoint, package, or failing test.
-**First touchpoint:** Compact canon summary points the agent to the routing guide, area map, and likely high-signal area docs instead of a broad narrative overview.
-**Key moment:** The agent can identify a plausible owning area and nearby risk boundaries before opening many files.
+**First touchpoint:** Compact canon summary points the agent to the most likely slice pack instead of a broad narrative overview.
+**Key moment:** The agent can identify a plausible owning slice and nearby risk boundaries before opening many files.
 **Exit state:** The agent has a safe first-hop path through the canon and understands which artifacts are authoritative for routing versus judgment.
 **Pain points to design around:** Wrong-area starts, duplicated routing advice across docs, unclear “do not touch casually” warnings, and confusion between canon guidance and future graph-derived navigation.
 
@@ -100,22 +100,23 @@ Adaptive Bootstrap Output
 │   ├── product-overview.md
 │   └── tech-overview.md
 ├── Routing Canon
-│   ├── routing-guide.md
-│   └── area-map.md (mega-repo only)
-├── Area Canon
-│   └── areas/*.md
-├── Playbooks
-│   └── playbooks/*.md (mega-repo or later as needed)
+├── Slice Canon
+│   └── slices/{slice-name}/
+│       ├── summary.md
+│       ├── boundaries.md
+│       ├── architecture.md
+│       ├── invariants.md
+│       └── change-guide.md
 └── Compact Reload Artifacts
     ├── canon summary
-    └── area-level summaries
+    └── slice-level summaries
 ```
 
 ### Navigation Model
 
 **Primary nav:** Command output plus file-path handoff to the next best artifact  
-**Secondary nav:** Cross-links inside generated markdown artifacts, especially from orientation to routing and from routing to areas/playbooks  
-**Key entry points:** Bootstrap result summary, `canon/summary.md`, routing-guide, area-map, and area docs surfaced for the current task type
+**Secondary nav:** Cross-links inside generated markdown artifacts, especially from orientation to slices and between neighboring slices  
+**Key entry points:** Bootstrap result summary, `canon/summary.md`, `canon/repo-context.md`, and the seeded slice docs surfaced for the current task type
 
 ---
 
@@ -139,11 +140,11 @@ Adaptive Bootstrap Output
 
 1. Builder or agent starts from a symptom, failing test, endpoint, module, or package.
 2. They open the compact canon summary or bootstrap handoff artifact.
-3. Cicadas points them to the routing guide or area map before broad narrative docs when routing risk is high.
-4. They follow the recommended first owning area and inspect neighboring areas, risky boundaries, and likely tests.
-5. They arrive at a plausible starting area with a short list of first files and first checks.
+3. Cicadas points them to the most likely seeded slice before broad narrative docs when routing risk is high.
+4. They follow the recommended first slice and inspect neighboring slices, risky boundaries, and likely tests.
+5. They arrive at a plausible starting slice with a short list of first files and first checks.
 
-**Alternate path A:** If no graph-backed layer exists, area docs and playbooks carry more of the routing burden.
+**Alternate path A:** If no graph-backed layer exists, seeded slice packs carry more of the routing burden.
 **Alternate path B:** If graph-backed routing exists later, canon redirects mechanically derivable adjacency questions toward the graph while keeping human judgment in the docs.
 
 ---
@@ -152,7 +153,7 @@ Adaptive Bootstrap Output
 
 1. Maintainer proposes adding richer routing or dependency-oriented detail.
 2. They check whether the detail is durable human guidance or future machine-navigation logic.
-3. If it is human judgment, it is added to canon artifacts such as routing guides, area docs, or playbooks.
+3. If it is human judgment, it is added to canon artifacts such as orientation docs or slice packs.
 4. If it is mainly mechanical traversal and the graph project is not available, it is recorded as parking-lot follow-on scope rather than bloating MVP canon.
 5. If the graph project later lands, the navigation detail moves to that layer and canon stays concise and judgment-rich.
 
@@ -168,7 +169,7 @@ Adaptive Bootstrap Output
 | **Loading** | Discovery and heuristic evaluation are in progress | Progress-oriented messaging that classification is inspecting repo structure, ownership shape, and routing complexity. |
 | **Populated** | Classification completed successfully | Selected mode, key evidence bullets, expected canon artifacts, and the recommended first artifact to read next. |
 | **Error** | Discovery or classification fails | Clear failure message, what signal could not be collected, and the safest fallback path. |
-| **Success** | Canon artifacts were generated | Confirmation plus a prioritized handoff such as “Start with `routing-guide.md` for brownfield routing.” |
+| **Success** | Canon artifacts were generated | Confirmation plus a prioritized handoff such as “Start with the seeded slice pack for your likely change area.” |
 | **Disabled** | A graph-backed feature is referenced before it exists | An explicit note that graph-assisted routing is a follow-on capability and that the current canon is using the non-graph fallback. |
 
 ### Routing Artifact Experience
@@ -177,9 +178,9 @@ Adaptive Bootstrap Output
 |-------|---------|-------------------|
 | **Empty** | No routing artifact is needed for `normal-repo` | A brief explanation that the repo is small enough for orientation plus module docs. |
 | **Loading** | Agent is deciding which artifact to surface | A lightweight handoff message naming the candidate artifact and why it is being chosen. |
-| **Populated** | Routing artifacts exist | A concise artifact index showing where to start, what to inspect second, and which neighboring areas may matter. |
-| **Error** | Expected routing artifact is missing or stale | A warning that the artifact is unavailable and a fallback path through orientation or area docs. |
-| **Success** | User confirms the starting area was useful | Encouragement to continue with the recommended area docs, tests, or playbooks. |
+| **Populated** | Slice artifacts exist | A concise artifact index showing where to start, what to inspect second, and which neighboring slices may matter. |
+| **Error** | Expected slice artifact is missing or stale | A warning that the artifact is unavailable and a fallback path through orientation or neighboring slices. |
+| **Success** | User confirms the starting slice was useful | Encouragement to continue with the recommended slice docs, tests, or neighboring slice references. |
 | **Disabled** | Parked graph-dependent feature is requested | A reminder that this navigation depth is intentionally parked pending the graph follow-on. |
 
 ---
@@ -200,7 +201,7 @@ Adaptive Bootstrap Output
 | Primary CTA | `Review classification and generate canon` |
 | Empty state headline | `Adaptive canon starts by classifying how this repo should be understood.` |
 | Primary error message | `Cicadas couldn’t classify this repo confidently from the available signals. Review the evidence and choose the canon shape that best fits expected maintenance work.` |
-| Success confirmation | `Canon generated for large-repo mode. Start with routing-guide.md for brownfield routing.` |
+| Success confirmation | `Canon generated for large-repo mode. Start with the most likely seeded slice for brownfield routing.` |
 | Onboarding headline | `Choose the canon shape that helps future changes start in the right place.` |
 
 ---

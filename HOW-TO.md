@@ -86,7 +86,7 @@ Cicadas uses a two-layer branching hierarchy to manage concurrent work and ensur
 | **Reflect** | Keeping active specs in sync with code *during* development. |
 | **Code Review** | Optional agent operation run after Reflect, before opening a PR or merging. Evaluates the diff against active specs, security patterns, correctness bugs, and code quality. Writes a structured `review.md` to `.cicadas/active/{initiative}/` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` reads this verdict and blocks on `BLOCK`. |
 | **Signal** | Broadcasting breaking changes to other peer branches. |
-| **Synthesis** | Overwriting Canon on `main` at the end of an initiative. |
+| **Synthesis** | Updating Canon on `main` at the end of an initiative. Full for normal repos; targeted reconcile for large/mega repos. |
 | **Lifecycle** | Per-initiative `lifecycle.json` (in drafts/active) defines PR boundaries (specs, initiatives, features, tasks) and an ordered step list. Created during Approach (for example, `python src/cicadas/scripts/cicadas.py create-lifecycle {name}`). |
 | **Status (Merged/Next)** | When lifecycle exists, `python src/cicadas/scripts/cicadas.py status` reports which branches are merged and suggests the next step (git-based; no host API). |
 | **Open PR** | `python src/cicadas/scripts/cicadas.py open-pr` opens a PR from the current branch (uses `gh` or `glab` if installed; else Bitbucket URL or fallback message). |
@@ -154,7 +154,9 @@ If the host agent/runtime supports context clearing or compaction, the skill ask
     - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` blocks on `BLOCK`.
     - **Complete Feature**: Merges back to the Initiative Branch.
 8.  **Complete Initiative**: *"Complete initiative [initiative-name]."*
-    - Merges Initiative Branch to `main`, **Synthesizes** the Canon on `main`, and **Archives** the specs.
+    - Merges Initiative Branch to `main`, updates Canon on `main`, and **Archives** the specs.
+    - `normal-repo` initiatives run the traditional broad synthesis pass.
+    - `large-repo` and `mega-repo` initiatives run targeted canon reconcile: touched slices first, neighboring slices only when the work changed interfaces, boundaries, or invariants, and global orientation docs only when repo-wide truth changed.
 
 ---
 
@@ -164,7 +166,9 @@ If you are starting with an existing codebase that lacks Cicadas documentation, 
 
 1.  **Initialize**: *"Initialize cicadas for this project."*
 2.  **Bootstrap**: *"Bootstrap the baseline Canon."*
-    - The Agent autonomously performs code discovery, synthesizes a full suite of docs (PRD, UX, Tech, Modules) using templates, and validates them against the code.
+    - The Agent autonomously performs code discovery, classifies the repo, writes orientation docs, and seeds only the canon structure appropriate for that scale.
+    - `normal-repo`: stays flat and module-oriented.
+    - `large-repo` / `mega-repo`: writes `repo.json`, `repo-tree.jsonl`, `repo-context.md`, and a small set of lazy starter `slices/` packs meant to deepen on first real use rather than upfront.
 3.  **Reference**: See the **Bootstrap** instruction module in `{cicadas root}/emergence/bootstrap.md` for a deep-dive on legacy migration.
 
 ---
@@ -175,6 +179,8 @@ If you are starting with an existing codebase that lacks Cicadas documentation, 
 2.  **Draft Delta**: *"I want to add [Feature X]."* (Agent authors specs aware of the existing system).
 3.  **Standard Cycle**: Follow the Approach -> Kickoff -> Feature loop.
 4.  **Update Canon**: Synthesis on `main` **updates** the existing Canon with the new reality.
+    - `normal-repo`: broad/full canon refresh.
+    - `large-repo` / `mega-repo`: targeted reconcile of touched slices, neighboring slices only when interfaces or boundaries changed, and top-level orientation only when durable repo-wide truth changed.
 
 ---
 

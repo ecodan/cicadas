@@ -70,7 +70,14 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("repo-context.md", text)
 
     def test_adaptive_canon_templates_exist(self):
-        for name in ["routing-guide.md", "area-map.md", "area.md", "playbook.md"]:
+        for name in [
+            "routing-guide.md",
+            "slice-summary.md",
+            "slice-boundaries.md",
+            "slice-architecture.md",
+            "slice-invariants.md",
+            "slice-change-guide.md",
+        ]:
             self.assertTrue((TEMPLATES / name).exists(), msg=f"{name} should exist")
 
     def test_clarify_module_uses_current_frontmatter_contract(self):
