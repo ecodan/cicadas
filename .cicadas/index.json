@@ -42,6 +42,16 @@
       "summary": "Adaptive repo classification, bootstrap V3 canon planning, and targeted reconcile landed on master.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T18:32:32.107080+00:00",
+      "branch": "tweak/stream-scan-repo-output",
+      "summary": "Reduced scan-repo peak memory by streaming repo-tree.jsonl entries during inventory build and added regression coverage proving incremental spool-to-disk behavior.",
+      "decisions": "",
+      "modules": [
+        "src/cicadas/scripts/scan_repo.py",
+        "tests/test_scan_repo.py"
+      ]
     }
   ]
 }
