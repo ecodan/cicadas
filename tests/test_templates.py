@@ -88,6 +88,20 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("summary", text)
         self.assertIn("next_section", text)
 
+    def test_graph_guidance_remains_conditional_across_workflows(self):
+        clarify = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()
+        bug_fix = (ROOT / "src" / "cicadas" / "emergence" / "bug-fix.md").read_text()
+        tweak = (ROOT / "src" / "cicadas" / "emergence" / "tweak.md").read_text()
+        routing = (TEMPLATES / "routing-guide.md").read_text()
+        area_map = (TEMPLATES / "area-map.md").read_text()
+
+        self.assertIn("graph artifacts are missing or stale", clarify)
+        self.assertIn("graph support is absent", bug_fix)
+        self.assertIn("graph artifacts are not present", tweak)
+        self.assertIn("graph-backed tooling when available", routing)
+        self.assertIn("graph area names aligned with canon slices", routing)
+        self.assertIn("optional code graph", area_map)
+
 
 if __name__ == "__main__":
     unittest.main()

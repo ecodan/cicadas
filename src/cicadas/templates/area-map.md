@@ -19,3 +19,4 @@
 ## First-Hop Guidance
 
 - For `{task-shape}`, begin in `{area}` and inspect `{neighbor}` second.
+- If the optional code graph is available, ensure `graph area` resolves to these same canon-seeded area names so graph output and prose routing guidance stay consistent.

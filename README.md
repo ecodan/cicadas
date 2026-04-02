@@ -86,6 +86,7 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
 *   **Start Feature**: `python src/cicadas/scripts/cicadas.py branch {feature} --intent "..."`
     - Parallel `feat/` partitions still auto-create linked worktrees by default.
     - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts in.
+*   **Optional Code Graph**: Repo owners can opt in with `python src/cicadas/scripts/cicadas.py graph build`. When `.cicadas/graph/` exists, agents may use `graph area`, `graph tests`, `graph callers`, `graph signature-impact`, and `graph route` to shrink the first-hop search space in large and mega repos. When graph artifacts are absent, Cicadas continues with `canon/summary.md`, `canon/repo-context.md`, routing guides, and targeted code reads.
 *   **Reflect**: When code implementation diverges from the plan, we update the active specs *immediately* (and before every commit on feat/task branches).
     - Reflect refreshes the affected specs' front matter as well as their prose content so the compact routing metadata stays accurate.
 *   **Code Review** (optional): After Reflect; before committing on feature branches; before opening a PR or merging. The agent evaluates the diff against specs, security, correctness, and quality — producing a structured `review.md` artifact with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` checks this verdict and blocks on `BLOCK`.
@@ -126,6 +127,10 @@ All scripts are in `src/cicadas/scripts/`.
 | **Unarchive** | `python src/cicadas/scripts/cicadas.py unarchive {name}` |
 | **Abort** | `python src/cicadas/scripts/cicadas.py abort` |
 | **Project History** | `python src/cicadas/scripts/cicadas.py history` |
+| **Graph Build** | `python src/cicadas/scripts/cicadas.py graph build` |
+| **Graph Status** | `python src/cicadas/scripts/cicadas.py graph status` |
+| **Graph Query** | `python src/cicadas/scripts/cicadas.py graph area|neighbors|tests|callers|callees|signature-impact|route ...` |
+| **Graph Usage** | `python src/cicadas/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` |
 | **Validate Skill** | `python src/cicadas/scripts/cicadas.py validate-skill {slug}` |
 | **Publish Skill** | `python src/cicadas/scripts/cicadas.py skill-publish {slug} [--publish-dir DIR] [--symlink] [--force]` |
 
@@ -154,6 +159,7 @@ The **Cicadas** toolset manages the `.cicadas/` directory:
     │       └── events.jsonl    # Append-only event log (lifecycle + agent events)
     ├── drafts/                 # Staging area for new initiatives
     ├── archive/                # Expired specs (historical record)
+    ├── graph/                  # Optional local code graph artifacts + usage log
     └── registry.json           # Active initiatives & branch registry
 ```
 

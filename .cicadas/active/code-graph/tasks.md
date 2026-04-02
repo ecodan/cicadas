@@ -1,5 +1,5 @@
 ---
-summary: "Execute Code Graph in four partitions: the graph foundation, query CLI, and observability are complete, including optional SQLite-backed graph builds, graph queries, and local usage logging/reporting with end-to-end timing. The remaining work is workflow integration and the initiative-level PR review."
+summary: "Execute Code Graph in four partitions: foundation, query CLI, observability, and workflow integration are complete. The initiative now has optional graph build/query/usage commands plus graph-aware skill, emergence, and routing guidance. The remaining step is the initiative PR boundary."
 phase: "tasks"
 when_to_load:
   - "When selecting the next implementation task or reviewing partition completion for Code Graph."
@@ -20,7 +20,7 @@ index:
   partition_observability: "## Partition: feat/graph-observability"
   partition_integration: "## Partition: feat/graph-workflow-integration"
   initiative_boundary: "## Initiative Boundary"
-next_section: "## Partition: feat/graph-workflow-integration"
+next_section: "## Initiative Boundary"
 ---
 
 # Tasks: Code Graph
@@ -56,11 +56,11 @@ next_section: "## Partition: feat/graph-workflow-integration"
 
 ## Partition: feat/graph-workflow-integration
 
-- [ ] Update Cicadas skill and emergence guidance to prefer graph-backed routing when work begins from a symptom, symbol, or failing test and graph artifacts are available <!-- id: 60 -->
-- [ ] Update README, internal docs, and routing templates to describe the optional graph subsystem, build flow, and fallback behavior <!-- id: 61 -->
-- [ ] Update routing/area guidance to align graph area naming with canon slices and existing routing artifacts <!-- id: 62 -->
-- [ ] Add regression tests that verify graph guidance remains conditional and non-graph workflows still function cleanly when graph artifacts are absent <!-- id: 63 -->
-- [ ] Review command names, output terms, and observability field names across docs and tests for consistency with the agreed contracts <!-- id: 64 -->
+- [x] Update Cicadas skill and emergence guidance to prefer graph-backed routing when work begins from a symptom, symbol, or failing test and graph artifacts are available <!-- id: 60 -->
+- [x] Update README, internal docs, and routing templates to describe the optional graph subsystem, build flow, and fallback behavior <!-- id: 61 -->
+- [x] Update routing/area guidance to align graph area naming with canon slices and existing routing artifacts <!-- id: 62 -->
+- [x] Add regression tests that verify graph guidance remains conditional and non-graph workflows still function cleanly when graph artifacts are absent <!-- id: 63 -->
+- [x] Review command names, output terms, and observability field names across docs and tests for consistency with the agreed contracts <!-- id: 64 -->
 
 ## Initiative Boundary
 
