@@ -1,0 +1,33 @@
+{
+  "status": "complete",
+  "build_id": "2026-04-02T20:24:24Z",
+  "language_filter": "auto",
+  "started_at": "2026-04-02T20:24:24Z",
+  "updated_at": "2026-04-02T20:24:25Z",
+  "phase": "complete",
+  "message": "Graph build complete",
+  "repo_entries_total": 1401,
+  "structural_files_total": 1269,
+  "structural_files_processed": 1269,
+  "python_files_total": 576,
+  "python_files_processed": 576,
+  "java_files_total": 0,
+  "java_files_processed": 0,
+  "percent_complete": 100,
+  "elapsed_seconds": 2,
+  "eta_seconds": 0,
+  "indexed_languages": [
+    "javascript",
+    "json",
+    "markdown",
+    "python",
+    "shell",
+    "toml",
+    "xml",
+    "yaml"
+  ],
+  "seeded_areas": 2,
+  "symbols_indexed": 6466,
+  "java_symbols_indexed": 0,
+  "db_path": "/Users/dcripe/dev/code/thirdparty/cicadas/.cicadas/graph/codegraph.sqlite"
+}

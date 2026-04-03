@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "build_id": "2026-04-02T20:24:24Z",
+  "generated_at": "2026-04-02T20:24:24Z",
+  "freshness": "fresh",
+  "languages_requested": "auto",
+  "indexed_languages": [
+    "javascript",
+    "json",
+    "markdown",
+    "python",
+    "shell",
+    "toml",
+    "xml",
+    "yaml"
+  ],
+  "seeded_areas": [
+    {
+      "name": "src",
+      "paths": [
+        "src"
+      ],
+      "source": "ownership_zone_candidates"
+    },
+    {
+      "name": "src-cicadas",
+      "paths": [
+        "src/cicadas"
+      ],
+      "source": "ownership_zone_candidates"
+    }
+  ],
+  "file_count": 1269,
+  "analyzers": {
+    "python": "semantic",
+    "javascript": "unavailable",
+    "java": "disabled",
+    "rust": "unavailable"
+  },
+  "symbols_indexed": 6466,
+  "java_symbols_indexed": 0
+}
