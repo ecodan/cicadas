@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import hashlib
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -138,32 +139,77 @@ class _CallCollector(ast.NodeVisitor):
         self.generic_visit(node)
 
 
-def extract_python_graph(root: Path, file_entries: list[dict], build_id: str, area_lookup: dict[str, str | None]) -> tuple[list[GraphNode], list[GraphEdge], dict]:
+def extract_python_graph(
+    root: Path,
+    file_entries: list[dict],
+    build_id: str,
+    area_lookup: dict[str, str | None],
+    progress: Callable[[dict], None] | None = None,
+    emit: Callable[[list[GraphNode], list[GraphEdge]], None] | None = None,
+) -> tuple[list[GraphNode], list[GraphEdge], dict]:
     discovered: list[_DiscoveredSymbol] = []
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
     calls_by_symbol: dict[str, list[str]] = {}
+    python_file_entries = [entry for entry in file_entries if entry.get("language") == "python" and entry.get("path")]
+    total_python_files = len(python_file_entries)
 
-    for entry in file_entries:
+    if progress is not None:
+        progress(
+            {
+                "phase": "python_extraction",
+                "message": f"python extraction started ({total_python_files} files)",
+                "python_files_processed": 0,
+                "python_files_total": total_python_files,
+            }
+        )
+
+    processed_python_files = 0
+    for entry in python_file_entries:
         rel_path = entry.get("path")
-        if entry.get("language") != "python" or not rel_path:
+        if not rel_path:
             continue
         path = root / rel_path
         try:
             tree = ast.parse(path.read_text())
         except (OSError, SyntaxError):
+            processed_python_files += 1
+            if progress is not None and (processed_python_files == total_python_files or processed_python_files % 200 == 0):
+                progress(
+                    {
+                        "phase": "python_extraction",
+                        "message": f"python extraction processed {processed_python_files}/{total_python_files} files",
+                        "python_files_processed": processed_python_files,
+                        "python_files_total": total_python_files,
+                    }
+                )
             continue
 
         collector = _FunctionCollector(rel_path=rel_path, area=area_lookup.get(rel_path), build_id=build_id)
         collector.visit(tree)
         discovered.extend(collector.symbols)
-        nodes.extend([item.node for item in collector.symbols])
-        nodes.extend(collector.test_nodes)
-        edges.extend(collector.declare_edges)
+        node_batch = [item.node for item in collector.symbols]
+        node_batch.extend(collector.test_nodes)
+        edge_batch = list(collector.declare_edges)
+        if emit is not None and (node_batch or edge_batch):
+            emit(node_batch, edge_batch)
+        else:
+            nodes.extend(node_batch)
+            edges.extend(edge_batch)
 
         call_collector = _CallCollector()
         call_collector.visit(tree)
         calls_by_symbol[rel_path] = call_collector.calls_by_qualname
+        processed_python_files += 1
+        if progress is not None and (processed_python_files == total_python_files or processed_python_files % 200 == 0):
+            progress(
+                {
+                    "phase": "python_extraction",
+                    "message": f"python extraction processed {processed_python_files}/{total_python_files} files",
+                    "python_files_processed": processed_python_files,
+                    "python_files_total": total_python_files,
+                }
+            )
 
     by_simple_name: dict[str, list[_DiscoveredSymbol]] = defaultdict(list)
     by_qualified_name: dict[str, _DiscoveredSymbol] = {}
@@ -178,12 +224,13 @@ def extract_python_graph(root: Path, file_entries: list[dict], build_id: str, ar
                 test_nodes_by_symbol[source_symbol] = node.node_id
 
     for item in discovered:
+        edge_batch: list[GraphEdge] = []
         for callee_name in calls_by_symbol.get(item.file_path, {}).get(item.node.name, []):
             targets = by_simple_name.get(callee_name, [])
             if len(targets) != 1:
                 continue
             target = targets[0]
-            edges.append(
+            edge_batch.append(
                 GraphEdge(
                     edge_id=_edge_id("calls", item.node.node_id, target.node.node_id),
                     kind="calls",
@@ -194,7 +241,7 @@ def extract_python_graph(root: Path, file_entries: list[dict], build_id: str, ar
             )
             if item.is_test_symbol and item.node.node_id in test_nodes_by_symbol:
                 test_node_id = test_nodes_by_symbol[item.node.node_id]
-                edges.append(
+                edge_batch.append(
                     GraphEdge(
                         edge_id=_edge_id("tests", test_node_id, target.node.node_id),
                         kind="tests",
@@ -204,8 +251,13 @@ def extract_python_graph(root: Path, file_entries: list[dict], build_id: str, ar
                         derived=True,
                     )
                 )
+        if emit is not None and edge_batch:
+            emit([], edge_batch)
+        else:
+            edges.extend(edge_batch)
 
     return nodes, edges, {
         "symbols_indexed": len(discovered),
         "python_mode": "semantic" if discovered else "structural",
+        "python_files_processed": processed_python_files,
     }

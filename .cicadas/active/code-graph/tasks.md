@@ -1,9 +1,9 @@
 ---
-summary: "Execute Code Graph in four partitions: foundation, query CLI, observability, and workflow integration are complete. The initiative now has optional graph build/query/usage commands plus graph-aware skill, emergence, and routing guidance. The remaining step is the initiative PR boundary."
+summary: "Execute Code Graph in five partitions. The first four partitions are complete and the graph subsystem is functional, observable, and integrated into Cicadas guidance. The new remaining work is a fifth precision/search/frontend partition that improves area granularity, adds graph-native search plus test-exclusion controls, and raises JavaScript coverage before the initiative PR boundary."
 phase: "tasks"
 when_to_load:
   - "When selecting the next implementation task or reviewing partition completion for Code Graph."
-  - "When checking initiative-only PR boundaries and execution sequencing across graph foundation, queries, observability, and integration."
+  - "When checking initiative-only PR boundaries and execution sequencing across graph foundation, queries, observability, integration, and the new precision/search tranche."
 depends_on:
   - "prd.md"
   - "ux.md"
@@ -19,8 +19,9 @@ index:
   partition_query: "## Partition: feat/graph-query-cli"
   partition_observability: "## Partition: feat/graph-observability"
   partition_integration: "## Partition: feat/graph-workflow-integration"
+  partition_precision: "## Partition: feat/graph-precision-search"
   initiative_boundary: "## Initiative Boundary"
-next_section: "## Initiative Boundary"
+next_section: "## Partition: feat/graph-precision-search"
 ---
 
 # Tasks: Code Graph
@@ -61,6 +62,16 @@ next_section: "## Initiative Boundary"
 - [x] Update routing/area guidance to align graph area naming with canon slices and existing routing artifacts <!-- id: 62 -->
 - [x] Add regression tests that verify graph guidance remains conditional and non-graph workflows still function cleanly when graph artifacts are absent <!-- id: 63 -->
 - [x] Review command names, output terms, and observability field names across docs and tests for consistency with the agreed contracts <!-- id: 64 -->
+
+## Partition: feat/graph-precision-search
+
+- [x] Refine mega-repo area seeding so hot zones can split one level deeper from canon paths and route/neighbors stop collapsing to only top-level buckets <!-- id: 80 -->
+- [x] Add area metadata and result formatting for file-count hints, modern-vs-legacy ranking, and explicit routing confidence <!-- id: 81 -->
+- [x] Implement `graph search <query>` with indexed file/symbol lookup, `--kind`, and ranking that promotes likely operational/UI entrypoints <!-- id: 82 -->
+- [x] Add a shared `--exclude-tests` CLI filter so graph hunts can focus on operational code paths instead of test artifacts <!-- id: 83 -->
+- [ ] Implement structural JavaScript/TypeScript indexing for imports, exports, top-level symbols, and likely UI surfaces <!-- id: 84 -->
+- [ ] Demote tests, DTOs, serializers, generated code, and support artifacts in search/routing ranking while boosting canon-modern surfaces <!-- id: 85 -->
+- [ ] Add regression tests and usage-log coverage for graph search, routing confidence, and test-exclusion behavior <!-- id: 86 -->
 
 ## Initiative Boundary
 

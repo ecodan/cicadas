@@ -103,6 +103,8 @@ GRAPH_DIRNAME = "graph"
 GRAPH_METADATA_FILENAME = "metadata.json"
 GRAPH_DB_FILENAME = "codegraph.sqlite"
 GRAPH_USAGE_FILENAME = "usage.jsonl"
+GRAPH_PROGRESS_FILENAME = "progress.json"
+GRAPH_PROGRESS_LOG_FILENAME = "progress-log.jsonl"
 EXCLUDED_COMPLEXITY_PREFIXES = (
     ".agents",
     ".claude",
@@ -167,6 +169,14 @@ def graph_db_path(root: Path | None = None) -> Path:
 
 def graph_usage_path(root: Path | None = None) -> Path:
     return graph_dir(root) / GRAPH_USAGE_FILENAME
+
+
+def graph_progress_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_PROGRESS_FILENAME
+
+
+def graph_progress_log_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_PROGRESS_LOG_FILENAME
 
 
 def load_graph_metadata(root: Path | None = None) -> dict | None:

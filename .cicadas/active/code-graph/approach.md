@@ -1,9 +1,10 @@
 ---
-summary: "Build Code Graph sequentially in four partitions: a foundational graph build/store layer first, then graph query commands, then observability/reporting, then workflow integration and regression coverage. The plan is intentionally phased so the public CLI and logging contracts stabilize before documentation and skill integration depend on them."
+summary: "Build Code Graph sequentially in five partitions: foundation, query commands, observability, workflow integration, and a final precision/search/frontend tranche. The new final partition deepens area granularity for mega-repos, adds graph-native search plus test-exclusion controls for operational hunts, and introduces structural JavaScript indexing so frontend routing becomes materially more useful."
 phase: "approach"
 when_to_load:
   - "When starting feature branches or reviewing graph partition scope, sequencing, and dependencies."
   - "When deciding the execution order for graph work and what must wait for contract stability."
+  - "When planning the next precision/search/frontend improvements after the initial graph CLI and observability work shipped."
 depends_on:
   - "prd.md"
   - "ux.md"
@@ -27,7 +28,7 @@ next_section: "Alternatives Considered"
 
 ## Strategy
 
-Use a phased sequential rollout with one foundational partition followed by query, observability, and integration partitions. The first partition establishes the optional graph subsystem itself: artifact layout, SQLite schema, graph IR, seeded-area loading, and graph build/status behavior. Once those contracts are stable, query commands can evolve with lower risk, observability can then instrument the settled command surface, and the final partition can wire the capability into Cicadas documentation, templates, and regression coverage without forcing rework in every downstream doc.
+Use a phased sequential rollout with one foundational partition followed by query, observability, integration, and a final precision/search/frontend partition. The first partition establishes the optional graph subsystem itself: artifact layout, SQLite schema, graph IR, seeded-area loading, and graph build/status behavior. Once those contracts are stable, query commands can evolve with lower risk, observability can then instrument the settled command surface, workflow guidance can depend on that stabilized behavior, and the final partition can deepen routing precision and frontend coverage without forcing rework in every earlier layer.
 
 This initiative is brownfield and terminal-first, so the approach prioritizes backward compatibility and explicit availability over aggressive automation. There is no attempt to hide graph setup inside normal Cicadas commands. Instead, the implementation makes graph support visible, optional, and inspectable: build explicitly, query deterministically, measure usefulness locally, and fall back cleanly to existing canon and routing artifacts when graph support is absent.
 
@@ -124,9 +125,33 @@ library
 3. Add regression tests covering absent-graph fallback messaging and graph-aware docs/template expectations.
 4. Review command names, artifact paths, and log terminology for consistency across specs and docs.
 
+### Partition 5: Graph Precision, Search & Frontend Coverage → `feat/graph-precision-search`
+**Modules**: `src/cicadas/scripts/graph_query.py`, `src/cicadas/scripts/graph.py`, `src/cicadas/scripts/graph_extract/common.py`, `src/cicadas/scripts/graph_extract/javascript.py`, `src/cicadas/scripts/graph_usage.py`, `tests/`, active graph specs under `.cicadas/active/code-graph/`
+**Scope**: Improve mega-repo routing precision by refining area granularity, add graph-native search with operational-code filters, and introduce structural JavaScript indexing so frontend entrypoint discovery becomes materially more useful.
+**Dependencies**: Requires Workflow Integration & Docs
+
+#### Artifact Type
+cli
+
+#### How to Run
+- teardown: `N/A`
+
+#### Acceptance Criteria
+- [ ] Mega-repo graphs can seed roughly `20-80` routing areas with finer canon-derived subdivisions in hot zones, and route/neighbors results expose routing confidence instead of presenting broad heuristics as equally precise.
+- [ ] `python src/cicadas/scripts/cicadas.py graph search <query>` can search indexed files or symbols by name/path, filter by kind, and rank likely operational/UI entrypoints ahead of tests, DTOs, serializers, and support code.
+- [ ] Query-oriented CLI commands support excluding tests from result sets so hunts can stay focused on operational code paths.
+- [ ] JavaScript/TypeScript structural indexing is available enough to surface imports, exports, top-level symbols, and likely UI surfaces in graph search and routing output.
+
+#### Implementation Steps
+1. Refine seeded area modeling to split broad canon slices one level deeper in hot zones, record per-area file counts, and expose routing confidence/modernity metadata in results.
+2. Add `graph search` with name/path matching, `--kind`, result ranking, and a shared `--exclude-tests` affordance for operational hunts.
+3. Implement structural JavaScript/TypeScript indexing for imports, exports, top-level symbols, and likely UI surface classification.
+4. Rank canon-marked modern surfaces and UI entrypoints above legacy/support artifacts, while demoting tests, DTOs, serializers, and generated code.
+5. Add regression coverage and usage logging fields for search/routing confidence so the next Jira-scale run produces clearer value signals.
+
 ## Sequencing
 
-Graph Foundation must land first because every other partition depends on stable graph artifact paths, metadata, and seeded area modeling. Query Commands come next so the public command set and output semantics are stable before observability starts wrapping them. Graph Observability follows once the user-visible graph operations are settled, and Workflow Integration & Docs comes last so the guidance and regression coverage reflect the final command and logging contracts.
+Graph Foundation must land first because every other partition depends on stable graph artifact paths, metadata, and seeded area modeling. Query Commands come next so the public command set and output semantics are stable before observability starts wrapping them. Graph Observability follows once the user-visible graph operations are settled, Workflow Integration & Docs then teaches the stable v1 surface, and the new Precision/Search/Frontend partition comes last so it can deliberately evolve routing/search quality on top of the already-shipped graph contracts.
 
 ```mermaid
 graph LR
@@ -134,6 +159,7 @@ graph LR
     P2 --> P3["feat/graph-observability"]
     P3 --> P4
     P2 --> P4
+    P4 --> P5["feat/graph-precision-search"]
 ```
 
 ### Partitions DAG
@@ -159,6 +185,10 @@ graph LR
 - name: feat/graph-workflow-integration
   modules: [src/cicadas/emergence, src/cicadas/templates, src/cicadas/SKILL.md, README.md, src/cicadas/README.md, tests]
   depends_on: [feat/graph-observability]
+
+- name: feat/graph-precision-search
+  modules: [src/cicadas/scripts/graph.py, src/cicadas/scripts/graph_query.py, src/cicadas/scripts/graph_extract/common.py, src/cicadas/scripts/graph_extract/javascript.py, src/cicadas/scripts/graph_usage.py, tests]
+  depends_on: [feat/graph-workflow-integration]
 ```
 
 ## Migrations & Compat
@@ -176,6 +206,7 @@ No source-code or user-data migration is required because graph artifacts are op
 | Query commands become too verbose or too confident | Keep the public command set narrow, return ranked summaries, and always show freshness/coverage context |
 | Observability logging becomes invasive or brittle | Make logging best-effort, append-only, and isolated from command success paths |
 | Integration guidance drifts from actual command behavior | Sequence docs/tests after query and observability contracts stabilize and add regression checks |
+| Precision/search work overfits Jira-scale repos and harms smaller repos | Keep deeper area splitting heuristic and optional, favor rebuild-over-migrate, and test both small fixtures and broad-path mega-repo simulations |
 
 ## Alternatives Considered
 

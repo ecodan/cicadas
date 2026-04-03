@@ -85,6 +85,7 @@ def append_usage_entry(
         "query_kind": query_kind,
         "target_type": target_type,
         "operation_name": operation_name,
+        "call_duration_ms": graph_query_ms if graph_query_ms is not None else end_to_end_ms,
         "end_to_end_ms": end_to_end_ms,
         "graph_query_ms": graph_query_ms,
         "result_count": result_count,
@@ -170,11 +171,12 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
                 "<tr>"
                 f"<td>{query_kind}</td>"
                 f"<td>{len(items)}</td>"
+                f"<td>{_avg(items, 'call_duration_ms')}</td>"
                 f"<td>{_avg(items, 'end_to_end_ms')}</td>"
                 f"<td>{_avg(items, 'graph_query_ms')}</td>"
                 "</tr>"
             )
-        body = "".join(rows) or "<tr><td colspan='4'>No graph usage recorded yet.</td></tr>"
+        body = "".join(rows) or "<tr><td colspan='5'>No graph usage recorded yet.</td></tr>"
         scope = []
         if initiative:
             scope.append(f"initiative={initiative}")
@@ -185,7 +187,7 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
             "<html><body><h1>Graph Usage</h1>"
             f"<p>Scope: {scope_text}</p>"
             f"<p>Corrupt entries ignored: {corrupt_count}</p>"
-            "<table><thead><tr><th>Query</th><th>Count</th><th>Avg end-to-end ms</th><th>Avg graph query ms</th></tr></thead>"
+            "<table><thead><tr><th>Query</th><th>Count</th><th>Avg call duration ms</th><th>Avg end-to-end ms</th><th>Avg graph query ms</th></tr></thead>"
             f"<tbody>{body}</tbody></table></body></html>"
         )
 
@@ -203,10 +205,12 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
     if corrupt_count:
         lines.append(f"Corrupt entries ignored: {corrupt_count}")
     for query_kind, items in sorted(grouped.items()):
+        avg_call_duration_ms = _avg(items, "call_duration_ms")
         avg_end_to_end_ms = _avg(items, "end_to_end_ms")
         avg_graph_query_ms = _avg(items, "graph_query_ms")
         lines.append(
             f"- {query_kind}: count={len(items)}, "
+            f"avg_call_duration_ms={avg_call_duration_ms}, "
             f"avg_end_to_end_ms={avg_end_to_end_ms}, "
             f"avg_graph_query_ms={avg_graph_query_ms}"
         )
