@@ -44,6 +44,34 @@
       "modules": []
     },
     {
+      "timestamp": "2026-04-02T04:29:30.659740+00:00",
+      "branch": "feat/graph-foundation",
+      "summary": "Add optional code graph foundation with SQLite storage, explicit build/status commands, seeded area loading, and foundation tests.",
+      "decisions": "",
+      "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:37:09.914698+00:00",
+      "branch": "feat/graph-query-cli",
+      "summary": "Add graph query commands for area, neighbors, tests, callers, callees, route, and signature-impact with Python-backed semantics and explicit analyzer coverage.",
+      "decisions": "",
+      "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:44:32.438881+00:00",
+      "branch": "feat/graph-observability",
+      "summary": "Add local graph usage logging, end-to-end timing, filterable usage reports, and observability resilience tests.",
+      "decisions": "",
+      "modules": []
+    },
+    {
+      "timestamp": "2026-04-02T04:49:28.278225+00:00",
+      "branch": "feat/graph-workflow-integration",
+      "summary": "Integrate optional graph guidance across the Cicadas skill, emergence modules, routing templates, and top-level docs while keeping graph usage conditional.",
+      "decisions": "",
+      "modules": []
+    },
+    {
       "timestamp": "2026-04-02T18:32:32.107080+00:00",
       "branch": "tweak/stream-scan-repo-output",
       "summary": "Reduced scan-repo peak memory by streaming repo-tree.jsonl entries during inventory build and added regression coverage proving incremental spool-to-disk behavior.",

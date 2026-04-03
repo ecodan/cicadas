@@ -1,0 +1,64 @@
+{
+  "name": "code-graph",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Add optional SQLite-backed code graph support for routing, blast-radius analysis, and local observability in large and mega repos.",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-04-02T04:22:42.422307+00:00"
+  },
+  "timestamp": "20260403-224521",
+  "associated_branches": {
+    "feat/graph-foundation": {
+      "intent": "Establish the optional graph subsystem, SQLite storage, metadata, and build/status commands.",
+      "modules": [
+        "src/cicadas/scripts/graph_ir.py",
+        "src/cicadas/scripts/graph_store.py",
+        "src/cicadas/scripts/graph_extract/common.py",
+        "src/cicadas/scripts/graph_build.py",
+        ".cicadas/graph"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-02T04:23:32.060329+00:00",
+      "initiative": "code-graph"
+    },
+    "feat/graph-query-cli": {
+      "intent": "Implement graph-backed routing and signature-impact query commands with ranked summaries and coverage-aware outputs.",
+      "modules": [
+        "src/cicadas/scripts/graph_extract/javascript.py",
+        "src/cicadas/scripts/command_registry.py",
+        "src/cicadas/scripts/graph_extract/rust.py",
+        "src/cicadas/scripts/graph_extract/java.py",
+        "src/cicadas/scripts/graph_query.py",
+        "src/cicadas/scripts/graph_extract/python.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-02T04:29:48.397511+00:00",
+      "initiative": "code-graph"
+    },
+    "feat/graph-observability": {
+      "intent": "Add graph-local usage logging, end-to-end timing, and graph usage reporting.",
+      "modules": [
+        "src/cicadas/scripts/graph_usage.py",
+        "src/cicadas/scripts/graph_query.py",
+        ".cicadas/graph/usage.jsonl"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-02T04:37:20.625342+00:00",
+      "initiative": "code-graph"
+    },
+    "feat/graph-workflow-integration": {
+      "intent": "Integrate optional graph guidance into Cicadas skills, docs, and routing templates.",
+      "modules": [
+        "src/cicadas/emergence",
+        "src/cicadas/SKILL.md",
+        "src/cicadas/README.md",
+        "README.md",
+        "src/cicadas/templates"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-02T04:45:18.486101+00:00",
+      "initiative": "code-graph"
+    }
+  }
+}

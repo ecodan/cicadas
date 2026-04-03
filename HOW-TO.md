@@ -184,6 +184,46 @@ If you are starting with an existing codebase that lacks Cicadas documentation, 
 
 ---
 
+## 🧭 Optional Code Graph
+
+Large and mega repos can opt into a local code graph to improve first-hop routing without changing the default Cicadas workflow:
+
+```bash
+python src/cicadas/scripts/cicadas.py graph build
+```
+
+The graph is optional. If `.cicadas/graph/` is absent, Cicadas continues to route from canon and targeted code reads.
+
+When enabled, graph build now writes progressive artifacts while it runs:
+
+- `codegraph.sqlite` — the staged/promoted SQLite graph
+- `metadata.json` — build freshness, analyzer coverage, symbol counts, seeded areas
+- `area-plan.json` — the deterministic routing areas selected for the repo
+- `progress.json` and `progress-log.jsonl` — current progress snapshot plus append-only history
+- `spool/` — streamed JSONL node/edge batches written during ingestion
+- `tools/` — extractor-side artifacts such as Java semantic batch logs and manifests
+
+Useful graph commands:
+
+- `python src/cicadas/scripts/cicadas.py graph area <file-or-symbol>`
+- `python src/cicadas/scripts/cicadas.py graph neighbors <file>`
+- `python src/cicadas/scripts/cicadas.py graph callers <symbol> --exclude-tests`
+- `python src/cicadas/scripts/cicadas.py graph signature-impact <symbol> --exclude-tests`
+- `python src/cicadas/scripts/cicadas.py graph search <query> --kind file --exclude-tests`
+- `python src/cicadas/scripts/cicadas.py graph tail`
+- `python src/cicadas/scripts/cicadas.py graph watch`
+- `python src/cicadas/scripts/cicadas.py graph usage --view table`
+
+Coverage today:
+
+- Python: semantic where available
+- JavaScript/TypeScript: structural indexing for imports, exports, top-level symbols, and likely entrypoints
+- Java: structural baseline plus semantic enrichment. Large repos may report `semantic` or `hybrid` Java coverage depending on how many semantic batches succeed locally.
+
+The Java semantic harness now keeps successful work when a few files are problematic: failed batches are bisected recursively, poisonous files are quarantined, and the rest of the semantic output is retained.
+
+---
+
 ## 🟡 Lightweight Paths (Fixes & Tweaks)
 
 For trivial changes, Cicadas supports a "fast path" that reduces documentation overhead.

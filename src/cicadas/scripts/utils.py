@@ -4,6 +4,7 @@
 import json
 import os
 import re
+import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -98,6 +99,13 @@ def load_config() -> dict:
 REPO_METADATA_FILENAME = "repo.json"
 REPO_TREE_FILENAME = "repo-tree.jsonl"
 REPO_CONTEXT_FILENAME = "repo-context.md"
+GRAPH_DIRNAME = "graph"
+GRAPH_METADATA_FILENAME = "metadata.json"
+GRAPH_DB_FILENAME = "codegraph.sqlite"
+GRAPH_AREA_PLAN_FILENAME = "area-plan.json"
+GRAPH_USAGE_FILENAME = "usage.jsonl"
+GRAPH_PROGRESS_FILENAME = "progress.json"
+GRAPH_PROGRESS_LOG_FILENAME = "progress-log.jsonl"
 EXCLUDED_COMPLEXITY_PREFIXES = (
     ".agents",
     ".claude",
@@ -117,6 +125,7 @@ EXCLUDED_COMPLEXITY_PREFIXES = (
     ".cicadas/archive",
     ".cicadas/drafts",
     ".cicadas/canon",
+    ".cicadas-skill",
     "build",
     "coverage",
     "dist",
@@ -144,6 +153,87 @@ def repo_tree_path(root: Path | None = None) -> Path:
 
 def repo_context_path(root: Path | None = None) -> Path:
     return canon_dir(root) / REPO_CONTEXT_FILENAME
+
+
+def graph_dir(root: Path | None = None) -> Path:
+    if root is None:
+        root = get_project_root()
+    return root / ".cicadas" / GRAPH_DIRNAME
+
+
+def graph_metadata_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_METADATA_FILENAME
+
+
+def graph_db_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_DB_FILENAME
+
+
+def graph_area_plan_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_AREA_PLAN_FILENAME
+
+
+def graph_usage_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_USAGE_FILENAME
+
+
+def graph_progress_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_PROGRESS_FILENAME
+
+
+def graph_progress_log_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_PROGRESS_LOG_FILENAME
+
+
+def load_graph_metadata(root: Path | None = None) -> dict | None:
+    path = graph_metadata_path(root)
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid {GRAPH_METADATA_FILENAME}: {exc}") from exc
+
+
+def save_graph_metadata(data: dict, root: Path | None = None) -> Path:
+    path = graph_metadata_path(root)
+    save_json(path, data)
+    return path
+
+
+def graph_available(root: Path | None = None) -> bool:
+    db_path = graph_db_path(root)
+    metadata_path = graph_metadata_path(root)
+    if not db_path.exists() or not metadata_path.exists():
+        return False
+    try:
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("SELECT 1 FROM graph_nodes LIMIT 1")
+    except sqlite3.Error:
+        return False
+    return True
+
+
+def format_graph_status(root: Path | None = None) -> str:
+    metadata = load_graph_metadata(root)
+    if metadata is None or not graph_available(root):
+        return (
+            "Graph: not initialized\n"
+            "Next: run `python src/cicadas/scripts/cicadas.py graph build`\n"
+            "Fallback: use `canon/repo-context.md` and routing docs."
+        )
+    analyzers = metadata.get("analyzers", {})
+    analyzer_text = ", ".join(f"{name}={status}" for name, status in sorted(analyzers.items())) or "unknown"
+    languages = ", ".join(metadata.get("indexed_languages", [])) or "none"
+    return (
+        "Graph: available\n"
+        f"Build ID: {metadata.get('build_id', 'unknown')}\n"
+        f"Generated At: {metadata.get('generated_at', 'unknown')}\n"
+        f"Freshness: {metadata.get('freshness', 'unknown')}\n"
+        f"Indexed Languages: {languages}\n"
+        f"Analyzers: {analyzer_text}\n"
+        f"DB: {graph_db_path(root)}"
+    )
 
 
 def load_repo_metadata(canon_root: Path | None = None) -> dict | None:
@@ -428,6 +518,8 @@ def scale_exclusion_reason(rel_path: str) -> str | None:
     if not normalized or normalized in {".git", "__pycache__"}:
         return "internal"
     if normalized.startswith(".cicadas/") and not normalized.startswith(".cicadas/canon/summary.md"):
+        return "cicadas-internal"
+    if normalized.startswith(".cicadas-skill/"):
         return "cicadas-internal"
     for prefix in EXCLUDED_COMPLEXITY_PREFIXES:
         if normalized == prefix or normalized.startswith(f"{prefix}/"):

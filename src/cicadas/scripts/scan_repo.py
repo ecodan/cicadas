@@ -32,7 +32,7 @@ from utils import (
 )
 
 
-SKIP_DIRS = {".git"}
+SKIP_DIRS = {".git", ".cicadas", ".cicadas-skill"}
 LANGUAGE_BY_EXTENSION = {
     ".py": "python",
     ".md": "markdown",
@@ -378,6 +378,108 @@ def _major_code_zones(directory_entries: list[dict]) -> list[str]:
     return inferred[:8]
 
 
+def _code_directory_like(path: str) -> bool:
+    normalized = path.strip("/")
+    if not normalized or normalized == ".":
+        return False
+    excluded_prefixes = (
+        ".",
+        ".cicadas",
+        ".cicadas-skill",
+        "build",
+        "dist",
+        "docs",
+        "node_modules",
+        "target",
+        "tmp",
+        "vendor",
+        "venv",
+    )
+    first_segment = normalized.split("/", 1)[0]
+    if first_segment in excluded_prefixes or normalized.startswith(excluded_prefixes):
+        return False
+    return True
+
+
+def _normalize_module_candidate(module: str) -> str | None:
+    normalized = module.strip().strip("/")
+    if not normalized:
+        return None
+    if normalized.startswith(":"):
+        normalized = normalized.lstrip(":").replace(":", "/")
+    if "*" in normalized:
+        normalized = normalized.split("*", 1)[0].rstrip("/")
+    if normalized in {".", ""}:
+        return None
+    return normalized
+
+
+def _top_level_code_roots(directory_entries: list[dict]) -> list[str]:
+    roots: list[str] = []
+    for entry in directory_entries:
+        path = entry.get("path", "")
+        if path == "." or "/" in path.strip("/"):
+            continue
+        if not entry_counts_toward_complexity(entry):
+            continue
+        if not _code_directory_like(path):
+            continue
+        child_count = int(entry.get("children_count", 0) or 0)
+        if child_count <= 0:
+            continue
+        roots.append(path)
+    return sorted(dict.fromkeys(roots))
+
+
+def _plan_candidate_slices(
+    *,
+    declared_modules: list[str],
+    major_code_zones: list[str],
+    directory_entries: list[dict],
+    max_seeded: int = 3,
+    max_total: int = 8,
+) -> list[dict]:
+    directory_paths = {entry.get("path", "") for entry in directory_entries if entry.get("kind") == "directory"}
+    planned_paths: list[tuple[str, str]] = []
+
+    for module in declared_modules:
+        normalized = _normalize_module_candidate(module)
+        if not normalized or not _code_directory_like(normalized):
+            continue
+        if normalized in directory_paths:
+            planned_paths.append((normalized, "declared-module"))
+            continue
+        top_level = normalized.split("/", 1)[0]
+        if top_level in directory_paths and _code_directory_like(top_level):
+            planned_paths.append((top_level, "declared-module-root"))
+
+    for zone in major_code_zones:
+        normalized = _normalize_module_candidate(zone)
+        if normalized and normalized in directory_paths and _code_directory_like(normalized):
+            planned_paths.append((normalized, "major-code-zone"))
+
+    for root in _top_level_code_roots(directory_entries):
+        planned_paths.append((root, "top-level-code-root"))
+
+    deduped: list[dict] = []
+    seen_paths: set[str] = set()
+    for idx, (path, reason) in enumerate(planned_paths):
+        if path in seen_paths:
+            continue
+        deduped.append(
+            {
+                "name": path.replace("/", "-"),
+                "paths": [path],
+                "status": "seeded" if len(deduped) < max_seeded else "deferred",
+                "reason": reason,
+            }
+        )
+        seen_paths.add(path)
+        if len(deduped) >= max_total:
+            break
+    return deduped
+
+
 def _runtime_package_surfaces(file_paths: set[str], directory_entries: list[dict]) -> list[str]:
     surfaces: set[str] = set()
     for path in file_paths:
@@ -403,20 +505,6 @@ def _canon_strategy_for_mode(mode: str, declared_modules: list[str], build_syste
     if mode in {"large-repo", "mega-repo"}:
         return "locality-first"
     return "flat"
-
-
-def _seed_candidate_slices(major_code_zones: list[str], max_seeded: int = 3, max_total: int = 8) -> list[dict]:
-    candidates: list[dict] = []
-    for idx, zone in enumerate(major_code_zones[:max_total]):
-        candidates.append(
-            {
-                "name": zone.replace("/", "-"),
-                "paths": [zone],
-                "status": "seeded" if idx < max_seeded else "deferred",
-                "reason": "major-code-zone",
-            }
-        )
-    return candidates
 
 
 def _classify_repo(
@@ -598,7 +686,15 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
 
 def build_repo_metadata(root: Path, summary: ScanSummary) -> dict:
     module_snapshot_policy = "minimal" if summary.mode in {"large-repo", "mega-repo"} else "full"
-    candidate_slices = _seed_candidate_slices(summary.major_code_zones) if summary.mode in {"large-repo", "mega-repo"} else []
+    candidate_slices = (
+        _plan_candidate_slices(
+            declared_modules=summary.declared_modules,
+            major_code_zones=summary.major_code_zones,
+            directory_entries=summary.directory_entries,
+        )
+        if summary.mode in {"large-repo", "mega-repo"}
+        else []
+    )
     canon_plan = {
         "strategy": summary.canon_strategy,
         "orientation": ["product-overview.md", "tech-overview.md", "summary.md"],
@@ -641,7 +737,7 @@ def build_repo_metadata(root: Path, summary: ScanSummary) -> dict:
             "test_paths": summary.test_paths[:8],
             "runtime_package_surfaces": summary.runtime_package_surfaces,
             "runtime_paths": summary.runtime_package_surfaces,
-            "ownership_zone_candidates": summary.major_code_zones,
+            "ownership_zone_candidates": [slice_info["paths"][0] for slice_info in candidate_slices[:8]],
         },
         "classification": {
             "decision": summary.mode,

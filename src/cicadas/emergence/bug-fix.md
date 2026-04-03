@@ -25,6 +25,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
 1.  **Understand the Bug**: Ask the Builder for the observed behavior and reproduction steps if not already clear.
 2.  **Analyze**: Quickly scan the codebase to identify the likely cause. Do not perform a deep refactor or redesign.
+    - If optional graph artifacts are present, prefer graph-assisted routing for symptom-led bugs: use `graph area`, `graph tests`, `graph callers`, or `graph signature-impact` to find the likely owning area, nearby tests, and stale callsites.
+    - If graph support is absent, continue with existing routing artifacts (`canon/summary.md`, `canon/repo-context.md`, routing guides, targeted reads) without treating that as a blocker.
 3.  **Draft Buglet**: Fill out the `buglet.md` template.
     - Keep descriptions punchy.
     - Ensure reproduction steps are actionable.

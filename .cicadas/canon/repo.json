@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
   "scan_version": 1,
-  "generated_at": "2026-04-02T00:45:15.606800+00:00",
+  "generated_at": "2026-04-02T13:53:46.572187+00:00",
   "repo_mode": "normal-repo",
   "scan": {
     "tree_path": "repo-tree.jsonl",
     "context_path": "repo-context.md",
-    "repo_file_count": 1219,
-    "meaningful_file_count": 116,
-    "estimated_loc": 10881,
+    "repo_file_count": 1269,
+    "meaningful_file_count": 128,
+    "estimated_loc": 12609,
     "top_level_entries": 4,
     "dominant_languages": [
       "python",
@@ -52,8 +52,8 @@
     "topology_class": "normal-repo",
     "confidence": "medium",
     "heuristic_scores": {
-      "meaningful_file_count": 116,
-      "estimated_loc": 10881,
+      "meaningful_file_count": 128,
+      "estimated_loc": 12609,
       "declared_module_count": 1,
       "major_code_zone_count": 2,
       "test_surface_count": 1,
@@ -65,7 +65,7 @@
     "evidence": [
       {
         "signal": "scale_floor",
-        "observation": "Detected 116 meaningful files and 10881 estimated LoC, giving a scale floor of `normal-repo`.",
+        "observation": "Detected 128 meaningful files and 12609 estimated LoC, giving a scale floor of `normal-repo`.",
         "weight": "high"
       },
       {
