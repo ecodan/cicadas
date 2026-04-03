@@ -6,6 +6,7 @@ from __future__ import annotations
 import sqlite3
 import time
 import re
+import json
 
 from utils import format_graph_status, graph_available, graph_db_path, load_graph_metadata
 
@@ -111,6 +112,16 @@ def _surface_kind(path: str | None, name: str, kind: str) -> str:
     return "operational"
 
 
+def _row_surface_kind(row: sqlite3.Row) -> str:
+    try:
+        metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+    except Exception:
+        metadata = {}
+    if metadata.get("surface_kind"):
+        return metadata["surface_kind"]
+    return _surface_kind(row["path"], row["name"], row["kind"])
+
+
 def _search_rank(row: sqlite3.Row, query: str, area_details: dict[str, dict]) -> tuple[int, int, str, str]:
     name = row["name"] or ""
     path = row["path"] or ""
@@ -126,7 +137,7 @@ def _search_rank(row: sqlite3.Row, query: str, area_details: dict[str, dict]) ->
     overlap = len(_tokenize(query) & _tokenize(f"{name} {path}"))
     score += overlap * 8
 
-    surface_kind = _surface_kind(path, name, kind)
+    surface_kind = _row_surface_kind(row)
     if surface_kind == "ui_surface":
         score += 18
     elif surface_kind == "operational":
@@ -184,6 +195,10 @@ def query_area(target: str, *, exclude_tests: bool = False) -> tuple[int, str, d
             lines = _header(f"Owning area for `{target}`")
             lines.append(f"- Area: {file_row['area'] or 'unknown'}")
             lines.append(f"- File: {file_row['path']}")
+            area = _area_index().get(file_row["area"] or "", {})
+            if area:
+                lines.append(f"- Confidence: {area.get('routing_confidence', 'low')}")
+                lines.append(f"- Modernity: {area.get('modernity', 'mixed')}")
             return 0, "\n".join(lines), _success_meta(
                 result_count=1,
                 usefulness_tags=["helped-route"],
@@ -196,6 +211,10 @@ def query_area(target: str, *, exclude_tests: bool = False) -> tuple[int, str, d
             lines.append(f"- Area: {symbol_row['area'] or 'unknown'}")
             lines.append(f"- Symbol: {symbol_row['name']}")
             lines.append(f"- File: {symbol_row['path'] or 'unknown'}")
+            area = _area_index().get(symbol_row["area"] or "", {})
+            if area:
+                lines.append(f"- Confidence: {area.get('routing_confidence', 'low')}")
+                lines.append(f"- Modernity: {area.get('modernity', 'mixed')}")
             return 0, "\n".join(lines), _success_meta(
                 result_count=1,
                 usefulness_tags=["helped-route"],
@@ -428,8 +447,12 @@ def query_route(target: str, *, exclude_tests: bool = False) -> tuple[int, str, 
     lines = _header(f"Route for `{target}`")
     if not seeded_areas:
         lines.append("- No seeded areas are available yet.")
+        top_area = None
+        top_confidence = None
     else:
         ranked_areas = sorted(seeded_areas, key=lambda area: _route_rank(area, target), reverse=True)
+        top_area = ranked_areas[0]["name"] if ranked_areas else None
+        top_confidence = ranked_areas[0].get("routing_confidence") if ranked_areas else None
         for area in ranked_areas[:5]:
             lines.append(
                 f"- Candidate area: {area['name']} "
@@ -440,7 +463,7 @@ def query_route(target: str, *, exclude_tests: bool = False) -> tuple[int, str, 
     return 0, "\n".join(lines), _success_meta(
         result_count=min(len(seeded_areas), 5),
         usefulness_tags=["helped-route"],
-        metadata={"target": target, "exclude_tests": exclude_tests},
+        metadata={"target": target, "exclude_tests": exclude_tests, "top_area": top_area, "routing_confidence": top_confidence},
     )
 
 
@@ -454,7 +477,7 @@ def query_search(
     if not graph_available():
         return 1, _missing_graph_message(), _success_meta(result_count=0, usefulness_tags=["graph-unavailable"], metadata={"target": target})
 
-    valid_kinds = tuple(kinds or ["file", "symbol", "test"])
+    valid_kinds = tuple(kinds or ["entrypoint", "file", "symbol", "test"])
     predicates = ["(name LIKE ? OR path LIKE ?)"]
     params: list[object] = [f"%{target}%", f"%{target}%"]
     if valid_kinds:
@@ -487,17 +510,25 @@ def query_search(
 
     for row in ranked_rows:
         area = area_details.get(row["area"] or "", {})
-        surface_kind = _surface_kind(row["path"], row["name"], row["kind"])
+        surface_kind = _row_surface_kind(row)
         lines.append(
             f"- {row['kind']}: {row['name']} "
             f"({row['path'] or 'unknown'}; area: {row['area'] or 'unknown'}; "
-            f"surface: {surface_kind}; confidence: {area.get('routing_confidence', 'low')})"
+            f"surface: {surface_kind}; confidence: {area.get('routing_confidence', 'low')}; "
+            f"modernity: {area.get('modernity', 'mixed')})"
         )
 
     return 0, "\n".join(lines), _success_meta(
         result_count=len(ranked_rows),
         usefulness_tags=["helped-route", "helped-search"],
-        metadata={"target": target, "exclude_tests": exclude_tests, "kinds": list(valid_kinds), "limit": limit},
+        metadata={
+            "target": target,
+            "exclude_tests": exclude_tests,
+            "kinds": list(valid_kinds),
+            "limit": limit,
+            "top_kind": ranked_rows[0]["kind"] if ranked_rows else None,
+            "top_area": ranked_rows[0]["area"] if ranked_rows else None,
+        },
     )
 
 

@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 
-from utils import graph_dir, graph_progress_log_path, graph_progress_path
+from utils import graph_area_plan_path, graph_dir, graph_progress_log_path, graph_progress_path
 
 
 def _format_bytes(value: int) -> str:
@@ -61,6 +61,17 @@ def _spool_summary() -> list[str]:
     return lines
 
 
+def _area_plan_summary() -> list[str]:
+    path = graph_area_plan_path()
+    if not path.exists():
+        return ["- Area plan: not created yet"]
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return [f"- Area plan: unreadable ({path})"]
+    return [f"- Area plan: {len(payload.get('areas', []))} areas ({path.name})"]
+
+
 def render_progress_tail(lines: int = 10) -> str:
     snapshot = _load_progress_snapshot()
     events = _load_progress_events()
@@ -90,6 +101,7 @@ def render_progress_tail(lines: int = 10) -> str:
             ]
         )
     output.extend(_spool_summary())
+    output.extend(_area_plan_summary())
     if events:
         output.append("- Recent events:")
         for event in events[-lines:]:

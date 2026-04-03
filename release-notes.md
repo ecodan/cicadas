@@ -10,6 +10,10 @@
 
 - Initiative completion now uses targeted canon reconcile for large and mega repos, updating touched slices by default and refreshing top-level orientation docs only when durable repo-wide truth changed.
 - `init` no longer creates an empty `.cicadas/canon/modules/` directory up front.
+- Optional code graph builds now write progressively to staged SQLite tables under `.cicadas/graph/`, emit `progress.json` / `progress-log.jsonl` with elapsed time and ETA, and expose `graph tail` / `graph watch` for long-running local builds.
+- Code graph routing is more useful on large repos: deterministic `area-plan.json` output now captures seeded routing areas, `graph search` adds graph-native file/symbol/entrypoint search, `--exclude-tests` filters operational hunts, and JavaScript/TypeScript now have structural graph indexing.
+- Java graph extraction now uses a structural baseline plus resumable semantic enrichment batches. Successful semantic batches are retained even when some files fail, bad files are quarantined via batch bisection, and graph metadata now reports `structural`, `semantic`, or `hybrid` Java coverage.
+- Repo scan now excludes local Cicadas workspaces like `.cicadas-skill/` from inventory, scale heuristics, and graph routing seeds so repo graphs stay focused on operational code.
 
 ## Version 0.7.5
 

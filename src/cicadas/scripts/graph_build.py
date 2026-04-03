@@ -24,6 +24,7 @@ from graph_store import (
 )
 from scan_repo import run_scan
 from utils import (
+    graph_area_plan_path,
     graph_db_path,
     graph_dir,
     graph_progress_path,
@@ -34,6 +35,31 @@ from utils import (
     save_graph_metadata,
     save_json,
 )
+
+
+def _log_line(level: str, message: str) -> str:
+    timestamp = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return f"{timestamp} [{level}] {message}"
+
+
+def _repo_scan_needs_refresh(repo_metadata: dict | None, repo_tree: list[dict] | None) -> bool:
+    if repo_metadata is None or repo_tree is None:
+        return True
+    repo_mode = repo_metadata.get("repo_mode")
+    if repo_mode not in {"large-repo", "mega-repo"}:
+        return False
+    candidate_slices = repo_metadata.get("candidate_slices") or []
+    scan = repo_metadata.get("scan") or {}
+    declared_modules = scan.get("declared_modules") or []
+    ownership_zone_candidates = scan.get("ownership_zone_candidates") or []
+    if candidate_slices:
+        return False
+    if declared_modules:
+        return True
+    if not ownership_zone_candidates:
+        return True
+    trivial_paths = {"package.json", "pom.xml", "yarn.lock", "pyproject.toml", "Cargo.toml"}
+    return all(path in trivial_paths for path in ownership_zone_candidates)
 
 
 class _GraphBuildProgress:
@@ -49,16 +75,18 @@ class _GraphBuildProgress:
         self.structural_files_processed = 0
         self.python_files_total = 0
         self.python_files_processed = 0
+        self.javascript_files_total = 0
+        self.javascript_files_processed = 0
         self.java_files_total = 0
         self.java_files_processed = 0
         self.stage_nodes_written = 0
         self.stage_edges_written = 0
 
     def _percent_complete(self, *, phase: str, sqlite_written: bool = False, metadata_written: bool = False) -> int:
-        total_work = self.structural_files_total + self.python_files_total + self.java_files_total + 3
+        total_work = self.structural_files_total + self.python_files_total + self.javascript_files_total + self.java_files_total + 3
         if total_work <= 0:
             return 0
-        completed_work = self.structural_files_processed + self.python_files_processed + self.java_files_processed
+        completed_work = self.structural_files_processed + self.python_files_processed + self.javascript_files_processed + self.java_files_processed
         if phase in {"sqlite_stage_write", "sqlite_stage_write_complete", "promote_stage", "complete"}:
             completed_work += 1
         if sqlite_written or phase in {"promote_stage", "complete"}:
@@ -89,6 +117,8 @@ class _GraphBuildProgress:
         self.structural_files_processed = int(extra.get("structural_files_processed", self.structural_files_processed) or 0)
         self.python_files_total = int(extra.get("python_files_total", self.python_files_total) or 0)
         self.python_files_processed = int(extra.get("python_files_processed", self.python_files_processed) or 0)
+        self.javascript_files_total = int(extra.get("javascript_files_total", self.javascript_files_total) or 0)
+        self.javascript_files_processed = int(extra.get("javascript_files_processed", self.javascript_files_processed) or 0)
         self.java_files_total = int(extra.get("java_files_total", self.java_files_total) or 0)
         self.java_files_processed = int(extra.get("java_files_processed", self.java_files_processed) or 0)
         self.stage_nodes_written = int(extra.get("stage_nodes_written", self.stage_nodes_written) or 0)
@@ -107,6 +137,8 @@ class _GraphBuildProgress:
             "structural_files_processed": self.structural_files_processed,
             "python_files_total": self.python_files_total,
             "python_files_processed": self.python_files_processed,
+            "javascript_files_total": self.javascript_files_total,
+            "javascript_files_processed": self.javascript_files_processed,
             "java_files_total": self.java_files_total,
             "java_files_processed": self.java_files_processed,
             "stage_nodes_written": self.stage_nodes_written,
@@ -126,7 +158,7 @@ class _GraphBuildProgress:
         with open(self.log_path, "a", encoding="utf-8") as handle:
             handle.write(json.dumps(payload, sort_keys=True))
             handle.write("\n")
-        print(f"[INFO] {message}", flush=True)
+        print(_log_line("INFO", message), flush=True)
 
 
 class _GraphBuildSpooler:
@@ -204,10 +236,12 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
                 message=f"Graph build started (build_id={build_id}, languages={language_filter})",
             )
 
-        if load_repo_metadata() is None or load_repo_tree() is None:
+        repo_metadata = load_repo_metadata()
+        repo_tree = load_repo_tree()
+        if _repo_scan_needs_refresh(repo_metadata, repo_tree):
             progress.write(
                 phase="scan_repo",
-                message="Repo inventory missing. Running scan-repo before graph build.",
+                message="Repo inventory missing or area seeds are insufficient. Running scan-repo before graph build.",
             )
             run_scan(progress_mode="off")
 
@@ -227,6 +261,27 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
                 progress=lambda update: progress.write(**update),
                 emit=spooler.emit,
             )
+            save_json(
+                graph_area_plan_path(),
+                {
+                    "build_id": build_id,
+                    "generated_at": build_id,
+                    "areas": stats.get("seeded_areas", []),
+                },
+            )
+            progress.write(
+                phase="area_planning",
+                message=f"Area planning complete ({len(stats.get('seeded_areas', []))} areas)",
+                repo_entries_total=progress.repo_entries_total,
+                structural_files_total=progress.structural_files_total,
+                structural_files_processed=progress.structural_files_total,
+                python_files_total=progress.python_files_total,
+                python_files_processed=progress.python_files_total,
+                javascript_files_total=progress.javascript_files_total,
+                javascript_files_processed=progress.javascript_files_total,
+                java_files_total=progress.java_files_total,
+                java_files_processed=progress.java_files_total,
+            )
             spooler.flush(force=True)
             counts = stage_row_counts(conn)
             progress.write(
@@ -239,6 +294,8 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
                 structural_files_processed=progress.structural_files_total,
                 python_files_total=progress.python_files_total,
                 python_files_processed=progress.python_files_total,
+                javascript_files_total=progress.javascript_files_total,
+                javascript_files_processed=progress.javascript_files_total,
                 java_files_total=progress.java_files_total,
                 java_files_processed=progress.java_files_total,
             )
@@ -252,6 +309,8 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
                 structural_files_processed=progress.structural_files_total,
                 python_files_total=progress.python_files_total,
                 python_files_processed=progress.python_files_total,
+                javascript_files_total=progress.javascript_files_total,
+                javascript_files_processed=progress.javascript_files_total,
                 java_files_total=progress.java_files_total,
                 java_files_processed=progress.java_files_total,
             )
@@ -267,6 +326,8 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
             structural_files_processed=progress.structural_files_total,
             python_files_total=progress.python_files_total,
             python_files_processed=progress.python_files_total,
+            javascript_files_total=progress.javascript_files_total,
+            javascript_files_processed=progress.javascript_files_total,
             java_files_total=progress.java_files_total,
             java_files_processed=progress.java_files_total,
             stage_nodes_written=progress.stage_nodes_written,
@@ -285,12 +346,20 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
                 "file_count": stats["file_count"],
                 "analyzers": {
                     "python": stats.get("python_stats", {}).get("python_mode", "structural"),
-                    "javascript": javascript_analyzer_status(),
+                    "javascript": stats.get("javascript_stats", {}).get("javascript_mode", javascript_analyzer_status()),
                     "java": stats.get("java_stats", {}).get("java_mode", java_analyzer_status()),
                     "rust": rust_analyzer_status(),
                 },
-                "symbols_indexed": stats.get("python_stats", {}).get("symbols_indexed", 0) + stats.get("java_stats", {}).get("symbols_indexed", 0),
+                "symbols_indexed": stats.get("python_stats", {}).get("symbols_indexed", 0) + stats.get("javascript_stats", {}).get("symbols_indexed", 0) + stats.get("java_stats", {}).get("symbols_indexed", 0),
+                "javascript_symbols_indexed": stats.get("javascript_stats", {}).get("symbols_indexed", 0),
                 "java_symbols_indexed": stats.get("java_stats", {}).get("symbols_indexed", 0),
+                "java_structural_symbols_indexed": stats.get("java_stats", {}).get("java_structural_symbols_indexed", 0),
+                "java_semantic_symbols_indexed": stats.get("java_stats", {}).get("java_semantic_symbols_indexed", 0),
+                "java_semantic_batches_total": stats.get("java_stats", {}).get("java_semantic_batches_total", 0),
+                "java_semantic_batches_completed": stats.get("java_stats", {}).get("java_semantic_batches_completed", 0),
+                "java_semantic_batches_reused": stats.get("java_stats", {}).get("java_semantic_batches_reused", 0),
+                "java_semantic_quarantined_files": stats.get("java_stats", {}).get("java_semantic_quarantined_files", 0),
+                "java_semantic_error": stats.get("java_stats", {}).get("java_semantic_error"),
             }
         )
         progress.write(
@@ -304,21 +373,24 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
             structural_files_processed=progress.structural_files_total,
             python_files_total=progress.python_files_total,
             python_files_processed=progress.python_files_total,
+            javascript_files_total=progress.javascript_files_total,
+            javascript_files_processed=progress.javascript_files_total,
             java_files_total=progress.java_files_total,
             java_files_processed=progress.java_files_total,
             stage_nodes_written=progress.stage_nodes_written,
             stage_edges_written=progress.stage_edges_written,
             indexed_languages=stats["indexed_languages"],
             seeded_areas=len(stats["seeded_areas"]),
-            symbols_indexed=stats.get("python_stats", {}).get("symbols_indexed", 0) + stats.get("java_stats", {}).get("symbols_indexed", 0),
+            symbols_indexed=stats.get("python_stats", {}).get("symbols_indexed", 0) + stats.get("javascript_stats", {}).get("symbols_indexed", 0) + stats.get("java_stats", {}).get("symbols_indexed", 0),
+            javascript_symbols_indexed=stats.get("javascript_stats", {}).get("symbols_indexed", 0),
             java_symbols_indexed=stats.get("java_stats", {}).get("symbols_indexed", 0),
             db_path=str(graph_db_path()),
         )
 
-        print(f"[OK]   Graph build complete: {graph_db_path()}")
-        print(f"[INFO] Build ID: {build_id}")
-        print(f"[INFO] Indexed languages: {', '.join(stats['indexed_languages']) if stats['indexed_languages'] else 'none'}")
-        print(f"[INFO] Seeded areas: {len(stats['seeded_areas'])}")
+        print(_log_line("OK", f"Graph build complete: {graph_db_path()}"))
+        print(_log_line("INFO", f"Build ID: {build_id}"))
+        print(_log_line("INFO", f"Indexed languages: {', '.join(stats['indexed_languages']) if stats['indexed_languages'] else 'none'}"))
+        print(_log_line("INFO", f"Seeded areas: {len(stats['seeded_areas'])}"))
         return 0
     except Exception as exc:
         progress.write(
@@ -330,6 +402,8 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
             structural_files_processed=progress.structural_files_processed,
             python_files_total=progress.python_files_total,
             python_files_processed=progress.python_files_processed,
+            javascript_files_total=progress.javascript_files_total,
+            javascript_files_processed=progress.javascript_files_processed,
             java_files_total=progress.java_files_total,
             java_files_processed=progress.java_files_processed,
             stage_nodes_written=progress.stage_nodes_written,

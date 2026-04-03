@@ -125,7 +125,17 @@ public final class SemanticGraphExtractor {
         String owner = symbolName(enclosing);
         String methodName = element.getKind() == ElementKind.CONSTRUCTOR ? "<init>" : element.getSimpleName().toString();
         List<String> params = new ArrayList<>();
-        element.getParameters().forEach(param -> params.add(param.asType().toString()));
+        try {
+            element.getParameters().forEach(param -> {
+                try {
+                    params.add(param.asType() == null ? "unknown" : param.asType().toString());
+                } catch (RuntimeException ignored) {
+                    params.add("unknown");
+                }
+            });
+        } catch (RuntimeException ignored) {
+            return owner + "#" + methodName;
+        }
         return owner + "#" + methodName + "(" + String.join(",", params) + ")";
     }
 
@@ -320,7 +330,11 @@ public final class SemanticGraphExtractor {
             if (enclosing instanceof PackageElement packageElement) {
                 return packageElement.getQualifiedName().toString();
             }
-            return symbolName(enclosing);
+            try {
+                return symbolName(enclosing);
+            } catch (RuntimeException ignored) {
+                return packageName;
+            }
         }
 
         private boolean isTestContext(String symbolName) {

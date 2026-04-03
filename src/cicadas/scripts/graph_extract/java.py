@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 import shutil
 import subprocess
-import tempfile
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -71,6 +71,10 @@ def _semantic_source_path() -> Path:
 
 def _semantic_classes_dir(root: Path) -> Path:
     return root / ".cicadas" / "graph" / "tools" / "java-semantic" / "classes"
+
+
+def _semantic_work_dir(root: Path) -> Path:
+    return root / ".cicadas" / "graph" / "tools" / "java-semantic"
 
 
 def _has_java_toolchain() -> bool:
@@ -207,7 +211,7 @@ def _extract_java_graph_structural(
             path=rel_path,
             area=area_name,
             build_id=build_id,
-            metadata={"symbol_type": "class", "simple_name": class_name, "package": package},
+            metadata={"symbol_type": "class", "simple_name": class_name, "package": package, "extraction_source": "structural"},
         )
         discovered.append(_JavaSymbol(node=class_node, simple_name=class_name, file_path=rel_path, is_test_symbol=is_test_file))
         file_nodes: list[GraphNode] = [class_node]
@@ -227,7 +231,7 @@ def _extract_java_graph_structural(
                 path=rel_path,
                 area=area_name,
                 build_id=build_id,
-                metadata={"symbol_type": "method", "simple_name": method_name, "package": package},
+                metadata={"symbol_type": "method", "simple_name": method_name, "package": package, "extraction_source": "structural"},
             )
             discovered.append(_JavaSymbol(node=symbol_node, simple_name=method_name, file_path=rel_path, is_test_symbol=is_test_symbol))
             file_nodes.append(symbol_node)
@@ -244,7 +248,7 @@ def _extract_java_graph_structural(
                         path=rel_path,
                         area=area_name,
                         build_id=build_id,
-                        metadata={"source_symbol": symbol_id, "simple_name": method_name},
+                        metadata={"source_symbol": symbol_id, "simple_name": method_name, "extraction_source": "structural"},
                     )
                 )
                 file_edges.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, test_id), kind="declares", src_id=symbol_id, dst_id=test_id, build_id=build_id))
@@ -316,6 +320,7 @@ def _extract_java_graph_structural(
                     src_id=source_symbol_id,
                     dst_id=target.node.node_id,
                     build_id=build_id,
+                    metadata={"extraction_source": "structural"},
                 )
             ]
             if source_symbol.is_test_symbol and source_symbol_id in test_nodes_by_symbol:
@@ -328,6 +333,7 @@ def _extract_java_graph_structural(
                         dst_id=target.node.node_id,
                         build_id=build_id,
                         derived=True,
+                        metadata={"extraction_source": "structural"},
                     )
                 )
             if emit is not None:
@@ -387,21 +393,136 @@ def _source_roots_from_files(root: Path, java_paths: list[str]) -> list[Path]:
     return sorted(roots)
 
 
+def _source_root_for_file(root: Path, rel_path: str) -> Path:
+    roots = _source_roots_from_files(root, [rel_path])
+    return roots[0]
+
+
+def _semantic_batches(root: Path, java_paths: list[str], max_files_per_batch: int = 4000) -> list[tuple[list[str], list[Path]]]:
+    batches: list[tuple[list[str], list[Path]]] = []
+    current_paths: list[str] = []
+    current_roots: list[Path] = []
+    current_root_set: set[Path] = set()
+
+    for rel_path in java_paths:
+        source_root = _source_root_for_file(root, rel_path)
+        if len(current_paths) >= max_files_per_batch:
+            batches.append((current_paths, current_roots))
+            current_paths = []
+            current_roots = []
+            current_root_set = set()
+        current_paths.append(rel_path)
+        if source_root not in current_root_set:
+            current_root_set.add(source_root)
+            current_roots.append(source_root)
+
+    if current_paths:
+        batches.append((current_paths, current_roots))
+    return batches
+
+
+def _write_semantic_manifest(work_dir: Path, payload: dict) -> None:
+    (work_dir / "last-run.json").write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+
+
+def _tail_text(path: Path, limit: int = 4000) -> str:
+    if not path.exists():
+        return ""
+    text = path.read_text(encoding="utf-8", errors="ignore")
+    return text[-limit:]
+
+
+def _batch_can_reuse(batch_dir: Path, batch_paths: list[str], source_roots: list[Path]) -> bool:
+    files_file = batch_dir / "files.txt"
+    roots_file = batch_dir / "source-roots.txt"
+    output_file = batch_dir / "semantic.tsv"
+    if not files_file.exists() or not roots_file.exists() or not output_file.exists():
+        return False
+    expected_files = "\n".join(batch_paths) + "\n"
+    expected_roots = "\n".join(str(path) for path in source_roots) + "\n"
+    return (
+        files_file.read_text(encoding="utf-8", errors="ignore") == expected_files
+        and roots_file.read_text(encoding="utf-8", errors="ignore") == expected_roots
+    )
+
+
 def _run_semantic_extractor(
     root: Path,
     java_paths: list[str],
-) -> Path:
+    progress: Callable[[dict], None] | None = None,
+) -> tuple[Path, dict]:
     classes_dir = _compile_semantic_extractor(root)
-    with tempfile.TemporaryDirectory(prefix="cicadas-java-graph-") as tmp_dir:
-        tmp = Path(tmp_dir)
-        files_file = tmp / "files.txt"
-        roots_file = tmp / "source-roots.txt"
-        output_file = tmp / "semantic.tsv"
+    work_dir = _semantic_work_dir(root)
+    work_dir.mkdir(parents=True, exist_ok=True)
+    persisted_output = work_dir / "last-semantic.tsv"
+    persisted_output.write_text("", encoding="utf-8")
+    batches = _semantic_batches(root, java_paths)
+    manifest_batches: list[dict] = []
+    quarantined_files: list[dict[str, str]] = []
+    completed_files = 0
 
-        files_file.write_text("\n".join(str((root / rel).resolve()) for rel in java_paths) + "\n", encoding="utf-8")
-        source_roots = _source_roots_from_files(root, java_paths)
+    def write_manifest(status: str, **extra: object) -> None:
+        payload = {
+            "status": status,
+            "classes_dir": str(classes_dir),
+            "batch_count": len(batches),
+            "completed_files": completed_files,
+            "quarantined_files": quarantined_files,
+            "batches": manifest_batches,
+            "combined_output": str(persisted_output),
+        }
+        payload.update(extra)
+        _write_semantic_manifest(work_dir, payload)
+
+    def append_output(output_file: Path) -> None:
+        if not output_file.exists() or output_file.stat().st_size <= 0:
+            return
+        with open(persisted_output, "a", encoding="utf-8") as combined, open(output_file, "r", encoding="utf-8") as batch_output:
+            shutil.copyfileobj(batch_output, combined)
+
+    def process_batch(batch_name: str, batch_label: str, batch_paths: list[str], source_roots: list[Path]) -> None:
+        nonlocal completed_files
+        batch_dir = work_dir / batch_name
+        batch_dir.mkdir(parents=True, exist_ok=True)
+        files_file = batch_dir / "files.txt"
+        roots_file = batch_dir / "source-roots.txt"
+        output_file = batch_dir / "semantic.tsv"
+        stdout_file = batch_dir / "stdout.log"
+        stderr_file = batch_dir / "stderr.log"
+
+        files_file.write_text("\n".join(batch_paths) + "\n", encoding="utf-8")
         roots_file.write_text("\n".join(str(path) for path in source_roots) + "\n", encoding="utf-8")
 
+        batch_record = {
+            "batch_name": batch_name,
+            "batch_label": batch_label,
+            "file_count": len(batch_paths),
+            "source_roots": [str(path) for path in source_roots],
+            "stdout_log": str(stdout_file),
+            "stderr_log": str(stderr_file),
+            "output_file": str(output_file),
+        }
+
+        if _batch_can_reuse(batch_dir, batch_paths, source_roots):
+            batch_record["returncode"] = 0
+            batch_record["reused"] = True
+            batch_record["status"] = "complete"
+            manifest_batches.append(batch_record)
+            append_output(output_file)
+            completed_files += len(batch_paths)
+            if progress is not None:
+                progress(
+                    {
+                        "phase": "java_semantic_enrichment",
+                        "message": f"java semantic enrichment reused {batch_label} ({len(batch_paths)} files)",
+                        "java_files_total": len(java_paths),
+                        "java_files_processed": completed_files,
+                    }
+                )
+            write_manifest("running")
+            return
+
+        absolute_files = [str((root / rel).resolve()) for rel in batch_paths]
         cmd = [
             "java",
             "-cp",
@@ -416,11 +537,86 @@ def _run_semantic_extractor(
             "--source-roots-file",
             str(roots_file),
         ]
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
-        persisted_output = root / ".cicadas" / "graph" / "tools" / "java-semantic" / "last-semantic.tsv"
-        persisted_output.parent.mkdir(parents=True, exist_ok=True)
-        persisted_output.write_text(output_file.read_text(encoding="utf-8"), encoding="utf-8")
-        return persisted_output
+        if progress is not None:
+            progress(
+                {
+                    "phase": "java_semantic_enrichment",
+                    "message": f"java semantic enrichment {batch_label} ({len(batch_paths)} files)",
+                    "java_files_total": len(java_paths),
+                    "java_files_processed": completed_files,
+                }
+            )
+        (batch_dir / "files-absolute.txt").write_text("\n".join(absolute_files) + "\n", encoding="utf-8")
+        with open(stdout_file, "w", encoding="utf-8") as stdout_handle, open(stderr_file, "w", encoding="utf-8") as stderr_handle:
+            files_file.write_text("\n".join(absolute_files) + "\n", encoding="utf-8")
+            completed = subprocess.run(cmd, check=False, stdout=stdout_handle, stderr=stderr_handle, text=True)
+        files_file.write_text("\n".join(batch_paths) + "\n", encoding="utf-8")
+
+        batch_record["returncode"] = completed.returncode
+        batch_record["reused"] = False
+
+        if completed.returncode == 0:
+            batch_record["status"] = "complete"
+            manifest_batches.append(batch_record)
+            append_output(output_file)
+            completed_files += len(batch_paths)
+            write_manifest("running")
+            return
+
+        stderr_tail = _tail_text(stderr_file)
+        batch_record["status"] = "failed"
+        batch_record["stderr_tail"] = stderr_tail[:1000]
+        manifest_batches.append(batch_record)
+        write_manifest("running", failed_batch=batch_name, stderr_tail=stderr_tail)
+
+        if len(batch_paths) == 1:
+            quarantined_files.append(
+                {
+                    "path": batch_paths[0],
+                    "batch_name": batch_name,
+                    "stderr_tail": stderr_tail[:1000],
+                }
+            )
+            if progress is not None:
+                progress(
+                    {
+                        "phase": "java_semantic_enrichment",
+                        "message": f"java semantic enrichment quarantined {batch_paths[0]}",
+                        "java_files_total": len(java_paths),
+                        "java_files_processed": completed_files,
+                    }
+                )
+            write_manifest("running", failed_batch=batch_name, stderr_tail=stderr_tail)
+            return
+
+        if progress is not None:
+            progress(
+                {
+                    "phase": "java_semantic_enrichment",
+                    "message": f"java semantic enrichment bisecting {batch_label} after failure ({len(batch_paths)} files)",
+                    "java_files_total": len(java_paths),
+                    "java_files_processed": completed_files,
+                }
+            )
+        midpoint = max(1, len(batch_paths) // 2)
+        left_paths = batch_paths[:midpoint]
+        right_paths = batch_paths[midpoint:]
+        left_roots = _source_roots_from_files(root, left_paths)
+        right_roots = _source_roots_from_files(root, right_paths)
+        process_batch(f"{batch_name}-a", f"{batch_label}a", left_paths, left_roots)
+        process_batch(f"{batch_name}-b", f"{batch_label}b", right_paths, right_roots)
+
+    for batch_index, (batch_paths, source_roots) in enumerate(batches, start=1):
+        process_batch(f"batch-{batch_index:04d}", f"batch {batch_index}/{len(batches)}", batch_paths, source_roots)
+
+    final_status = "complete" if not quarantined_files else "partial"
+    write_manifest(final_status)
+    return persisted_output, {
+        "batch_count": len(batches),
+        "completed_batches": sum(1 for batch in manifest_batches if batch.get("status") == "complete"),
+        "reused_batches": sum(1 for batch in manifest_batches if batch.get("reused")),
+        "quarantined_files": len(quarantined_files),
+    }
 
 
 def _parse_semantic_output(
@@ -449,7 +645,7 @@ def _parse_semantic_output(
             if symbol_kind in {"method", "constructor"}:
                 normalized_name = re.sub(r"\([^)]*\)$", "", name)
             area_name = area_lookup.get(rel_path)
-            symbol_id = _node_id("symbol", f"{rel_path}:{name}")
+            symbol_id = _node_id("symbol", f"{rel_path}:{normalized_name}")
             node = GraphNode(
                 node_id=symbol_id,
                 kind="symbol",
@@ -458,7 +654,7 @@ def _parse_semantic_output(
                 path=rel_path,
                 area=area_name,
                 build_id=build_id,
-                metadata={"symbol_type": symbol_kind, "simple_name": simple_name, "package": package_name, "full_name": name},
+                metadata={"symbol_type": symbol_kind, "simple_name": simple_name, "package": package_name, "full_name": name, "extraction_source": "semantic"},
             )
             node_batch.append(node)
             symbol_name_to_id[name] = symbol_id
@@ -479,7 +675,7 @@ def _parse_semantic_output(
                         path=rel_path,
                         area=area_name,
                         build_id=build_id,
-                        metadata={"source_symbol": symbol_id, "simple_name": simple_name},
+                        metadata={"source_symbol": symbol_id, "simple_name": simple_name, "extraction_source": "semantic"},
                     )
                 )
                 edge_batch.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, test_id), kind="declares", src_id=symbol_id, dst_id=test_id, build_id=build_id))
@@ -519,7 +715,7 @@ def _parse_semantic_output(
                         path=rel_path,
                         area=area_lookup.get(rel_path),
                         build_id=build_id,
-                        metadata={},
+                        metadata={"extraction_source": "semantic"},
                     )
                 ]
                 relation_edges = [
@@ -552,7 +748,7 @@ def _parse_semantic_output(
                         path=rel_path,
                         area=area_lookup.get(rel_path),
                         build_id=build_id,
-                        metadata={},
+                        metadata={"extraction_source": "semantic"},
                     )
                 ]
             else:
@@ -567,7 +763,7 @@ def _parse_semantic_output(
                     dst_id=dst_id,
                     build_id=build_id,
                     derived=not resolved,
-                    metadata={"java_rel_path": rel_path, "resolved": resolved},
+                    metadata={"java_rel_path": rel_path, "resolved": resolved, "extraction_source": "semantic"},
                 )
             ]
             if mapped_kind == "calls" and symbol_name_to_is_test.get(src_name) and src_id in source_symbol_to_test_node:
@@ -580,6 +776,7 @@ def _parse_semantic_output(
                         dst_id=dst_id,
                         build_id=build_id,
                         derived=True,
+                        metadata={"java_rel_path": rel_path, "resolved": resolved, "extraction_source": "semantic"},
                     )
                 )
             if emit is not None:
@@ -611,46 +808,83 @@ def extract_java_graph(
     if not _has_java_toolchain():
         return _extract_java_graph_structural(root, file_entries, build_id, area_lookup, progress=progress, emit=emit)
 
+    nodes, edges, structural_stats = _extract_java_graph_structural(root, file_entries, build_id, area_lookup, progress=progress, emit=emit)
+
     if progress is not None:
         progress(
             {
-                "phase": "java_extraction",
-                "message": f"java semantic extraction preparing ({total_java_files} files)",
+                "phase": "java_semantic_enrichment",
+                "message": f"starting java semantic enrichment ({total_java_files} files)",
                 "java_files_total": total_java_files,
-                "java_files_processed": 0,
+                "java_files_processed": structural_stats.get("java_files_processed", 0),
             }
         )
 
+    semantic_stats = {"symbols_indexed": 0, "completed_batches": 0, "batch_count": 0, "reused_batches": 0}
+    semantic_output = _semantic_work_dir(root) / "last-semantic.tsv"
     try:
-        semantic_output = _run_semantic_extractor(root=root, java_paths=java_paths)
+        semantic_output, semantic_stats = _run_semantic_extractor(root=root, java_paths=java_paths, progress=progress)
         if progress is not None:
             progress(
                 {
-                    "phase": "java_extraction",
-                    "message": "java semantic extraction completed, parsing output",
+                    "phase": "java_semantic_enrichment",
+                    "message": "java semantic enrichment completed, parsing output",
                     "java_files_total": total_java_files,
                     "java_files_processed": total_java_files,
                 }
             )
-        nodes, edges, symbols_indexed = _parse_semantic_output(
+        semantic_nodes, semantic_edges, semantic_symbols_indexed = _parse_semantic_output(
             output_path=semantic_output,
             build_id=build_id,
             area_lookup=area_lookup,
             emit=emit,
         )
+        nodes.extend(semantic_nodes)
+        edges.extend(semantic_edges)
+        java_mode = "hybrid" if semantic_stats.get("quarantined_files", 0) else "semantic"
         return nodes, edges, {
-            "symbols_indexed": symbols_indexed,
-            "java_mode": "semantic",
+            "symbols_indexed": max(structural_stats.get("symbols_indexed", 0), semantic_symbols_indexed),
+            "java_mode": java_mode,
             "java_files_processed": total_java_files,
+            "java_structural_symbols_indexed": structural_stats.get("symbols_indexed", 0),
+            "java_semantic_symbols_indexed": semantic_symbols_indexed,
+            "java_semantic_batches_total": semantic_stats.get("batch_count", 0),
+            "java_semantic_batches_completed": semantic_stats.get("completed_batches", 0),
+            "java_semantic_batches_reused": semantic_stats.get("reused_batches", 0),
+            "java_semantic_quarantined_files": semantic_stats.get("quarantined_files", 0),
         }
-    except Exception:
+    except Exception as exc:
+        partial_semantic_symbols = 0
+        if semantic_output.exists() and semantic_output.stat().st_size > 0:
+            semantic_nodes, semantic_edges, partial_semantic_symbols = _parse_semantic_output(
+                output_path=semantic_output,
+                build_id=build_id,
+                area_lookup=area_lookup,
+                emit=emit,
+            )
+            nodes.extend(semantic_nodes)
+            edges.extend(semantic_edges)
         if progress is not None:
+            message = f"java semantic enrichment failed; retaining structural coverage ({exc})"
+            if partial_semantic_symbols:
+                message = f"java semantic enrichment partially applied ({partial_semantic_symbols} semantic symbols); structural coverage retained ({exc})"
             progress(
                 {
-                    "phase": "java_extraction",
-                    "message": "java semantic extraction failed, falling back to structural mode",
+                    "phase": "java_semantic_enrichment",
+                    "message": message,
                     "java_files_total": total_java_files,
-                    "java_files_processed": 0,
+                    "java_files_processed": total_java_files,
                 }
             )
-        return _extract_java_graph_structural(root, file_entries, build_id, area_lookup, progress=progress, emit=emit)
+        return nodes, edges, {
+            "symbols_indexed": max(structural_stats.get("symbols_indexed", 0), partial_semantic_symbols),
+            "java_mode": "hybrid" if partial_semantic_symbols else "structural",
+            "java_files_processed": total_java_files,
+            "java_structural_symbols_indexed": structural_stats.get("symbols_indexed", 0),
+            "java_semantic_symbols_indexed": partial_semantic_symbols,
+            "java_semantic_batches_total": semantic_stats.get("batch_count", 0),
+            "java_semantic_batches_completed": semantic_stats.get("completed_batches", 0),
+            "java_semantic_batches_reused": semantic_stats.get("reused_batches", 0),
+            "java_semantic_quarantined_files": semantic_stats.get("quarantined_files", 0),
+            "java_semantic_error": str(exc),
+        }

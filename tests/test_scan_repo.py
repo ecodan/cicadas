@@ -78,6 +78,23 @@ class TestScanRepo(CicadasTest):
         self.assertNotIn(".agents", context_path.read_text())
         self.assertNotIn(".idea", context_path.read_text())
 
+    def test_scan_skips_cicadas_skill_workspace(self):
+        (self.root / ".cicadas-skill" / "cicadas" / "scripts").mkdir(parents=True)
+        (self.root / ".cicadas-skill" / "cicadas" / "scripts" / "helper.py").write_text("print('tooling')\n")
+        (self.root / "src" / "pkg").mkdir(parents=True)
+        (self.root / "src" / "pkg" / "mod.py").write_text("print('real')\n")
+
+        tree_path, metadata_path, context_path = scan_repo.run_scan()
+        entries = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+        paths = {entry["path"] for entry in entries}
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertIn("src/pkg/mod.py", paths)
+        self.assertNotIn(".cicadas-skill", paths)
+        self.assertFalse(any(path.startswith(".cicadas-skill/") for path in paths))
+        self.assertNotIn(".cicadas-skill", metadata["scan"]["ownership_zone_candidates"])
+        self.assertNotIn(".cicadas-skill", context_path.read_text())
+
     def test_scan_marks_gitignored_and_generated_paths_without_counting_them(self):
         (self.root / ".gitignore").write_text("tmp/\n")
         (self.root / "tmp").mkdir()
@@ -161,6 +178,38 @@ class TestScanRepo(CicadasTest):
             ["summary.md", "boundaries.md", "architecture.md", "invariants.md", "change-guide.md"],
         )
         self.assertIn("Seeded slices:", context_path.read_text())
+
+    def test_scan_seeds_slices_from_declared_modules_when_major_code_zones_are_empty(self):
+        for module_name in ["jira-components", "jira-domains", "jira-devops"]:
+            module_src = self.root / module_name / "src" / "main" / "java" / "com" / "acme"
+            module_src.mkdir(parents=True)
+            for idx in range(400):
+                (module_src / f"{module_name.replace('-', '_')}_{idx}.java").write_text("class Demo {}\n")
+        (self.root / "pom.xml").write_text(
+            "<project><modules>"
+            "<module>jira-components</module>"
+            "<module>jira-domains</module>"
+            "<module>jira-devops</module>"
+            "</modules></project>"
+        )
+        (self.root / "package.json").write_text(json.dumps({"name": "jira"}))
+
+        _tree_path, metadata_path, context_path = scan_repo.run_scan()
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertEqual(metadata["repo_mode"], "large-repo")
+        self.assertEqual(metadata["scan"]["major_code_zones"], [])
+        self.assertEqual(
+            set(metadata["scan"]["ownership_zone_candidates"][:3]),
+            {"jira-components", "jira-domains", "jira-devops"},
+        )
+        candidate_names = [slice_info["name"] for slice_info in metadata["candidate_slices"]]
+        self.assertIn("jira-components", candidate_names)
+        self.assertIn("jira-domains", candidate_names)
+        self.assertIn("jira-devops", candidate_names)
+        context = context_path.read_text()
+        self.assertIn("Seeded slices:", context)
+        self.assertIn("jira-components", context)
 
     def test_normal_repo_does_not_seed_slices(self):
         src_dir = self.root / "src" / "pkg"

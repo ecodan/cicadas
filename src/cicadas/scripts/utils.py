@@ -102,6 +102,7 @@ REPO_CONTEXT_FILENAME = "repo-context.md"
 GRAPH_DIRNAME = "graph"
 GRAPH_METADATA_FILENAME = "metadata.json"
 GRAPH_DB_FILENAME = "codegraph.sqlite"
+GRAPH_AREA_PLAN_FILENAME = "area-plan.json"
 GRAPH_USAGE_FILENAME = "usage.jsonl"
 GRAPH_PROGRESS_FILENAME = "progress.json"
 GRAPH_PROGRESS_LOG_FILENAME = "progress-log.jsonl"
@@ -124,6 +125,7 @@ EXCLUDED_COMPLEXITY_PREFIXES = (
     ".cicadas/archive",
     ".cicadas/drafts",
     ".cicadas/canon",
+    ".cicadas-skill",
     "build",
     "coverage",
     "dist",
@@ -165,6 +167,10 @@ def graph_metadata_path(root: Path | None = None) -> Path:
 
 def graph_db_path(root: Path | None = None) -> Path:
     return graph_dir(root) / GRAPH_DB_FILENAME
+
+
+def graph_area_plan_path(root: Path | None = None) -> Path:
+    return graph_dir(root) / GRAPH_AREA_PLAN_FILENAME
 
 
 def graph_usage_path(root: Path | None = None) -> Path:
@@ -512,6 +518,8 @@ def scale_exclusion_reason(rel_path: str) -> str | None:
     if not normalized or normalized in {".git", "__pycache__"}:
         return "internal"
     if normalized.startswith(".cicadas/") and not normalized.startswith(".cicadas/canon/summary.md"):
+        return "cicadas-internal"
+    if normalized.startswith(".cicadas-skill/"):
         return "cicadas-internal"
     for prefix in EXCLUDED_COMPLEXITY_PREFIXES:
         if normalized == prefix or normalized.startswith(f"{prefix}/"):

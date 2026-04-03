@@ -69,9 +69,9 @@ next_section: "## Partition: feat/graph-precision-search"
 - [x] Add area metadata and result formatting for file-count hints, modern-vs-legacy ranking, and explicit routing confidence <!-- id: 81 -->
 - [x] Implement `graph search <query>` with indexed file/symbol lookup, `--kind`, and ranking that promotes likely operational/UI entrypoints <!-- id: 82 -->
 - [x] Add a shared `--exclude-tests` CLI filter so graph hunts can focus on operational code paths instead of test artifacts <!-- id: 83 -->
-- [ ] Implement structural JavaScript/TypeScript indexing for imports, exports, top-level symbols, and likely UI surfaces <!-- id: 84 -->
-- [ ] Demote tests, DTOs, serializers, generated code, and support artifacts in search/routing ranking while boosting canon-modern surfaces <!-- id: 85 -->
-- [ ] Add regression tests and usage-log coverage for graph search, routing confidence, and test-exclusion behavior <!-- id: 86 -->
+- [x] Implement structural JavaScript/TypeScript indexing for imports, exports, top-level symbols, and likely UI surfaces <!-- id: 84 -->
+- [x] Demote tests, DTOs, serializers, generated code, and support artifacts in search/routing ranking while boosting canon-modern surfaces <!-- id: 85 -->
+- [x] Add regression tests and usage-log coverage for graph search, routing confidence, and test-exclusion behavior <!-- id: 86 -->
 
 ## Initiative Boundary
 

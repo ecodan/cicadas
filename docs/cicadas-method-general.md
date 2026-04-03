@@ -57,6 +57,7 @@ Traditional Spec-Driven Development (SDD) works well on the first pass but degra
 |-----------|---------|-----------|
 | Active Specs | Drive implementation (PRD, tasks, tokens, lifecycle) | Created at kickoff → updated by Reflect → archived at completion |
 | Canon | Authoritative canon | Synthesized on `main` at initiative completion, never manually edited |
+| Optional Graph | Local routing and impact index | Built on demand under `.cicadas/graph/`; safe to rebuild |
 | Index | Lightweight change ledger | Append-only, one entry per feature branch |
 | Registry | Track concurrent work-in-progress | Entries added/removed with initiatives and feature branches |
 | Archive | Historical active specs | Append-only, one entry per initiative |
@@ -83,6 +84,8 @@ project-root/
 │   │   ├── utils.py                 # Shared utilities (path resolution, JSON I/O)
 │   │   ├── kickoff.py               # Promote drafts → active, register initiative
 │   │   ├── branch.py                # Register a feature branch, check module overlaps
+│   │   ├── graph_build.py           # Optional staged graph build
+│   │   ├── graph_query.py           # Graph routing, impact, and search queries
 │   │   ├── review.py                # Parses review.md verdict
 │   │   ├── tokens.py                # Token usage log API
 │   │   └── ...                      # Other deterministic lifecycle scripts
@@ -119,6 +122,14 @@ project-root/
     │       ├── tech-design.md
     │       ├── approach.md
     │       └── tasks.md
+    ├── graph/                        # Optional local code graph artifacts
+    │   ├── codegraph.sqlite          # Active graph DB
+    │   ├── metadata.json             # Coverage, freshness, symbol counts
+    │   ├── area-plan.json            # Deterministic routing areas
+    │   ├── progress.json             # Current build snapshot
+    │   ├── progress-log.jsonl        # Append-only build log
+    │   ├── spool/                    # Streamed JSONL node/edge staging
+    │   └── tools/                    # Extractor diagnostics and semantic logs
     └── archive/                      # Expired specs (timestamped)
         └── {timestamp}-{name}/
 ```
@@ -160,6 +171,25 @@ Progressive spec authoring using subagents or manual drafting:
 This front matter is the low-token re-entry point for later phases and branch starts. Clarify refreshes it as sections are approved, and Reflect refreshes it again when implementation changes the plan.
 
 **Mechanism**: Subagents in `src/cicadas/emergence/` or manual authoring. See `EMERGENCE.md` for details.
+
+### Optional Graph Augmentation
+
+For large and mega repos, Cicadas can optionally build a local code graph with:
+
+`python src/cicadas/scripts/cicadas.py graph build`
+
+This augments canon rather than replacing it. The graph helps with first-hop routing, blast-radius checks, test discovery, and file/symbol search when available.
+
+Current graph characteristics:
+
+- deterministic area planning written to `.cicadas/graph/area-plan.json`
+- staged SQLite persistence with progressive progress logs and ETA
+- `graph tail` and `graph watch` for long-running build observability
+- graph-native search over files, symbols, tests, and likely entrypoints
+- structural JavaScript/TypeScript indexing
+- structural Java baseline plus semantic enrichment batches, which may land as `semantic` or `hybrid`
+
+If Java semantic enrichment encounters pathological files, Cicadas now bisects failed batches, quarantines the smallest failing file set, and retains successful semantic output for the rest of the repo.
 
 ### Phase 2: Kickoff
 

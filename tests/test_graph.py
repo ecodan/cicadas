@@ -9,6 +9,9 @@ import sys
 from pathlib import Path
 
 from base import CicadasTest, SCRIPTS_DIR
+import graph_extract.java as graph_java
+import graph_store
+from graph_ir import GraphEdge, GraphNode
 
 
 CLI_PATH = SCRIPTS_DIR / "cicadas.py"
@@ -52,6 +55,7 @@ class TestGraphCli(CicadasTest):
         graph_dir = self.cicadas_dir / "graph"
         self.assertTrue((graph_dir / "codegraph.sqlite").exists())
         self.assertTrue((graph_dir / "metadata.json").exists())
+        self.assertTrue((graph_dir / "area-plan.json").exists())
         self.assertTrue((graph_dir / "progress.json").exists())
         self.assertTrue((graph_dir / "progress-log.jsonl").exists())
         self.assertTrue((graph_dir / "spool" / "nodes.jsonl").exists())
@@ -67,6 +71,8 @@ class TestGraphCli(CicadasTest):
         self.assertGreaterEqual(progress["stage_edges_written"], 0)
         self.assertGreaterEqual(progress["elapsed_seconds"], 0)
         self.assertEqual(progress["eta_seconds"], 0)
+        area_plan = json.loads((graph_dir / "area-plan.json").read_text())
+        self.assertIn("areas", area_plan)
         with sqlite3.connect(graph_dir / "codegraph.sqlite") as conn:
             row = conn.execute("SELECT COUNT(*) FROM graph_nodes").fetchone()
             stage_row = conn.execute("SELECT COUNT(*) FROM graph_nodes_stage").fetchone()
@@ -74,6 +80,7 @@ class TestGraphCli(CicadasTest):
         self.assertGreater(stage_row[0], 0)
         self.assertTrue((self.cicadas_dir / "canon" / "repo.json").exists())
         self.assertIn("Graph build started", result.stdout)
+        self.assertIn("Area planning complete", result.stdout)
         self.assertIn("Writing graph data to SQLite stage tables", result.stdout)
         self.assertIn("SQLite stage write complete", result.stdout)
         self.assertIn("Promoting stage graph into active tables", result.stdout)
@@ -102,6 +109,46 @@ class TestGraphCli(CicadasTest):
         self.assertEqual(result.returncode, 0)
         payload = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
         self.assertEqual(payload["seeded_areas"][0]["name"], "payments")
+
+    def test_graph_build_refreshes_stale_large_repo_scan_when_candidate_slices_are_missing(self):
+        self.init_git()
+        for module_name in ["jira-components", "jira-domains", "jira-devops"]:
+            module_src = self.root / module_name / "src" / "main" / "java" / "com" / "acme"
+            module_src.mkdir(parents=True)
+            (module_src / "Demo.java").write_text("class Demo {}\n")
+        (self.root / "pom.xml").write_text(
+            "<project><modules>"
+            "<module>jira-components</module>"
+            "<module>jira-domains</module>"
+            "<module>jira-devops</module>"
+            "</modules></project>"
+        )
+        (self.root / "package.json").write_text(json.dumps({"name": "jira"}))
+        (self.cicadas_dir / "canon").mkdir(exist_ok=True)
+        (self.cicadas_dir / "canon" / "repo.json").write_text(
+            json.dumps(
+                {
+                    "repo_mode": "mega-repo",
+                    "scan": {
+                        "declared_modules": ["jira-components", "jira-domains", "jira-devops"],
+                        "ownership_zone_candidates": [],
+                    },
+                    "candidate_slices": [],
+                }
+            )
+        )
+        (self.cicadas_dir / "canon" / "repo-tree.jsonl").write_text(
+            json.dumps({"path": "pom.xml", "kind": "file", "language": "xml", "extension": ".xml", "summary": "pom"}) + "\n"
+        )
+
+        result = self._run_cli("graph", "build")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("area seeds are insufficient", result.stdout)
+        payload = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
+        area_names = {area["name"] for area in payload["seeded_areas"]}
+        self.assertIn("jira-components", area_names)
+        self.assertIn("jira-domains", area_names)
 
     def test_graph_build_refines_large_seeded_area_into_child_areas(self):
         self.init_git()
@@ -152,6 +199,7 @@ class TestGraphCli(CicadasTest):
 
         self.assertEqual(result.returncode, 0)
         self.assertIn("payments", result.stdout)
+        self.assertIn("Confidence:", result.stdout)
 
     def test_graph_neighbors_reports_other_seeded_areas(self):
         self.init_git()
@@ -246,6 +294,71 @@ class TestGraphCli(CicadasTest):
         self.assertIn("Java toolchain:", result.stdout)
         self.assertIn("Java semantic source:", result.stdout)
 
+    def test_java_semantic_batches_split_large_source_roots(self):
+        java_paths = [f"jira-domains/platform/foo/src/main/java/com/acme/File{idx}.java" for idx in range(4500)]
+
+        batches = graph_java._semantic_batches(self.root, java_paths, max_files_per_batch=2000)
+
+        self.assertEqual(len(batches), 3)
+        self.assertEqual(len(batches[0][0]), 2000)
+        self.assertEqual(len(batches[1][0]), 2000)
+        self.assertEqual(len(batches[2][0]), 500)
+
+    def test_stage_upsert_allows_semantic_rows_to_replace_structural_duplicates(self):
+        graph_db = self.root / ".cicadas" / "graph" / "codegraph.sqlite"
+        conn = graph_store.connect_graph(graph_db)
+        try:
+            graph_store.initialize_schema(conn)
+            graph_store.reset_stage_graph(conn, "build-1")
+            symbol = GraphNode(
+                node_id="symbol:1",
+                kind="symbol",
+                name="com.acme.Calculator#add",
+                language="java",
+                path="src/main/java/com/acme/Calculator.java",
+                build_id="build-1",
+                metadata={"extraction_source": "structural"},
+            )
+            edge = GraphEdge(
+                edge_id="calls:1",
+                kind="calls",
+                src_id="symbol:caller",
+                dst_id="symbol:1",
+                build_id="build-1",
+                metadata={"extraction_source": "structural"},
+            )
+            graph_store.insert_stage_nodes(conn, [symbol], "build-1")
+            graph_store.insert_stage_edges(conn, [edge], "build-1")
+
+            semantic_symbol = GraphNode(
+                node_id="symbol:1",
+                kind="symbol",
+                name="com.acme.Calculator#add",
+                language="java",
+                path="src/main/java/com/acme/Calculator.java",
+                build_id="build-1",
+                metadata={"extraction_source": "semantic", "full_name": "com.acme.Calculator#add()"},
+            )
+            semantic_edge = GraphEdge(
+                edge_id="calls:1",
+                kind="calls",
+                src_id="symbol:caller",
+                dst_id="symbol:1",
+                build_id="build-1",
+                metadata={"extraction_source": "semantic", "resolved": True},
+            )
+            graph_store.insert_stage_nodes(conn, [semantic_symbol], "build-1")
+            graph_store.insert_stage_edges(conn, [semantic_edge], "build-1")
+
+            stored_node = conn.execute("SELECT metadata_json FROM graph_nodes_stage WHERE node_id = 'symbol:1'").fetchone()
+            stored_edge = conn.execute("SELECT metadata_json FROM graph_edges_stage WHERE edge_id = 'calls:1'").fetchone()
+        finally:
+            conn.close()
+
+        self.assertEqual(json.loads(stored_node[0])["extraction_source"], "semantic")
+        self.assertEqual(json.loads(stored_edge[0])["extraction_source"], "semantic")
+        self.assertTrue(json.loads(stored_edge[0])["resolved"])
+
     def test_graph_query_writes_usage_log_with_end_to_end_timing(self):
         self.init_git()
         (self.root / "src").mkdir()
@@ -305,6 +418,41 @@ class TestGraphCli(CicadasTest):
         self.assertIn("Search results for `IssueView`", result.stdout)
         self.assertIn("IssueView.tsx", result.stdout)
         self.assertNotIn("test_issue_view", result.stdout)
+
+    def test_graph_build_indexes_javascript_structurally(self):
+        self.init_git()
+        (self.root / "frontend" / "issue").mkdir(parents=True)
+        (self.root / "frontend" / "issue" / "IssueView.tsx").write_text(
+            "import React from 'react';\n"
+            "export function IssueView() {\n"
+            "  return null;\n"
+            "}\n"
+            "export default IssueView;\n"
+        )
+
+        result = self._run_cli("graph", "build")
+
+        self.assertEqual(result.returncode, 0)
+        metadata = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
+        self.assertEqual(metadata["analyzers"]["javascript"], "structural")
+        self.assertGreater(metadata["javascript_symbols_indexed"], 0)
+
+        search_result = self._run_cli("graph", "search", "IssueView", "--kind", "entrypoint", "--limit", "5")
+        self.assertEqual(search_result.returncode, 0)
+        self.assertIn("entrypoint:", search_result.stdout)
+        self.assertIn("IssueView.tsx", search_result.stdout)
+
+    def test_graph_build_tolerates_non_utf8_javascript_sources(self):
+        self.init_git()
+        (self.root / "frontend").mkdir(parents=True)
+        with open(self.root / "frontend" / "legacy.js", "wb") as handle:
+            handle.write(b"export function legacyView() { return '\\xe2'; }\n")
+
+        result = self._run_cli("graph", "build")
+
+        self.assertEqual(result.returncode, 0)
+        metadata = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
+        self.assertEqual(metadata["analyzers"]["javascript"], "structural")
 
     def test_graph_search_supports_kind_filter(self):
         self.init_git()

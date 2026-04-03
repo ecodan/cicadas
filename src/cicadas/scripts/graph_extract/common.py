@@ -9,6 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from graph_ir import GraphEdge, GraphNode
+from graph_extract.javascript import extract_javascript_graph
 from graph_extract.java import extract_java_graph
 from graph_extract.python import extract_python_graph
 from utils import (
@@ -173,6 +174,7 @@ def build_structural_graph(
     edges: list[GraphEdge] = []
 
     total_python_files = sum(1 for entry in file_entries if entry.get("language") == "python")
+    total_javascript_files = sum(1 for entry in file_entries if entry.get("language") in {"javascript", "typescript"})
     total_java_files = sum(1 for entry in file_entries if entry.get("language") == "java")
 
     repo_name = root.name
@@ -188,6 +190,8 @@ def build_structural_graph(
                 "structural_files_processed": 0,
                 "python_files_total": total_python_files,
                 "python_files_processed": 0,
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": 0,
                 "java_files_total": total_java_files,
                 "java_files_processed": 0,
             }
@@ -228,6 +232,8 @@ def build_structural_graph(
                 "structural_files_processed": 0,
                 "python_files_total": total_python_files,
                 "python_files_processed": 0,
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": 0,
                 "java_files_total": total_java_files,
                 "java_files_processed": 0,
             }
@@ -290,6 +296,8 @@ def build_structural_graph(
                     "structural_files_processed": processed_files,
                     "python_files_total": total_python_files,
                     "python_files_processed": 0,
+                    "javascript_files_total": total_javascript_files,
+                    "javascript_files_processed": 0,
                     "java_files_total": total_java_files,
                     "java_files_processed": 0,
                 }
@@ -312,6 +320,8 @@ def build_structural_graph(
                 "structural_files_processed": processed_files,
                 "python_files_total": total_python_files,
                 "python_files_processed": 0,
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": 0,
                 "java_files_total": total_java_files,
                 "java_files_processed": 0,
             }
@@ -329,6 +339,8 @@ def build_structural_graph(
                 "structural_files_processed": processed_files,
                 "python_files_total": total_python_files,
                 "python_files_processed": 0,
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": 0,
                 "java_files_total": total_java_files,
                 "java_files_processed": 0,
             }
@@ -354,9 +366,56 @@ def build_structural_graph(
                 "structural_files_processed": processed_files,
                 "python_files_total": total_python_files,
                 "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": 0,
                 "java_files_total": total_java_files,
                 "java_files_processed": 0,
                 "symbols_indexed": python_stats.get("symbols_indexed", 0),
+            }
+        )
+
+    if progress is not None:
+        progress(
+            {
+                "phase": "javascript_extraction",
+                "message": f"starting javascript extraction ({total_javascript_files} files)",
+                "repo_entries_total": len(repo_tree),
+                "structural_files_total": len(file_entries),
+                "structural_files_processed": processed_files,
+                "python_files_total": total_python_files,
+                "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": 0,
+                "java_files_total": total_java_files,
+                "java_files_processed": 0,
+            }
+        )
+    javascript_nodes, javascript_edges, javascript_stats = extract_javascript_graph(
+        root=root,
+        file_entries=file_entries,
+        build_id=build_id,
+        area_lookup=area_lookup,
+        progress=progress,
+        emit=emit,
+    )
+    nodes.extend(javascript_nodes)
+    edges.extend(javascript_edges)
+    if progress is not None:
+        progress(
+            {
+                "phase": "javascript_extraction",
+                "message": "javascript extraction finished "
+                f"({javascript_stats.get('javascript_files_processed', 0)} files, {javascript_stats.get('symbols_indexed', 0)} symbols)",
+                "repo_entries_total": len(repo_tree),
+                "structural_files_total": len(file_entries),
+                "structural_files_processed": processed_files,
+                "python_files_total": total_python_files,
+                "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
+                "java_files_total": total_java_files,
+                "java_files_processed": 0,
+                "javascript_symbols_indexed": javascript_stats.get("symbols_indexed", 0),
             }
         )
 
@@ -370,6 +429,8 @@ def build_structural_graph(
                 "structural_files_processed": processed_files,
                 "python_files_total": total_python_files,
                 "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
                 "java_files_total": total_java_files,
                 "java_files_processed": 0,
             }
@@ -395,6 +456,8 @@ def build_structural_graph(
                 "structural_files_processed": processed_files,
                 "python_files_total": total_python_files,
                 "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
                 "java_files_total": total_java_files,
                 "java_files_processed": java_stats.get("java_files_processed", 0),
                 "java_symbols_indexed": java_stats.get("symbols_indexed", 0),
@@ -411,6 +474,8 @@ def build_structural_graph(
                 "structural_files_processed": processed_files,
                 "python_files_total": total_python_files,
                 "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
                 "java_files_total": total_java_files,
                 "java_files_processed": java_stats.get("java_files_processed", 0),
                 "nodes_count": len(nodes),
@@ -435,5 +500,6 @@ def build_structural_graph(
         ],
         "file_count": file_count,
         "python_stats": python_stats,
+        "javascript_stats": javascript_stats,
         "java_stats": java_stats,
     }

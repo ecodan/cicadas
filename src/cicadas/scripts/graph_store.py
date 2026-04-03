@@ -187,8 +187,16 @@ def insert_stage_nodes(conn: sqlite3.Connection, nodes: list[GraphNode], build_i
         return 0
     cursor = conn.executemany(
         """
-        INSERT OR IGNORE INTO graph_nodes_stage(node_id, kind, name, language, path, area, build_id, metadata_json)
+        INSERT INTO graph_nodes_stage(node_id, kind, name, language, path, area, build_id, metadata_json)
         VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(node_id) DO UPDATE SET
+            kind = excluded.kind,
+            name = excluded.name,
+            language = excluded.language,
+            path = excluded.path,
+            area = excluded.area,
+            build_id = excluded.build_id,
+            metadata_json = excluded.metadata_json
         """,
         [
             (
@@ -214,8 +222,16 @@ def insert_stage_edges(conn: sqlite3.Connection, edges: list[GraphEdge], build_i
         return 0
     cursor = conn.executemany(
         """
-        INSERT OR IGNORE INTO graph_edges_stage(edge_id, kind, src_id, dst_id, weight, derived, build_id, metadata_json)
+        INSERT INTO graph_edges_stage(edge_id, kind, src_id, dst_id, weight, derived, build_id, metadata_json)
         VALUES(?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(edge_id) DO UPDATE SET
+            kind = excluded.kind,
+            src_id = excluded.src_id,
+            dst_id = excluded.dst_id,
+            weight = excluded.weight,
+            derived = excluded.derived,
+            build_id = excluded.build_id,
+            metadata_json = excluded.metadata_json
         """,
         [
             (

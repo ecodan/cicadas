@@ -47,7 +47,7 @@ def _build_parser() -> argparse.ArgumentParser:
         query_parser.add_argument("target", help="Path, symbol, or description to analyze")
         query_parser.add_argument("--exclude-tests", action="store_true", help="Filter test artifacts from result sets when applicable")
         if command == "search":
-            query_parser.add_argument("--kind", action="append", choices=("file", "symbol", "test"), help="Limit search to one or more node kinds")
+            query_parser.add_argument("--kind", action="append", choices=("entrypoint", "file", "symbol", "test"), help="Limit search to one or more node kinds")
             query_parser.add_argument("--limit", type=int, default=10, help="Maximum number of search results to return")
     return parser
 
