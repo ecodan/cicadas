@@ -1,5 +1,5 @@
 # Cicadas 
-**Version 0.7.5**
+**Version 0.8**
 
 **Sustainable, Spec-Driven Development (SDD) for human-AI teams.**
 

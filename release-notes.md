@@ -1,10 +1,11 @@
 # Release Notes
 
-## Unreleased
+## Version 0.8.0
 
 ### Added
 
 - Adaptive canon bootstrap that classifies repos as `normal-repo`, `large-repo`, or `mega-repo`, writes `repo.json` / `repo-tree.jsonl` / `repo-context.md`, and seeds lazy `slices/` packs only for larger repos.
+- Code Graph DB (currently supports python and java) to assist the coding agent in navigating large- and mega-repos.
 
 ### Changed
 
