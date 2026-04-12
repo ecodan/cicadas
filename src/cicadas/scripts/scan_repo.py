@@ -26,6 +26,7 @@ from utils import (
     entry_counts_toward_complexity,
     generate_repo_context,
     get_project_root,
+    load_config,
     save_repo_context,
     save_repo_metadata,
     scale_exclusion_reason,
@@ -33,6 +34,21 @@ from utils import (
 
 
 SKIP_DIRS = {".git", ".cicadas", ".cicadas-skill"}
+
+# Lowercase substrings that identify SDD (spec-driven development) tool state directories.
+# Applied only to immediate children of the project root that start with '.' or '_' to
+# avoid false positives in source trees (e.g. src/gsd-parser/ is left alone).
+_SDD_SUBSTRINGS: frozenset[str] = frozenset({"bmad", "cicadas", "gsd", "openspec"})
+
+
+def _is_sdd_state_dir(name: str, *, is_root_child: bool) -> bool:
+    """Return True when *name* looks like an SDD tool state/output directory."""
+    if not is_root_child:
+        return False
+    if not (name.startswith(".") or name.startswith("_")):
+        return False
+    lower = name.lower()
+    return any(sub in lower for sub in _SDD_SUBSTRINGS)
 LANGUAGE_BY_EXTENSION = {
     ".py": "python",
     ".md": "markdown",
@@ -568,10 +584,26 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
     reporter = progress or ProgressReporter(mode="off")
     reporter.phase("Discovering repository paths")
 
+    # Build the effective skip set: hard-coded dirs + user-configured extra paths.
+    config_exclude: list[str] = load_config().get("scan_exclude_paths") or []
+    # Normalise: strip leading/trailing slashes, keep as relative path strings.
+    config_exclude_set: set[str] = {p.strip("/") for p in config_exclude if p and p.strip("/")}
+
     for current_root, dirnames, filenames in os.walk(root):
-        dirnames[:] = sorted(name for name in dirnames if name not in SKIP_DIRS)
-        filenames = sorted(filenames)
         current_path = Path(current_root)
+        is_root_child = current_path == root
+        dirnames[:] = sorted(
+            name for name in dirnames
+            if name not in SKIP_DIRS
+            and not (current_path / name / "SKILL.md").exists()
+            and not _is_sdd_state_dir(name, is_root_child=is_root_child)
+            and not any(
+                (current_path / name).relative_to(root).as_posix() == exc
+                or (current_path / name).relative_to(root).as_posix().startswith(exc + "/")
+                for exc in config_exclude_set
+            )
+        )
+        filenames = sorted(filenames)
         if current_path != root:
             dir_paths.append(current_path)
         for filename in filenames:
