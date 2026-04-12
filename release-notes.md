@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.8.1
+
+### Fixed
+
+- **Scan exclusions**: `scan_repository` now skips directories containing a `SKILL.md` file (SDD installs and agent skill bundles at arbitrary paths), root-level hidden/underscore dirs whose names contain a known SDD tool substring (`bmad`, `cicadas`, `gsd`, `openspec`), and any paths listed in the new `scan_exclude_paths` key in `.cicadas/config.json`. This prevents SDD state/output directories like `_bmad-output/` and vendored SDD installs from inflating `meaningful_file_count`, `estimated_loc`, and slice candidates.
+
 ## Version 0.8.0
 
 ### Added

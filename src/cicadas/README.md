@@ -74,7 +74,7 @@ Merge back to `main`. The agent then updates Canon from the code and active spec
 
 `tests/test_templates.py` provides lightweight regression coverage for the context contract: it checks the shared front matter structure in the core templates, the branch-start cue in `canon-summary.md`, and the Clarify instructions that keep the new metadata current.
 
-`tests/test_graph.py` covers the optional code graph CLI, including build/status behavior, routed queries, local observability output such as `usage.jsonl` entries and `graph usage` summaries, Java semantic batching, and staged graph persistence behavior. `tests/test_scan_repo.py` now also checks that local Cicadas workspaces like `.cicadas-skill/` stay out of repo inventory and routing signals.
+`tests/test_graph.py` covers the optional code graph CLI, including build/status behavior, routed queries, local observability output such as `usage.jsonl` entries and `graph usage` summaries, Java semantic batching, and staged graph persistence behavior. `tests/test_scan_repo.py` covers repo inventory, scale classification, slice seeding, and scan exclusion logic — including that local Cicadas workspaces (`.cicadas-skill/`), SDD installs at arbitrary paths (SKILL.md detection), known SDD tool state dirs (substring matching on root-level `./` and `_` dirs), and `scan_exclude_paths` config entries all stay out of file counts and routing signals.
 
 ---
 
