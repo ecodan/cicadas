@@ -565,7 +565,7 @@ def _classify_repo(
     source_file_count = code_file_count + test_file_count
     scale_class = _scale_class(source_file_count, estimated_code_loc)
     topology_score = 0
-    topology_score += 2 if len(declared_modules) >= 20 else 1 if len(declared_modules) >= 5 else 0
+    topology_score += 2 if len(declared_modules) >= 20 else 1 if len(declared_modules) >= 3 else 0
     topology_score += 1 if len(build_systems) >= 2 else 0
     topology_score += 1 if len(major_code_zones) >= 4 else 0
     topology_score += 1 if len(test_paths) >= 3 else 0

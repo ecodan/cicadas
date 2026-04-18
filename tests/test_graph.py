@@ -248,6 +248,25 @@ class TestGraphCli(CicadasTest):
         self.assertIn("consumer", result.stdout)
         self.assertIn("test_helper", result.stdout)
 
+    def test_graph_tests_reports_python_linked_tests_after_streamed_build(self):
+        self.init_git()
+        (self.root / "src").mkdir()
+        (self.root / "tests").mkdir()
+        (self.root / "src" / "helpers.py").write_text(
+            "def helper():\n    return 1\n"
+        )
+        (self.root / "tests" / "test_helpers.py").write_text(
+            "from src.helpers import helper\n\n"
+            "def test_helper():\n    assert helper() == 1\n"
+        )
+
+        self._run_cli("graph", "build")
+        result = self._run_cli("graph", "tests", "helper")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Tests for `helper`", result.stdout)
+        self.assertIn("test_helper", result.stdout)
+
     def test_graph_signature_impact_can_exclude_tests(self):
         self.init_git()
         (self.root / "src").mkdir()
@@ -434,7 +453,8 @@ class TestGraphCli(CicadasTest):
 
         self.assertEqual(result.returncode, 0)
         metadata = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
-        self.assertEqual(metadata["analyzers"]["javascript"], "structural")
+        self.assertIn(metadata["analyzers"]["javascript"], {"fallback-structural", "tree-sitter"})
+        self.assertIn("javascript", metadata["analyzer_capabilities"])
         self.assertGreater(metadata["javascript_symbols_indexed"], 0)
 
         search_result = self._run_cli("graph", "search", "IssueView", "--kind", "entrypoint", "--limit", "5")
@@ -452,7 +472,38 @@ class TestGraphCli(CicadasTest):
 
         self.assertEqual(result.returncode, 0)
         metadata = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
-        self.assertEqual(metadata["analyzers"]["javascript"], "structural")
+        self.assertIn(metadata["analyzers"]["javascript"], {"fallback-structural", "tree-sitter"})
+
+    def test_graph_build_indexes_rust_with_optional_treesitter_fallback(self):
+        self.init_git()
+        (self.root / "crates" / "core" / "src").mkdir(parents=True)
+        (self.root / "crates" / "core" / "src" / "lib.rs").write_text(
+            "use std::fmt;\n"
+            "pub struct Issue;\n"
+            "pub enum IssueState { Open, Closed }\n"
+            "impl Issue {\n"
+            "    pub fn render(&self) {}\n"
+            "}\n"
+            "#[test]\n"
+            "fn test_render() {}\n"
+        )
+
+        result = self._run_cli("graph", "build")
+
+        self.assertEqual(result.returncode, 0)
+        metadata = json.loads((self.cicadas_dir / "graph" / "metadata.json").read_text())
+        self.assertIn(metadata["analyzers"]["rust"], {"fallback", "tree-sitter"})
+        self.assertIn("rust", metadata["analyzer_capabilities"])
+        self.assertGreater(metadata["rust_symbols_indexed"], 0)
+
+        with sqlite3.connect(self.cicadas_dir / "graph" / "codegraph.sqlite") as conn:
+            row = conn.execute(
+                "SELECT metadata_json FROM graph_nodes WHERE language = 'rust' AND kind = 'symbol' LIMIT 1"
+            ).fetchone()
+        self.assertIsNotNone(row)
+        node_metadata = json.loads(row[0])
+        self.assertIn(node_metadata["extraction_source"], {"fallback-structural", "tree-sitter"})
+        self.assertIn("confidence", node_metadata)
 
     def test_graph_search_supports_kind_filter(self):
         self.init_git()
