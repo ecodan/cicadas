@@ -60,6 +60,21 @@
       "created_at": "2026-04-18T04:49:46.007071+00:00",
       "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-eval-harness",
       "initiative": "graph-quality-treesitter"
+    },
+    "feat/graph-quality-guidance": {
+      "intent": "Update Cicadas skill, emergence guidance, README docs, and regression tests for source-aware scan metrics, optional Tree-sitter, graph query workflows, eval harness, and graph usage value reporting.",
+      "modules": [
+        "tests",
+        "src/cicadas/README.md",
+        "README.md",
+        "src/cicadas/SKILL.md",
+        "src/cicadas/emergence",
+        "tests/test_templates.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-18T14:16:48.374467+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-quality-guidance",
+      "initiative": "graph-quality-treesitter"
     }
   }
 }
