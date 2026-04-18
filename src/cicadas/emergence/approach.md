@@ -26,7 +26,12 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - Option 2 (final only): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {initiative} --no-pr-features`
     - Option 3 (full, default): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle {initiative}`
 
-2.  **Ingest**: Read `prd.md`, `ux.md`, and `tech-design.md` from `.cicadas/drafts/{initiative}/` (or `.cicadas/active/{initiative}/` if the initiative was already kicked off).
+2.  **Ingest**: Read `emergence-config.json` and `tech-design.md` from `.cicadas/drafts/{initiative}/` (or `.cicadas/active/{initiative}/` if the initiative was already kicked off). Determine `initiative_profile` (default to `"product"` when absent), then read the approved source artifacts for that profile:
+    - `product`: `prd.md` and `ux.md`
+    - `technical`: `technical-brief.md` and, when present, `operator-experience.md` or the explicit UX skip note
+    - `mixed`: the approved clarify artifact (`prd.md` or `technical-brief.md`) and the approved experience artifact (`ux.md`, `operator-experience.md`, or explicit skip note)
+
+    Approach remains mandatory for technical initiatives with architectural or cross-module impact.
 3.  **LLMs and Evals — Eval spec offer and placement** (initiatives only): Read `emergence-config.json` from `.cicadas/drafts/{initiative}/` or `.cicadas/active/{initiative}/`. If `building_on_ai` is true and `eval_status` is `"will_do"`:
     - **Eval spec offer**: If `eval-spec.md` does not yet exist in drafts or active for this initiative, ask: *"Would you like help creating the eval spec now? I'll walk you through the template using the LLMOps Experimentation playbook (define success, dataset, rubrics, harness, experiment, wrap-up). (yes / no)"* If yes, run the **[Eval Spec](./eval-spec.md)** instruction module, then continue with the placement question below. If no or if eval-spec.md already exists, skip to the placement question.
     - **Eval placement**: Ask the Builder: *"Do you want to insert the (manual) eval step before starting the build, or run evals in parallel with the build? (before / parallel)"*.

@@ -14,7 +14,12 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - `doc` — complete the full doc, then hard stop for Builder review before proceeding to kickoff
     - `all` — complete the full doc and present to Builder (this is the final doc — always present at the end regardless of pace)
 
-1.  **Ingest**: Read all previous docs in `.cicadas/drafts/{initiative}/`.
+1.  **Ingest**: Read `emergence-config.json` and all approved previous docs in `.cicadas/drafts/{initiative}/`. Determine `initiative_profile` (default to `"product"` when absent), then make sure the loaded context includes:
+    - `product`: `prd.md`, `ux.md`, `tech-design.md`, and `approach.md`
+    - `technical`: `technical-brief.md`, optional `operator-experience.md` or explicit UX skip note, `tech-design.md`, and `approach.md`
+    - `mixed`: the approved clarify artifact, the approved experience artifact or explicit UX skip note, `tech-design.md`, and `approach.md`
+
+    Tasks remain mandatory for technical initiatives with architectural or cross-module impact.
 2.  **Select Mode**: Choose **Foundation Mode** for greenfield projects or new standalone modules with no existing codebase to extend. Choose **Feature Mode** when adding vertical slices of functionality to an existing system.
     -   **Foundation Mode** (New Project/Module):
         -   **Decompose**: Atomic, file-level tasks.

@@ -14,7 +14,12 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - `doc` — complete the full doc, then hard stop for Builder review before moving to Approach
     - `all` — complete the full doc and continue to Approach without stopping
 
-1. **Ingest**: Read `.cicadas/drafts/{initiative}/prd.md` and `ux.md`. Identify all functional and non-functional requirements that have architectural implications.
+1. **Ingest**: Read `.cicadas/drafts/{initiative}/emergence-config.json` and determine `initiative_profile` (default to `"product"` when absent). Then read the approved source artifacts for that profile:
+    - `product`: `prd.md` and `ux.md`
+    - `technical`: `technical-brief.md` and, when present, `operator-experience.md` or the explicit UX skip note
+    - `mixed`: the approved clarify artifact (`prd.md` or `technical-brief.md`) and the approved experience artifact (`ux.md`, `operator-experience.md`, or explicit skip note)
+
+    Identify all functional and non-functional requirements that have architectural implications. Tech Design remains mandatory for technical initiatives with architectural or cross-module impact.
 
 2. **Canon Check**: On brownfield projects, read existing canon — especially `tech-overview.md` and relevant `modules/*.md`. Understand the current stack, data model, API surface, and established patterns before proposing anything. Your design must extend the existing system, not contradict it.
 

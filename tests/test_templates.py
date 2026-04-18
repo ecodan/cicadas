@@ -51,6 +51,42 @@ class TestSpecTemplates(unittest.TestCase):
             for key in expected_keys:
                 self.assertIn(key, frontmatter, msg=f"{name} should include {key}")
 
+    def test_technical_profile_templates_include_context_frontmatter(self):
+        expected_keys = [
+            "summary:",
+            "phase:",
+            "when_to_load:",
+            "depends_on:",
+            "modules:",
+            "index:",
+            "next_section:",
+        ]
+        template_names = [
+            "technical-brief.md",
+            "operator-experience.md",
+        ]
+
+        for name in template_names:
+            frontmatter = _frontmatter_block(TEMPLATES / name)
+            for key in expected_keys:
+                self.assertIn(key, frontmatter, msg=f"{name} should include {key}")
+
+    def test_initiative_profile_guidance_is_documented(self):
+        start_flow = (ROOT / "src" / "cicadas" / "emergence" / "start-flow.md").read_text()
+        clarify = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()
+        ux = (ROOT / "src" / "cicadas" / "emergence" / "ux.md").read_text()
+        tech_design = (ROOT / "src" / "cicadas" / "emergence" / "tech-design.md").read_text()
+        approach = (ROOT / "src" / "cicadas" / "emergence" / "approach.md").read_text()
+        tasks = (ROOT / "src" / "cicadas" / "emergence" / "tasks.md").read_text()
+
+        self.assertIn("Initiative profile", start_flow)
+        self.assertIn("initiative_profile", start_flow)
+        self.assertIn("technical-brief.md", clarify)
+        self.assertIn("operator-experience.md", ux)
+        self.assertIn("Tech Design remains mandatory", tech_design)
+        self.assertIn("Approach remains mandatory", approach)
+        self.assertIn("Tasks remain mandatory", tasks)
+
     def test_tasks_template_matches_partition_workflow(self):
         text = (TEMPLATES / "tasks.md").read_text()
 
