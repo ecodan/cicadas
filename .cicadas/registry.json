@@ -8,5 +8,18 @@
       "created_at": "2026-04-18T03:16:20.888253+00:00"
     }
   },
-  "branches": {}
+  "branches": {
+    "feat/source-aware-scan": {
+      "intent": "Implement source-aware repository scan metrics and scale classification so documentation-heavy repositories do not inflate large/mega repo mode.",
+      "modules": [
+        "src/cicadas/scripts/utils.py",
+        "src/cicadas/scripts/scan_repo.py",
+        "tests/test_scan_repo.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-18T03:17:29.299969+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-source-aware-scan",
+      "initiative": "graph-quality-treesitter"
+    }
+  }
 }
