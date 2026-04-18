@@ -32,12 +32,12 @@ next_section: "## Partition: feat/source-aware-scan"
 
 ## Partition: feat/source-aware-scan
 
-- [ ] Add shared source classification helpers for code, test, docs, config, generated/local, and unknown paths <!-- id: 1 -->
-- [ ] Extend scan summaries and repo metadata with total, meaningful, code, test, documentation, generated/local, code LOC, and documentation LOC metrics <!-- id: 2 -->
-- [ ] Revise repo mode scale floor to use code file count and code LOC, with topology/build/module evidence as the secondary escalation path <!-- id: 3 -->
-- [ ] Update repo context output to explain source volume separately from documentation/context volume <!-- id: 4 -->
-- [ ] Add markdown-heavy SDD/doc regression tests that remain `normal-repo` when code volume is small <!-- id: 5 -->
-- [ ] Run focused scan tests with `uv run pytest tests/test_scan_repo.py` and fix regressions <!-- id: 6 -->
+- [x] Add shared source classification helpers for code, test, docs, config, generated/local, and unknown paths <!-- id: 1 -->
+- [x] Extend scan summaries and repo metadata with total, meaningful, code, test, documentation, generated/local, code LOC, and documentation LOC metrics <!-- id: 2 -->
+- [x] Revise repo mode scale floor to use code file count and code LOC, with topology/build/module evidence as the secondary escalation path <!-- id: 3 -->
+- [x] Update repo context output to explain source volume separately from documentation/context volume <!-- id: 4 -->
+- [x] Add markdown-heavy SDD/doc regression tests that remain `normal-repo` when code volume is small <!-- id: 5 -->
+- [x] Run focused scan tests with `uv run pytest tests/test_scan_repo.py` and fix regressions <!-- id: 6 -->
 
 ## Partition: feat/layered-graph-extraction
 
