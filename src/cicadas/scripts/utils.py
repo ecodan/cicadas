@@ -136,6 +136,85 @@ EXCLUDED_COMPLEXITY_PREFIXES = (
     "venv",
 )
 
+SOURCE_CLASS_CODE = "code"
+SOURCE_CLASS_TEST = "test"
+SOURCE_CLASS_DOCUMENTATION = "documentation"
+SOURCE_CLASS_CONFIG = "config"
+SOURCE_CLASS_GENERATED_OR_LOCAL = "generated_or_local"
+SOURCE_CLASS_UNKNOWN = "unknown"
+
+CODE_EXTENSIONS = {
+    ".c",
+    ".cc",
+    ".cpp",
+    ".cs",
+    ".go",
+    ".h",
+    ".hpp",
+    ".java",
+    ".js",
+    ".jsx",
+    ".kt",
+    ".kts",
+    ".php",
+    ".py",
+    ".rb",
+    ".rs",
+    ".scala",
+    ".sh",
+    ".sql",
+    ".swift",
+    ".ts",
+    ".tsx",
+}
+DOCUMENTATION_EXTENSIONS = {
+    ".adoc",
+    ".md",
+    ".mdx",
+    ".rst",
+    ".txt",
+}
+CONFIG_EXTENSIONS = {
+    ".bazel",
+    ".cfg",
+    ".conf",
+    ".gradle",
+    ".ini",
+    ".json",
+    ".lock",
+    ".properties",
+    ".toml",
+    ".xml",
+    ".yaml",
+    ".yml",
+}
+CONFIG_FILENAMES = {
+    ".gitignore",
+    "BUILD",
+    "BUILD.bazel",
+    "Cargo.toml",
+    "Dockerfile",
+    "Makefile",
+    "MODULE.bazel",
+    "WORKSPACE",
+    "WORKSPACE.bazel",
+    "build.gradle",
+    "build.gradle.kts",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "pom.xml",
+    "pyproject.toml",
+    "settings.gradle",
+    "settings.gradle.kts",
+}
+TEST_PATH_SEGMENTS = {
+    "__tests__",
+    "spec",
+    "specs",
+    "test",
+    "tests",
+}
+
 
 def canon_dir(root: Path | None = None) -> Path:
     if root is None:
@@ -527,6 +606,54 @@ def scale_exclusion_reason(rel_path: str) -> str | None:
     return None
 
 
+def _is_test_like_path(rel_path: str) -> bool:
+    normalized = rel_path.strip("/")
+    if not normalized:
+        return False
+    parts = normalized.split("/")
+    lower_parts = [part.lower() for part in parts]
+    if any(part in TEST_PATH_SEGMENTS for part in lower_parts[:-1]):
+        return True
+    filename = lower_parts[-1]
+    path = Path(normalized)
+    stem = path.stem
+    ext = path.suffix.lower()
+    return (
+        filename.startswith("test_")
+        or filename.endswith("_test.py")
+        or filename.endswith("_tests.py")
+        or filename.endswith(".test.js")
+        or filename.endswith(".test.jsx")
+        or filename.endswith(".test.ts")
+        or filename.endswith(".test.tsx")
+        or filename.endswith(".spec.js")
+        or filename.endswith(".spec.jsx")
+        or filename.endswith(".spec.ts")
+        or filename.endswith(".spec.tsx")
+        or (ext in {".java", ".kt", ".kts", ".cs", ".scala"} and (stem.endswith("Test") or stem.endswith("Tests")))
+    )
+
+
+def classify_source_path(rel_path: str, extension: str | None = None) -> str:
+    """Classify repository paths for source-aware scan and graph routing."""
+    normalized = rel_path.strip("/")
+    if not normalized:
+        return SOURCE_CLASS_UNKNOWN
+    if scale_exclusion_reason(normalized) is not None:
+        return SOURCE_CLASS_GENERATED_OR_LOCAL
+
+    path = Path(normalized)
+    ext = (extension if extension is not None else path.suffix).lower()
+    filename = path.name
+    if ext in CODE_EXTENSIONS:
+        return SOURCE_CLASS_TEST if _is_test_like_path(normalized) else SOURCE_CLASS_CODE
+    if ext in DOCUMENTATION_EXTENSIONS:
+        return SOURCE_CLASS_DOCUMENTATION
+    if ext in CONFIG_EXTENSIONS or filename in CONFIG_FILENAMES:
+        return SOURCE_CLASS_CONFIG
+    return SOURCE_CLASS_UNKNOWN
+
+
 def path_counts_toward_complexity(rel_path: str) -> bool:
     return scale_exclusion_reason(rel_path) is None
 
@@ -699,6 +826,15 @@ def generate_repo_context(repo_metadata: dict, repo_tree: list[dict] | None = No
     repo_mode = repo_metadata.get("repo_mode", "unknown")
     scan = repo_metadata.get("scan", {})
     dominant_languages = scan.get("dominant_languages", [])
+    source_file_count = int(scan.get("source_file_count", 0) or 0)
+    code_file_count = int(scan.get("code_file_count", 0) or 0)
+    test_file_count = int(scan.get("test_file_count", 0) or 0)
+    documentation_file_count = int(scan.get("documentation_file_count", 0) or 0)
+    generated_or_local_file_count = int(scan.get("generated_or_local_file_count", 0) or 0)
+    config_file_count = int(scan.get("config_file_count", 0) or 0)
+    unknown_file_count = int(scan.get("unknown_file_count", 0) or 0)
+    estimated_code_loc = int(scan.get("estimated_code_loc", 0) or 0)
+    estimated_documentation_loc = int(scan.get("estimated_documentation_loc", 0) or 0)
     build_systems = scan.get("build_systems", [])
     build_paths = scan.get("build_paths", [])
     test_paths = scan.get("test_paths", [])
@@ -710,6 +846,9 @@ def generate_repo_context(repo_metadata: dict, repo_tree: list[dict] | None = No
         "",
         f"- Repo mode candidate: `{repo_mode}`",
         f"- Dominant languages: {', '.join(f'`{lang}`' for lang in dominant_languages) if dominant_languages else '`unknown`'}",
+        f"- Source volume: `{source_file_count}` source/test files (`{code_file_count}` code, `{test_file_count}` test) and `{estimated_code_loc}` estimated code LoC",
+        f"- Documentation/context volume: `{documentation_file_count}` documentation files and `{estimated_documentation_loc}` estimated documentation LoC",
+        f"- Non-source inventory: `{config_file_count}` config files, `{unknown_file_count}` unknown files, `{generated_or_local_file_count}` generated/local files",
         f"- Build systems: {', '.join(f'`{item}`' for item in build_systems) if build_systems else '`unknown`'}",
         f"- Declared modules: {', '.join(f'`{item}`' for item in declared_modules[:6]) if declared_modules else '`none detected`'}",
         "- Major code zones:",

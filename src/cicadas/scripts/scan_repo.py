@@ -23,6 +23,7 @@ from utils import (
     REPO_TREE_FILENAME,
     _meaningful_runtime_areas,
     canon_dir,
+    classify_source_path,
     entry_counts_toward_complexity,
     generate_repo_context,
     get_project_root,
@@ -30,6 +31,12 @@ from utils import (
     save_repo_context,
     save_repo_metadata,
     scale_exclusion_reason,
+    SOURCE_CLASS_CODE,
+    SOURCE_CLASS_CONFIG,
+    SOURCE_CLASS_DOCUMENTATION,
+    SOURCE_CLASS_GENERATED_OR_LOCAL,
+    SOURCE_CLASS_TEST,
+    SOURCE_CLASS_UNKNOWN,
 )
 
 
@@ -88,9 +95,18 @@ class ScanSummary:
     directory_entries: list[dict]
     top_level_entries: list[str]
     dominant_languages: dict[str, int]
+    dominant_code_languages: dict[str, int]
     meaningful_file_count: int
     estimated_loc: int
     total_file_count: int
+    code_file_count: int
+    test_file_count: int
+    documentation_file_count: int
+    generated_or_local_file_count: int
+    config_file_count: int
+    unknown_file_count: int
+    estimated_code_loc: int
+    estimated_documentation_loc: int
     build_paths: list[str]
     test_paths: list[str]
     runtime_package_surfaces: list[str]
@@ -232,15 +248,22 @@ def _summarize_file(path: Path, root: Path, gitignored_paths: set[str]) -> dict 
     language = LANGUAGE_BY_EXTENSION.get(extension)
     summary = f"{path.name} in {path.parent.relative_to(root).as_posix() or '.'}"
     estimated_loc = _estimate_loc(path, extension)
+    scale_metadata = _scale_metadata(rel, gitignored_paths)
+    source_class = (
+        SOURCE_CLASS_GENERATED_OR_LOCAL
+        if scale_metadata.get("scale_exclusion_reason")
+        else classify_source_path(rel, extension)
+    )
     return {
         "path": rel,
         "kind": "file",
         "bytes": stat.st_size,
         "extension": extension,
         "language": language,
+        "source_class": source_class,
         "estimated_loc": estimated_loc,
         "summary": summary,
-        **_scale_metadata(rel, gitignored_paths),
+        **scale_metadata,
     }
 
 
@@ -505,10 +528,10 @@ def _runtime_package_surfaces(file_paths: set[str], directory_entries: list[dict
     return sorted(surfaces)[:8]
 
 
-def _scale_class(meaningful_file_count: int, estimated_loc: int) -> str:
-    if meaningful_file_count >= 25_000 or estimated_loc >= 2_000_000:
+def _scale_class(source_file_count: int, estimated_code_loc: int) -> str:
+    if source_file_count >= 25_000 or estimated_code_loc >= 2_000_000:
         return "mega-repo"
-    if meaningful_file_count >= 1_000 or estimated_loc >= 100_000:
+    if source_file_count >= 1_000 or estimated_code_loc >= 100_000:
         return "large-repo"
     return "normal-repo"
 
@@ -526,21 +549,28 @@ def _canon_strategy_for_mode(mode: str, declared_modules: list[str], build_syste
 def _classify_repo(
     meaningful_file_count: int,
     estimated_loc: int,
+    code_file_count: int,
+    test_file_count: int,
+    documentation_file_count: int,
+    generated_or_local_file_count: int,
+    estimated_code_loc: int,
+    estimated_documentation_loc: int,
     build_systems: list[str],
     declared_modules: list[str],
     major_code_zones: list[str],
     test_paths: list[str],
     runtime_package_surfaces: list[str],
-    dominant_languages: dict[str, int],
+    dominant_code_languages: dict[str, int],
 ) -> tuple[str, str, str, str, list[dict], dict]:
-    scale_class = _scale_class(meaningful_file_count, estimated_loc)
+    source_file_count = code_file_count + test_file_count
+    scale_class = _scale_class(source_file_count, estimated_code_loc)
     topology_score = 0
     topology_score += 2 if len(declared_modules) >= 20 else 1 if len(declared_modules) >= 5 else 0
     topology_score += 1 if len(build_systems) >= 2 else 0
     topology_score += 1 if len(major_code_zones) >= 4 else 0
     topology_score += 1 if len(test_paths) >= 3 else 0
     topology_score += 1 if len(runtime_package_surfaces) >= 4 else 0
-    topology_score += 1 if len(dominant_languages) >= 3 else 0
+    topology_score += 1 if len(dominant_code_languages) >= 3 else 0
 
     topology_class = "mega-repo" if topology_score >= 5 else "large-repo" if topology_score >= 2 else "normal-repo"
     repo_mode = scale_class if _class_rank(scale_class) >= _class_rank(topology_class) else topology_class
@@ -548,18 +578,29 @@ def _classify_repo(
     heuristic_scores = {
         "meaningful_file_count": meaningful_file_count,
         "estimated_loc": estimated_loc,
+        "source_file_count": source_file_count,
+        "code_file_count": code_file_count,
+        "test_file_count": test_file_count,
+        "documentation_file_count": documentation_file_count,
+        "generated_or_local_file_count": generated_or_local_file_count,
+        "estimated_code_loc": estimated_code_loc,
+        "estimated_documentation_loc": estimated_documentation_loc,
         "declared_module_count": len(declared_modules),
         "major_code_zone_count": len(major_code_zones),
         "test_surface_count": len(test_paths),
         "runtime_surface_count": len(runtime_package_surfaces),
         "build_system_count": len(build_systems),
-        "language_count": len(dominant_languages),
+        "language_count": len(dominant_code_languages),
         "topology_score": topology_score,
     }
     evidence = [
         {
             "signal": "scale_floor",
-            "observation": f"Detected {meaningful_file_count} meaningful files and {estimated_loc} estimated LoC, giving a scale floor of `{scale_class}`.",
+            "observation": (
+                f"Detected {source_file_count} source/test files and {estimated_code_loc} estimated code LoC "
+                f"(with {documentation_file_count} documentation files, {estimated_documentation_loc} documentation LoC, "
+                f"and {generated_or_local_file_count} generated/local files), giving a scale floor of `{scale_class}`."
+            ),
             "weight": "high",
         },
         {
@@ -631,9 +672,18 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
             dir_stats.setdefault(parent_rel, DirectoryStats(path=parent_rel)).child_dir_count += 1
 
     dominant_languages: dict[str, int] = defaultdict(int)
+    dominant_code_languages: dict[str, int] = defaultdict(int)
     test_paths: set[str] = set()
     meaningful_file_count = 0
     estimated_loc = 0
+    code_file_count = 0
+    test_file_count = 0
+    documentation_file_count = 0
+    generated_or_local_file_count = 0
+    config_file_count = 0
+    unknown_file_count = 0
+    estimated_code_loc = 0
+    estimated_documentation_loc = 0
 
     reporter.phase(f"Scanning {len(file_paths)} files into {tree_path.name}")
     scan_started_at = time.monotonic()
@@ -644,15 +694,35 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
                     tree_file.write(f"{json.dumps(result, sort_keys=True)}\n")
 
                     language = result.get("language")
+                    source_class = result.get("source_class") or SOURCE_CLASS_UNKNOWN
+                    file_loc = int(result.get("estimated_loc", 0) or 0)
                     if language:
                         dominant_languages[language] += 1
+                        if source_class in {SOURCE_CLASS_CODE, SOURCE_CLASS_TEST}:
+                            dominant_code_languages[language] += 1
 
                     rel = result["path"]
-                    if rel.startswith("tests"):
+                    if source_class == SOURCE_CLASS_CODE:
+                        code_file_count += 1
+                        estimated_code_loc += file_loc
+                    elif source_class == SOURCE_CLASS_TEST:
+                        test_file_count += 1
+                        estimated_code_loc += file_loc
+                    elif source_class == SOURCE_CLASS_DOCUMENTATION:
+                        documentation_file_count += 1
+                        estimated_documentation_loc += file_loc
+                    elif source_class == SOURCE_CLASS_GENERATED_OR_LOCAL:
+                        generated_or_local_file_count += 1
+                    elif source_class == SOURCE_CLASS_CONFIG:
+                        config_file_count += 1
+                    else:
+                        unknown_file_count += 1
+
+                    if rel.startswith("tests") or source_class == SOURCE_CLASS_TEST:
                         test_paths.add(rel.split("/", 1)[0])
                     if entry_counts_toward_complexity(result):
                         meaningful_file_count += 1
-                        estimated_loc += int(result.get("estimated_loc", 0) or 0)
+                        estimated_loc += file_loc
 
                     parent_rel = _parent_rel(rel)
                     parent_stats = dir_stats.setdefault(parent_rel, DirectoryStats(path=parent_rel))
@@ -685,12 +755,18 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
     scale_class, topology_class, mode, canon_strategy, evidence, heuristic_scores = _classify_repo(
         meaningful_file_count=meaningful_file_count,
         estimated_loc=estimated_loc,
+        code_file_count=code_file_count,
+        test_file_count=test_file_count,
+        documentation_file_count=documentation_file_count,
+        generated_or_local_file_count=generated_or_local_file_count,
+        estimated_code_loc=estimated_code_loc,
+        estimated_documentation_loc=estimated_documentation_loc,
         build_systems=build_systems,
         declared_modules=declared_modules,
         major_code_zones=major_code_zones,
         test_paths=sorted(test_paths),
         runtime_package_surfaces=runtime_package_surfaces,
-        dominant_languages=dict(dominant_languages),
+        dominant_code_languages=dict(dominant_code_languages),
     )
     reporter.done(f"Inventory complete: {len(file_paths)} files, {len(directory_entries)} directories")
     return ScanSummary(
@@ -698,9 +774,18 @@ def scan_repository(root: Path, tree_path: Path, summary_depth: int = 2, progres
         directory_entries=directory_entries,
         top_level_entries=top_level_entries,
         dominant_languages=dict(dominant_languages),
+        dominant_code_languages=dict(dominant_code_languages),
         meaningful_file_count=meaningful_file_count,
         estimated_loc=estimated_loc,
         total_file_count=len(file_paths),
+        code_file_count=code_file_count,
+        test_file_count=test_file_count,
+        documentation_file_count=documentation_file_count,
+        generated_or_local_file_count=generated_or_local_file_count,
+        config_file_count=config_file_count,
+        unknown_file_count=unknown_file_count,
+        estimated_code_loc=estimated_code_loc,
+        estimated_documentation_loc=estimated_documentation_loc,
         build_paths=sorted(build_paths),
         test_paths=sorted(test_paths),
         runtime_package_surfaces=runtime_package_surfaces,
@@ -748,7 +833,17 @@ def build_repo_metadata(root: Path, summary: ScanSummary) -> dict:
         "generated_targets": ["product-overview.md", "tech-overview.md", "summary.md"]
         + (["slices/"] if summary.mode in {"large-repo", "mega-repo"} else []),
     }
-    top_languages = [lang for lang, _ in sorted(summary.dominant_languages.items(), key=lambda item: (-item[1], item[0]))[:3]]
+    top_languages = [
+        lang
+        for lang, _ in sorted(
+            (summary.dominant_code_languages or summary.dominant_languages).items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:3]
+    ]
+    top_repository_languages = [
+        lang
+        for lang, _ in sorted(summary.dominant_languages.items(), key=lambda item: (-item[1], item[0]))[:3]
+    ]
     return {
         "schema_version": 1,
         "scan_version": 1,
@@ -760,8 +855,18 @@ def build_repo_metadata(root: Path, summary: ScanSummary) -> dict:
             "repo_file_count": summary.total_file_count,
             "meaningful_file_count": summary.meaningful_file_count,
             "estimated_loc": summary.estimated_loc,
+            "source_file_count": summary.code_file_count + summary.test_file_count,
+            "code_file_count": summary.code_file_count,
+            "test_file_count": summary.test_file_count,
+            "documentation_file_count": summary.documentation_file_count,
+            "generated_or_local_file_count": summary.generated_or_local_file_count,
+            "config_file_count": summary.config_file_count,
+            "unknown_file_count": summary.unknown_file_count,
+            "estimated_code_loc": summary.estimated_code_loc,
+            "estimated_documentation_loc": summary.estimated_documentation_loc,
             "top_level_entries": len(summary.top_level_entries),
             "dominant_languages": top_languages,
+            "dominant_repository_languages": top_repository_languages,
             "build_systems": summary.build_systems,
             "declared_modules": summary.declared_modules[:50],
             "major_code_zones": summary.major_code_zones,
