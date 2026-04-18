@@ -47,6 +47,19 @@
       "created_at": "2026-04-18T04:43:58.274845+00:00",
       "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-query-quality",
       "initiative": "graph-quality-treesitter"
+    },
+    "feat/graph-eval-harness": {
+      "intent": "Add local graph evaluation harness with scenario JSONL, synthetic mega-repo fixture support, metrics aggregation, and private scenario guidance.",
+      "modules": [
+        "src/cicadas/scripts/graph.py",
+        "tests/test_graph_eval.py",
+        "src/cicadas/scripts/graph_eval.py",
+        "tests/fixtures"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-18T04:49:46.007071+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-eval-harness",
+      "initiative": "graph-quality-treesitter"
     }
   }
 }
