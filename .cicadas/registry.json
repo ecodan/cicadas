@@ -33,6 +33,20 @@
       "created_at": "2026-04-18T04:24:39.802062+00:00",
       "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-layered-graph-extraction",
       "initiative": "graph-quality-treesitter"
+    },
+    "feat/graph-query-quality": {
+      "intent": "Improve graph query quality by removing arbitrary search truncation, adding deterministic candidate generation, edge-based neighbors, and overlap-ready result summaries in usage.",
+      "modules": [
+        "tests/test_graph.py",
+        "src/cicadas/scripts/graph_store.py",
+        "src/cicadas/scripts/graph_query.py",
+        "src/cicadas/scripts/graph.py",
+        "src/cicadas/scripts/graph_usage.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-18T04:43:58.274845+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-query-quality",
+      "initiative": "graph-quality-treesitter"
     }
   }
 }
