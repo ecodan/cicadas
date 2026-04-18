@@ -62,13 +62,13 @@ next_section: "## Partition: feat/source-aware-scan"
 
 ## Partition: feat/graph-eval-harness
 
-- [ ] Define graph eval scenario JSONL schema for search, route, neighbors, tests, callers, callees, and signature-impact checks <!-- id: 50 -->
-- [ ] Add `graph eval --repo <path> --scenario-file <jsonl> --output <path>` command or equivalent script entrypoint <!-- id: 51 -->
-- [ ] Implement synthetic mega-repo fixture/generator support for doc-heavy scale, search noise, dense adjacency, generated/support noise, and parser-unavailable fallback <!-- id: 52 -->
-- [ ] Implement metric aggregation for build coverage, search top-N/rank, route top-N/rank, neighbor hit rate, test discovery, latency, and failure reasons <!-- id: 53 -->
-- [ ] Write JSON report output plus concise human-readable summary output <!-- id: 54 -->
-- [ ] Document private Jira/Confluence scenario files as local/gitignored inputs outside the public repository <!-- id: 55 -->
-- [ ] Add tests for scenario parsing, synthetic fixture execution, metric aggregation, and report compatibility <!-- id: 56 -->
+- [x] Define graph eval scenario JSONL schema for search, route, neighbors, tests, callers, callees, and signature-impact checks <!-- id: 50 -->
+- [x] Add `graph eval --repo <path> --scenario-file <jsonl> --output <path>` command or equivalent script entrypoint <!-- id: 51 -->
+- [x] Implement synthetic mega-repo fixture/generator support for doc-heavy scale, search noise, dense adjacency, generated/support noise, and parser-unavailable fallback <!-- id: 52 -->
+- [x] Implement metric aggregation for build coverage, search top-N/rank, route top-N/rank, neighbor hit rate, test discovery, latency, and failure reasons <!-- id: 53 -->
+- [x] Write JSON report output plus concise human-readable summary output <!-- id: 54 -->
+- [x] Document private Jira/Confluence scenario files as local/gitignored inputs outside the public repository <!-- id: 55 -->
+- [x] Add tests for scenario parsing, synthetic fixture execution, metric aggregation, and report compatibility <!-- id: 56 -->
 
 ## Partition: feat/graph-quality-guidance
 
