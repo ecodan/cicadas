@@ -41,13 +41,13 @@ next_section: "## Partition: feat/source-aware-scan"
 
 ## Partition: feat/layered-graph-extraction
 
-- [ ] Add graph fact metadata helpers for extraction source, confidence, and semantic resolution <!-- id: 20 -->
-- [ ] Add optional Tree-sitter adapter with runtime package/grammar capability detection and no network/install behavior <!-- id: 21 -->
-- [ ] Fix Python extractor streamed-build state so linked test edges are emitted and `graph tests` works after normal builds <!-- id: 22 -->
-- [ ] Update JS/TS extraction to use Tree-sitter structural parsing when available and keep existing fallback behavior when absent <!-- id: 23 -->
-- [ ] Implement Rust analyzer status and optional Tree-sitter structural extraction for modules, functions, structs, enums, impl blocks, use statements, and tests <!-- id: 24 -->
-- [ ] Update graph build metadata and status output to report Tree-sitter capability and extraction modes per language <!-- id: 25 -->
-- [ ] Add graph tests for Tree-sitter-unavailable fallback, Python linked tests, and Rust coverage metadata <!-- id: 26 -->
+- [x] Add graph fact metadata helpers for extraction source, confidence, and semantic resolution <!-- id: 20 -->
+- [x] Add optional Tree-sitter adapter with runtime package/grammar capability detection and no network/install behavior <!-- id: 21 -->
+- [x] Fix Python extractor streamed-build state so linked test edges are emitted and `graph tests` works after normal builds <!-- id: 22 -->
+- [x] Update JS/TS extraction to use Tree-sitter structural parsing when available and keep existing fallback behavior when absent <!-- id: 23 -->
+- [x] Implement Rust analyzer status and optional Tree-sitter structural extraction for modules, functions, structs, enums, impl blocks, use statements, and tests <!-- id: 24 -->
+- [x] Update graph build metadata and status output to report Tree-sitter capability and extraction modes per language <!-- id: 25 -->
+- [x] Add graph tests for Tree-sitter-unavailable fallback, Python linked tests, and Rust coverage metadata <!-- id: 26 -->
 
 ## Partition: feat/graph-query-quality
 

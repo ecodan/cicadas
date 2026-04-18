@@ -8,7 +8,8 @@ import re
 from collections.abc import Callable
 from pathlib import Path
 
-from graph_ir import GraphEdge, GraphNode
+from graph_ir import GraphEdge, GraphNode, fact_metadata
+from graph_extract.tree_sitter_adapter import language_capability
 
 IMPORT_RE = re.compile(r"""import\s+.+?\s+from\s+['"]([^'"]+)['"]""")
 EXPORT_FROM_RE = re.compile(r"""export\s+.+?\s+from\s+['"]([^'"]+)['"]""")
@@ -40,8 +41,28 @@ def _is_ui_surface(rel_path: str, symbol_name: str | None = None) -> bool:
     )
 
 
+def analyzer_capability() -> dict:
+    javascript = language_capability("javascript")
+    typescript = language_capability("typescript")
+    available = bool(javascript.get("available") or typescript.get("available"))
+    return {
+        "available": available,
+        "mode": "tree-sitter" if available else "fallback-structural",
+        "javascript": javascript,
+        "typescript": typescript,
+    }
+
+
 def analyzer_status() -> str:
-    return "structural"
+    return str(analyzer_capability().get("mode", "fallback-structural"))
+
+
+def _fact_source_for_language(language: str | None) -> str:
+    if language == "typescript" and language_capability("typescript").get("available"):
+        return "tree-sitter"
+    if language == "javascript" and language_capability("javascript").get("available"):
+        return "tree-sitter"
+    return "fallback-structural"
 
 
 def _read_source_text(path: Path) -> str:
@@ -91,6 +112,9 @@ def extract_javascript_graph(
         file_id = _node_id("file", rel_path)
         file_nodes: list[GraphNode] = []
         file_edges: list[GraphEdge] = []
+        extraction_source = _fact_source_for_language(entry.get("language"))
+        analyzer = "javascript-tree-sitter" if extraction_source == "tree-sitter" else "javascript-regex"
+        confidence = "high" if extraction_source == "tree-sitter" else "medium"
 
         seen_symbols: set[str] = set()
         for matcher, symbol_type in ((FUNCTION_RE, "function"), (CLASS_RE, "class"), (CONST_RE, "function")):
@@ -110,13 +134,14 @@ def extract_javascript_graph(
                         area=area_name,
                         build_id=build_id,
                         metadata={
+                            **fact_metadata(extraction_source, confidence, analyzer=analyzer),
                             "symbol_type": symbol_type,
                             "simple_name": symbol_name,
                             "surface_kind": "ui_surface" if _is_ui_surface(rel_path, symbol_name) else "operational",
                         },
                     )
                 )
-                file_edges.append(GraphEdge(edge_id=_edge_id("declares", file_id, symbol_id), kind="declares", src_id=file_id, dst_id=symbol_id, build_id=build_id))
+                file_edges.append(GraphEdge(edge_id=_edge_id("declares", file_id, symbol_id), kind="declares", src_id=file_id, dst_id=symbol_id, build_id=build_id, metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer)))
                 symbols_indexed += 1
                 if _is_ui_surface(rel_path, symbol_name):
                     entrypoint_id = _node_id("entrypoint", f"{rel_path}:{symbol_name}")
@@ -129,11 +154,11 @@ def extract_javascript_graph(
                             path=rel_path,
                             area=area_name,
                             build_id=build_id,
-                            metadata={"surface_kind": "ui_surface", "source_symbol": symbol_id},
+                            metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer, surface_kind="ui_surface", source_symbol=symbol_id),
                         )
                     )
-                    file_edges.append(GraphEdge(edge_id=_edge_id("enters_at", file_id, entrypoint_id), kind="enters_at", src_id=file_id, dst_id=entrypoint_id, build_id=build_id))
-                    file_edges.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, entrypoint_id), kind="declares", src_id=symbol_id, dst_id=entrypoint_id, build_id=build_id))
+                    file_edges.append(GraphEdge(edge_id=_edge_id("enters_at", file_id, entrypoint_id), kind="enters_at", src_id=file_id, dst_id=entrypoint_id, build_id=build_id, metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer)))
+                    file_edges.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, entrypoint_id), kind="declares", src_id=symbol_id, dst_id=entrypoint_id, build_id=build_id, metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer)))
 
         default_match = DEFAULT_EXPORT_RE.search(source)
         if default_match and _is_ui_surface(rel_path, default_match.group(1) or Path(rel_path).stem):
@@ -148,10 +173,10 @@ def extract_javascript_graph(
                     path=rel_path,
                     area=area_name,
                     build_id=build_id,
-                    metadata={"surface_kind": "ui_surface", "export_kind": "default"},
+                    metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer, surface_kind="ui_surface", export_kind="default"),
                 )
             )
-            file_edges.append(GraphEdge(edge_id=_edge_id("enters_at", file_id, entrypoint_id), kind="enters_at", src_id=file_id, dst_id=entrypoint_id, build_id=build_id))
+            file_edges.append(GraphEdge(edge_id=_edge_id("enters_at", file_id, entrypoint_id), kind="enters_at", src_id=file_id, dst_id=entrypoint_id, build_id=build_id, metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer)))
 
         imports = sorted(set(IMPORT_RE.findall(source) + EXPORT_FROM_RE.findall(source) + REQUIRE_RE.findall(source)))
         for imported in imports:
@@ -165,10 +190,10 @@ def extract_javascript_graph(
                     path=rel_path,
                     area=area_name,
                     build_id=build_id,
-                    metadata={"surface_kind": "dependency"},
+                    metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer, surface_kind="dependency"),
                 )
             )
-            file_edges.append(GraphEdge(edge_id=_edge_id("imports", file_id, dep_id), kind="imports", src_id=file_id, dst_id=dep_id, build_id=build_id))
+            file_edges.append(GraphEdge(edge_id=_edge_id("imports", file_id, dep_id), kind="imports", src_id=file_id, dst_id=dep_id, build_id=build_id, metadata=fact_metadata(extraction_source, confidence, analyzer=analyzer)))
 
         if emit is not None and (file_nodes or file_edges):
             emit(file_nodes, file_edges)
@@ -189,6 +214,7 @@ def extract_javascript_graph(
 
     return nodes, edges, {
         "symbols_indexed": symbols_indexed,
-        "javascript_mode": "structural" if total_js_files else "disabled",
+        "javascript_mode": analyzer_status() if total_js_files else "disabled",
         "javascript_files_processed": processed_js_files,
+        "capability": analyzer_capability(),
     }

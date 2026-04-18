@@ -9,8 +9,10 @@ import time
 from pathlib import Path
 
 from graph_extract.common import build_structural_graph
+from graph_extract.javascript import analyzer_capability as javascript_analyzer_capability
 from graph_extract.javascript import analyzer_status as javascript_analyzer_status
 from graph_extract.java import analyzer_status as java_analyzer_status
+from graph_extract.rust import analyzer_capability as rust_analyzer_capability
 from graph_extract.rust import analyzer_status as rust_analyzer_status
 from graph_ir import GraphEdge, GraphNode
 from graph_store import (
@@ -79,14 +81,16 @@ class _GraphBuildProgress:
         self.javascript_files_processed = 0
         self.java_files_total = 0
         self.java_files_processed = 0
+        self.rust_files_total = 0
+        self.rust_files_processed = 0
         self.stage_nodes_written = 0
         self.stage_edges_written = 0
 
     def _percent_complete(self, *, phase: str, sqlite_written: bool = False, metadata_written: bool = False) -> int:
-        total_work = self.structural_files_total + self.python_files_total + self.javascript_files_total + self.java_files_total + 3
+        total_work = self.structural_files_total + self.python_files_total + self.javascript_files_total + self.java_files_total + self.rust_files_total + 3
         if total_work <= 0:
             return 0
-        completed_work = self.structural_files_processed + self.python_files_processed + self.javascript_files_processed + self.java_files_processed
+        completed_work = self.structural_files_processed + self.python_files_processed + self.javascript_files_processed + self.java_files_processed + self.rust_files_processed
         if phase in {"sqlite_stage_write", "sqlite_stage_write_complete", "promote_stage", "complete"}:
             completed_work += 1
         if sqlite_written or phase in {"promote_stage", "complete"}:
@@ -121,6 +125,8 @@ class _GraphBuildProgress:
         self.javascript_files_processed = int(extra.get("javascript_files_processed", self.javascript_files_processed) or 0)
         self.java_files_total = int(extra.get("java_files_total", self.java_files_total) or 0)
         self.java_files_processed = int(extra.get("java_files_processed", self.java_files_processed) or 0)
+        self.rust_files_total = int(extra.get("rust_files_total", self.rust_files_total) or 0)
+        self.rust_files_processed = int(extra.get("rust_files_processed", self.rust_files_processed) or 0)
         self.stage_nodes_written = int(extra.get("stage_nodes_written", self.stage_nodes_written) or 0)
         self.stage_edges_written = int(extra.get("stage_edges_written", self.stage_edges_written) or 0)
         updated_at = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -141,6 +147,8 @@ class _GraphBuildProgress:
             "javascript_files_processed": self.javascript_files_processed,
             "java_files_total": self.java_files_total,
             "java_files_processed": self.java_files_processed,
+            "rust_files_total": self.rust_files_total,
+            "rust_files_processed": self.rust_files_processed,
             "stage_nodes_written": self.stage_nodes_written,
             "stage_edges_written": self.stage_edges_written,
             "percent_complete": self._percent_complete(
@@ -334,6 +342,10 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
             stage_edges_written=progress.stage_edges_written,
         )
 
+        python_symbols = stats.get("python_stats", {}).get("symbols_indexed", 0)
+        javascript_symbols = stats.get("javascript_stats", {}).get("symbols_indexed", 0)
+        java_symbols = stats.get("java_stats", {}).get("symbols_indexed", 0)
+        rust_symbols = stats.get("rust_stats", {}).get("symbols_indexed", 0)
         save_graph_metadata(
             {
                 "schema_version": 1,
@@ -348,11 +360,19 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
                     "python": stats.get("python_stats", {}).get("python_mode", "structural"),
                     "javascript": stats.get("javascript_stats", {}).get("javascript_mode", javascript_analyzer_status()),
                     "java": stats.get("java_stats", {}).get("java_mode", java_analyzer_status()),
-                    "rust": rust_analyzer_status(),
+                    "rust": stats.get("rust_stats", {}).get("rust_mode", rust_analyzer_status()),
                 },
-                "symbols_indexed": stats.get("python_stats", {}).get("symbols_indexed", 0) + stats.get("javascript_stats", {}).get("symbols_indexed", 0) + stats.get("java_stats", {}).get("symbols_indexed", 0),
-                "javascript_symbols_indexed": stats.get("javascript_stats", {}).get("symbols_indexed", 0),
-                "java_symbols_indexed": stats.get("java_stats", {}).get("symbols_indexed", 0),
+                "analyzer_capabilities": {
+                    "javascript": stats.get("javascript_stats", {}).get("capability") or javascript_analyzer_capability(),
+                    "rust": stats.get("rust_stats", {}).get("capability")
+                    or stats.get("rust_stats", {}).get("analyzer")
+                    or rust_analyzer_capability(),
+                },
+                "symbols_indexed": python_symbols + javascript_symbols + java_symbols + rust_symbols,
+                "javascript_symbols_indexed": javascript_symbols,
+                "java_symbols_indexed": java_symbols,
+                "rust_symbols_indexed": rust_symbols,
+                "rust_files_processed": stats.get("rust_stats", {}).get("rust_files_processed", 0),
                 "java_structural_symbols_indexed": stats.get("java_stats", {}).get("java_structural_symbols_indexed", 0),
                 "java_semantic_symbols_indexed": stats.get("java_stats", {}).get("java_semantic_symbols_indexed", 0),
                 "java_semantic_batches_total": stats.get("java_stats", {}).get("java_semantic_batches_total", 0),
@@ -377,13 +397,16 @@ def run_graph_build(language_filter: str = "auto", force: bool = False) -> int:
             javascript_files_processed=progress.javascript_files_total,
             java_files_total=progress.java_files_total,
             java_files_processed=progress.java_files_total,
+            rust_files_total=progress.rust_files_total,
+            rust_files_processed=progress.rust_files_total,
             stage_nodes_written=progress.stage_nodes_written,
             stage_edges_written=progress.stage_edges_written,
             indexed_languages=stats["indexed_languages"],
             seeded_areas=len(stats["seeded_areas"]),
-            symbols_indexed=stats.get("python_stats", {}).get("symbols_indexed", 0) + stats.get("javascript_stats", {}).get("symbols_indexed", 0) + stats.get("java_stats", {}).get("symbols_indexed", 0),
-            javascript_symbols_indexed=stats.get("javascript_stats", {}).get("symbols_indexed", 0),
-            java_symbols_indexed=stats.get("java_stats", {}).get("symbols_indexed", 0),
+            symbols_indexed=python_symbols + javascript_symbols + java_symbols + rust_symbols,
+            javascript_symbols_indexed=javascript_symbols,
+            java_symbols_indexed=java_symbols,
+            rust_symbols_indexed=rust_symbols,
             db_path=str(graph_db_path()),
         )
 
