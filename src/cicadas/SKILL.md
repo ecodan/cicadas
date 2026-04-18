@@ -309,8 +309,14 @@ When `.cicadas/graph/metadata.json` and `.cicadas/graph/codegraph.sqlite` exist,
 - `python {cicadas-dir}/scripts/cicadas.py graph build` builds or refreshes local graph artifacts.
 - `python {cicadas-dir}/scripts/cicadas.py graph status` reports freshness and analyzer coverage.
 - `python {cicadas-dir}/scripts/cicadas.py graph area {artifact}` routes from a file, test, or symbol to a canon-seeded area.
-- `python {cicadas-dir}/scripts/cicadas.py graph tests {symbol}` and `graph signature-impact {symbol}` help find first tests and likely blast radius after a signature change.
-- `python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` summarizes local graph usage and end-to-end timings.
+- `python {cicadas-dir}/scripts/cicadas.py graph search {term} [--kind file|symbol|entrypoint|test] [--exclude-tests]` finds likely files, symbols, entrypoints, and tests with deterministic candidate ranking.
+- `python {cicadas-dir}/scripts/cicadas.py graph neighbors {artifact}` ranks graph-connected neighboring areas when edges exist and labels metadata fallback when they do not.
+- `python {cicadas-dir}/scripts/cicadas.py graph callers|callees {symbol} [--exclude-tests]` inspects direct call edges.
+- `python {cicadas-dir}/scripts/cicadas.py graph tests {symbol}` and `graph signature-impact {symbol} [--exclude-tests]` help find first tests and likely blast radius after a signature change.
+- `python {cicadas-dir}/scripts/cicadas.py graph eval --repo {path} --scenario-file {jsonl} --output {json}` runs local graph-quality scenarios; keep private Jira/Confluence scenario files outside the public repo or in gitignored local paths.
+- `python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` summarizes local graph usage, result-summary availability, overlap-ready fields, and end-to-end timings.
+
+Analyzer coverage is layered. Python uses AST extraction, Java can use structural plus semantic enrichment, JavaScript/TypeScript and Rust use fallback structural extraction and may report `tree-sitter` when optional Tree-sitter packages and grammars are locally available. Tree-sitter is never required; absence is reported as analyzer metadata and must not block scan, build, query, or non-graph Cicadas workflows.
 
 If the graph is missing or stale, continue with `canon/summary.md`, `canon/repo-context.md`, routing guides, and targeted code inspection. Do not block the workflow waiting for graph support.
 
@@ -560,8 +566,9 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 | **History** | `python {cicadas-dir}/scripts/cicadas.py history [--output path]` | Generate HTML timeline to `.cicadas/canon/history.html` |
 | **Graph Build** | `python {cicadas-dir}/scripts/cicadas.py graph build [--languages auto]` | Build optional local graph artifacts |
 | **Graph Status** | `python {cicadas-dir}/scripts/cicadas.py graph status` | Report graph freshness and analyzer coverage |
-| **Graph Route** | `python {cicadas-dir}/scripts/cicadas.py graph area\|neighbors\|tests\|callers\|callees\|signature-impact\|route ...` | Use the optional graph for routing and blast-radius analysis |
-| **Graph Usage** | `python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table\|json\|html]` | Summarize local graph usage and timings |
+| **Graph Route** | `python {cicadas-dir}/scripts/cicadas.py graph area\|neighbors\|tests\|callers\|callees\|signature-impact\|route\|search ... [--exclude-tests]` | Use the optional graph for routing, search, tests, and blast-radius analysis |
+| **Graph Eval** | `python {cicadas-dir}/scripts/cicadas.py graph eval --repo path --scenario-file scenarios.jsonl --output report.json` | Run local graph-quality scenarios against synthetic or private repos |
+| **Graph Usage** | `python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table\|json\|html]` | Summarize local graph usage, value proxies, and timings |
 | **Validate skill** | `python {cicadas-dir}/scripts/cicadas.py validate-skill {slug-or-path}` | Check Agent Skill spec compliance |
 | **Publish skill** | `python {cicadas-dir}/scripts/cicadas.py skill-publish {slug} [--publish-dir DIR] [--symlink] [--force]` | Copy/symlink active skill to publish destination (pre-validates) |
 

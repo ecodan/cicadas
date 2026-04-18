@@ -44,7 +44,7 @@ next_section: "## Partition: feat/source-aware-scan"
 - [x] Add graph fact metadata helpers for extraction source, confidence, and semantic resolution <!-- id: 20 -->
 - [x] Add optional Tree-sitter adapter with runtime package/grammar capability detection and no network/install behavior <!-- id: 21 -->
 - [x] Fix Python extractor streamed-build state so linked test edges are emitted and `graph tests` works after normal builds <!-- id: 22 -->
-- [x] Update JS/TS extraction to use Tree-sitter structural parsing when available and keep existing fallback behavior when absent <!-- id: 23 -->
+- [x] Update JS/TS extraction to report optional Tree-sitter capability while keeping fallback structural extraction behavior when parsing is absent <!-- id: 23 -->
 - [x] Implement Rust analyzer status and optional Tree-sitter structural extraction for modules, functions, structs, enums, impl blocks, use statements, and tests <!-- id: 24 -->
 - [x] Update graph build metadata and status output to report Tree-sitter capability and extraction modes per language <!-- id: 25 -->
 - [x] Add graph tests for Tree-sitter-unavailable fallback, Python linked tests, and Rust coverage metadata <!-- id: 26 -->
@@ -72,12 +72,12 @@ next_section: "## Partition: feat/source-aware-scan"
 
 ## Partition: feat/graph-quality-guidance
 
-- [ ] Update `src/cicadas/SKILL.md` graph guidance to include `search`, `neighbors`, `callers`, `callees`, `tests`, `signature-impact`, `--exclude-tests`, and fallback behavior <!-- id: 60 -->
-- [ ] Update emergence and routing guidance so graph use remains conditional and reflects improved search/neighbor behavior <!-- id: 61 -->
-- [ ] Update README and `src/cicadas/README.md` to document source-aware scan metrics, Tree-sitter optionality, analyzer modes, graph eval harness usage, and graph value reporting <!-- id: 62 -->
-- [ ] Add or update template/guidance tests for conditional graph guidance and optional Tree-sitter wording <!-- id: 63 -->
-- [ ] Run focused regression tests for scan, graph, graph eval, and templates <!-- id: 64 -->
-- [ ] Reflect any implementation-driven scope or behavior changes into PRD, tech-design, approach, and tasks before initiative PR <!-- id: 65 -->
+- [x] Update `src/cicadas/SKILL.md` graph guidance to include `search`, `neighbors`, `callers`, `callees`, `tests`, `signature-impact`, `--exclude-tests`, and fallback behavior <!-- id: 60 -->
+- [x] Update emergence and routing guidance so graph use remains conditional and reflects improved search/neighbor behavior <!-- id: 61 -->
+- [x] Update README and `src/cicadas/README.md` to document source-aware scan metrics, Tree-sitter optionality, analyzer modes, graph eval harness usage, and graph value reporting <!-- id: 62 -->
+- [x] Add or update template/guidance tests for conditional graph guidance and optional Tree-sitter wording <!-- id: 63 -->
+- [x] Run focused regression tests for scan, graph, graph eval, and templates <!-- id: 64 -->
+- [x] Reflect any implementation-driven scope or behavior changes into PRD, tech-design, approach, and tasks before initiative PR <!-- id: 65 -->
 
 ## Initiative Boundary
 

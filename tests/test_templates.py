@@ -89,6 +89,7 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("next_section", text)
 
     def test_graph_guidance_remains_conditional_across_workflows(self):
+        skill = (ROOT / "src" / "cicadas" / "SKILL.md").read_text()
         clarify = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()
         bug_fix = (ROOT / "src" / "cicadas" / "emergence" / "bug-fix.md").read_text()
         tweak = (ROOT / "src" / "cicadas" / "emergence" / "tweak.md").read_text()
@@ -101,6 +102,12 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("graph-backed tooling when available", routing)
         self.assertIn("graph area names aligned with canon slices", routing)
         self.assertIn("optional code graph", area_map)
+        self.assertIn("graph search", skill)
+        self.assertIn("graph neighbors", skill)
+        self.assertIn("graph callers|callees", skill)
+        self.assertIn("graph eval --repo", skill)
+        self.assertIn("--exclude-tests", skill)
+        self.assertIn("Tree-sitter is never required", skill)
 
 
 if __name__ == "__main__":

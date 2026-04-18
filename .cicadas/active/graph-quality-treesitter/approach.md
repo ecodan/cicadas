@@ -62,7 +62,7 @@ cli
 
 ### Partition 2: Layered Extraction and Optional Tree-sitter -> `feat/layered-graph-extraction`
 **Modules**: `src/cicadas/scripts/graph_ir.py`, `src/cicadas/scripts/graph_build.py`, `src/cicadas/scripts/graph_extract`, `tests/test_graph.py`
-**Scope**: Standardize extraction source/confidence metadata, add Tree-sitter capability detection, add optional JS/TS and Rust structural extraction, and fix Python streamed-build test links.
+**Scope**: Standardize extraction source/confidence metadata, add Tree-sitter capability detection, add Rust structural extraction with fallback, preserve JS/TS fallback structural extraction with capability reporting, and fix Python streamed-build test links.
 **Dependencies**: Requires Partition 1
 
 #### Artifact Type
@@ -76,13 +76,13 @@ cli
 - [ ] Graph nodes/edges produced by fallback, Python AST, Tree-sitter, and semantic paths carry extraction source and confidence metadata.
 - [ ] Python `graph tests <symbol>` returns linked tests from a normal streamed graph build.
 - [ ] Rust graph build reports explicit unavailable/fallback coverage when Tree-sitter Rust support is absent.
-- [ ] If Tree-sitter support is locally available or adapter-stubbed in tests, Rust and JS/TS structural facts are indexed.
+- [ ] If Tree-sitter support is locally available or adapter-stubbed in tests, Rust structural facts are indexed; JS/TS reports capability while continuing to use fallback structural extraction until a parser-backed extractor is added.
 
 #### Implementation Steps
 1. Add optional `tree_sitter_adapter.py` with package/grammar capability probes.
 2. Standardize metadata helpers for extraction source, confidence, and semantic resolution.
 3. Fix Python extractor state so test-node mappings survive streamed emission.
-4. Add optional Tree-sitter JS/TS extraction path while preserving regex fallback.
+4. Add JS/TS Tree-sitter capability reporting while preserving regex fallback extraction.
 5. Add optional Tree-sitter Rust extractor and accurate analyzer status reporting.
 
 ### Partition 3: Query Quality and Value Observability -> `feat/graph-query-quality`
