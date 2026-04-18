@@ -296,5 +296,88 @@ class TestScanRepo(CicadasTest):
         self.assertIn("Scan the repository", completed.stdout)
 
 
+    def test_scan_skips_sdd_install_dirs_with_skill_md(self):
+        # An SDD install at a non-standard path (e.g. tools/cicadas/) should be fully excluded.
+        sdd_dir = self.root / "tools" / "cicadas"
+        sdd_dir.mkdir(parents=True)
+        (sdd_dir / "SKILL.md").write_text("# Skill")
+        (sdd_dir / "emergence").mkdir()
+        (sdd_dir / "emergence" / "clarify.md").write_text("# Clarify")
+        (sdd_dir / "templates").mkdir()
+        (sdd_dir / "templates" / "prd.md").write_text("# PRD")
+        src_dir = self.root / "src" / "pkg"
+        src_dir.mkdir(parents=True)
+        (src_dir / "mod.py").write_text("print('real')\n")
+
+        tree_path, metadata_path, _context_path = scan_repo.run_scan()
+        entries = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+        paths = {entry["path"] for entry in entries}
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertIn("src/pkg/mod.py", paths)
+        # SDD install dir and its contents must not appear in the tree
+        self.assertFalse(any(p.startswith("tools/cicadas") for p in paths))
+        # Must not appear as a slice candidate or code zone
+        all_candidates = [s["paths"][0] for s in metadata.get("candidate_slices", [])]
+        self.assertFalse(any("cicadas" in c for c in all_candidates))
+
+    def test_scan_skips_sdd_state_dirs_by_substring(self):
+        # Root-level dirs starting with _ or . whose names contain known SDD substrings
+        # (bmad, gsd, openspec) should be excluded from traversal.
+        bmad_dir = self.root / "_bmad-output"
+        bmad_dir.mkdir()
+        for i in range(5):
+            (bmad_dir / f"story-{i}.md").write_text(f"# Story {i}")
+        gsd_dir = self.root / ".gsd-work"
+        gsd_dir.mkdir()
+        (gsd_dir / "epic.md").write_text("# Epic")
+        src_dir = self.root / "src" / "app"
+        src_dir.mkdir(parents=True)
+        (src_dir / "main.py").write_text("print('app')\n")
+
+        tree_path, metadata_path, _context_path = scan_repo.run_scan()
+        entries = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+        paths = {entry["path"] for entry in entries}
+        metadata = json.loads(metadata_path.read_text())
+
+        self.assertIn("src/app/main.py", paths)
+        self.assertFalse(any(p.startswith("_bmad-output") for p in paths))
+        self.assertFalse(any(p.startswith(".gsd-work") for p in paths))
+        self.assertNotIn("_bmad-output", metadata["scan"]["major_code_zones"])
+        self.assertNotIn(".gsd-work", metadata["scan"]["major_code_zones"])
+
+    def test_scan_does_not_skip_deep_source_dirs_matching_sdd_substrings(self):
+        # A source package named e.g. src/gsd-parser/ must NOT be excluded — the
+        # substring heuristic only applies at the project root level.
+        gsd_pkg = self.root / "src" / "gsd-parser"
+        gsd_pkg.mkdir(parents=True)
+        (gsd_pkg / "parser.py").write_text("def parse(): pass\n")
+
+        tree_path, _metadata_path, _context_path = scan_repo.run_scan()
+        entries = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+        paths = {entry["path"] for entry in entries}
+
+        self.assertIn("src/gsd-parser/parser.py", paths)
+
+    def test_scan_respects_scan_exclude_paths_from_config(self):
+        # Paths listed in config.json scan_exclude_paths are skipped entirely.
+        vendor_sdd = self.root / "vendor" / "my-sdd-tool"
+        vendor_sdd.mkdir(parents=True)
+        (vendor_sdd / "spec.md").write_text("# Spec")
+        (vendor_sdd / "task.md").write_text("# Task")
+        src_dir = self.root / "src" / "app"
+        src_dir.mkdir(parents=True)
+        (src_dir / "main.py").write_text("print('app')\n")
+        config_path = self.cicadas_dir / "config.json"
+        config_path.write_text(json.dumps({"scan_exclude_paths": ["vendor/my-sdd-tool"]}))
+
+        tree_path, _metadata_path, _context_path = scan_repo.run_scan()
+        entries = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+        paths = {entry["path"] for entry in entries}
+
+        self.assertIn("src/app/main.py", paths)
+        self.assertFalse(any(p.startswith("vendor/my-sdd-tool") for p in paths))
+
+
 if __name__ == "__main__":
     unittest.main()

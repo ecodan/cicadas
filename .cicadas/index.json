@@ -80,6 +80,13 @@
         "src/cicadas/scripts/scan_repo.py",
         "tests/test_scan_repo.py"
       ]
+    },
+    {
+      "timestamp": "2026-04-12T04:27:42.772293+00:00",
+      "branch": "fix/ignore-skills-sdd",
+      "summary": "Exclude SDD installs (SKILL.md detection), SDD state dirs (substring match on root-level ./_ prefixed dirs for bmad/cicadas/gsd/openspec), and config-declared scan_exclude_paths from scan_repository traversal",
+      "decisions": "",
+      "modules": []
     }
   ]
 }

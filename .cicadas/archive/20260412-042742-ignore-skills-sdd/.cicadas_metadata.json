@@ -1,0 +1,23 @@
+{
+  "name": "ignore-skills-sdd",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Exclude SDD installs, skill bundles, and SDD state dirs from repo scale/complexity scan to prevent inflation of file counts and slice candidates",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-04-12T04:21:54.427824+00:00"
+  },
+  "timestamp": "20260412-042742",
+  "associated_branches": {
+    "fix/ignore-skills-sdd": {
+      "intent": "Exclude SDD installs (SKILL.md), SDD state dirs (substring match), and config-declared paths from scan_repository traversal",
+      "modules": [
+        "src/cicadas/scripts/utils.py",
+        "src/cicadas/scripts/scan_repo.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-12T04:22:04.120480+00:00",
+      "initiative": "ignore-skills-sdd"
+    }
+  }
+}
