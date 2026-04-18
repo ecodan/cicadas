@@ -20,6 +20,19 @@
       "created_at": "2026-04-18T03:17:29.299969+00:00",
       "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-source-aware-scan",
       "initiative": "graph-quality-treesitter"
+    },
+    "feat/layered-graph-extraction": {
+      "intent": "Implement layered graph extraction metadata, optional Tree-sitter capability detection, Python streamed-build test link fixes, and optional JS/TS/Rust structural extraction.",
+      "modules": [
+        "tests/test_graph.py",
+        "src/cicadas/scripts/graph_build.py",
+        "src/cicadas/scripts/graph_ir.py",
+        "src/cicadas/scripts/graph_extract"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-04-18T04:24:39.802062+00:00",
+      "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-layered-graph-extraction",
+      "initiative": "graph-quality-treesitter"
     }
   }
 }
