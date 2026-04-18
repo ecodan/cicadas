@@ -11,6 +11,7 @@ from pathlib import Path
 from base import CicadasTest, SCRIPTS_DIR
 import graph_extract.java as graph_java
 import graph_store
+from graph_usage import render_usage_report
 from graph_ir import GraphEdge, GraphNode
 
 
@@ -227,6 +228,42 @@ class TestGraphCli(CicadasTest):
         self.assertIn("accounts", result.stdout)
         self.assertIn("confidence:", result.stdout)
 
+    def test_graph_neighbors_prefers_graph_connected_areas(self):
+        self.init_git()
+        (self.root / "src" / "payments").mkdir(parents=True)
+        (self.root / "src" / "accounts").mkdir(parents=True)
+        (self.root / "src" / "payments" / "pay.py").write_text(
+            "from src.accounts.ledger import ledger\n\n"
+            "def checkout():\n    return ledger()\n"
+        )
+        (self.root / "src" / "accounts" / "ledger.py").write_text(
+            "def ledger():\n    return 1\n"
+        )
+        (self.cicadas_dir / "canon").mkdir(exist_ok=True)
+        (self.cicadas_dir / "canon" / "repo.json").write_text(
+            json.dumps(
+                {
+                    "candidate_slices": [
+                        {"name": "payments", "paths": ["src/payments"], "status": "seeded"},
+                        {"name": "accounts", "paths": ["src/accounts"], "status": "seeded"},
+                    ]
+                }
+            )
+        )
+        entries = []
+        for path in sorted((self.root / "src").rglob("*.py")):
+            rel_path = path.relative_to(self.root).as_posix()
+            entries.append(json.dumps({"path": rel_path, "kind": "file", "language": "python", "extension": ".py", "summary": rel_path}))
+        (self.cicadas_dir / "canon" / "repo-tree.jsonl").write_text("\n".join(entries) + "\n")
+
+        self._run_cli("graph", "build")
+        result = self._run_cli("graph", "neighbors", "src/payments/pay.py")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("accounts", result.stdout)
+        self.assertIn("basis: graph-connected", result.stdout)
+        self.assertNotIn("metadata fallback", result.stdout)
+
     def test_graph_signature_impact_reports_callers_and_tests_for_python(self):
         self.init_git()
         (self.root / "src").mkdir()
@@ -415,6 +452,65 @@ class TestGraphCli(CicadasTest):
         self.assertIn("avg_call_duration_ms", result.stdout)
         self.assertIn("avg_end_to_end_ms", result.stdout)
 
+    def test_graph_usage_reports_result_summary_and_overlap_fields(self):
+        self.init_git()
+        usage_path = self.cicadas_dir / "graph" / "usage.jsonl"
+        usage_path.parent.mkdir(parents=True, exist_ok=True)
+        usage_path.write_text(
+            "\n".join(
+                json.dumps(entry)
+                for entry in [
+                    {
+                        "timestamp": "2026-04-17T00:00:00Z",
+                        "query_kind": "area",
+                        "call_duration_ms": 10,
+                        "end_to_end_ms": 12,
+                        "graph_query_ms": 8,
+                        "metadata": {"target": "src/demo.py"},
+                    },
+                    {
+                        "timestamp": "2026-04-17T00:00:01Z",
+                        "query_kind": "signature-impact",
+                        "call_duration_ms": 11,
+                        "end_to_end_ms": 13,
+                        "graph_query_ms": 9,
+                        "result_summary": {"top_area": "src/cicadas/scripts", "top_file": "src/cicadas/scripts/graph_usage.py"},
+                        "overlap": {"predicted_files": 2, "touched_files": 1},
+                        "metadata": {"target": "helper"},
+                    },
+                    {
+                        "timestamp": "2026-04-17T00:00:02Z",
+                        "query_kind": "tests",
+                        "call_duration_ms": 14,
+                        "end_to_end_ms": 15,
+                        "graph_query_ms": 7,
+                        "metadata": {
+                            "target": "helper",
+                            "result_summary": {"top_symbol": "helper"},
+                            "overlap": {"predicted_tests": 1, "touched_tests": 1},
+                        },
+                    },
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        report = render_usage_report()
+        payload = json.loads(render_usage_report(view="json"))
+
+        self.assertIn("Result summaries present: 2/3", report)
+        self.assertIn("Result summary fields: top_area=1, top_file=1, top_symbol=1", report)
+        self.assertIn("Overlap-ready fields present: 2/3", report)
+        self.assertIn("Overlap fields: predicted_files=1, predicted_tests=1, touched_files=1, touched_tests=1", report)
+        self.assertIn("result_summaries=0", report)
+        self.assertIn("result_summaries=1", report)
+        self.assertIn("overlap_ready=1", report)
+        self.assertEqual(payload["summary"]["result_summary_present"], 2)
+        self.assertEqual(payload["summary"]["overlap_present"], 2)
+        self.assertEqual(payload["summary"]["result_summary_fields"]["top_symbol"], 1)
+        self.assertEqual(payload["summary"]["overlap_fields"]["predicted_tests"], 1)
+
     def test_graph_search_finds_operational_symbols(self):
         self.init_git()
         (self.root / "src" / "ui").mkdir(parents=True)
@@ -437,6 +533,27 @@ class TestGraphCli(CicadasTest):
         self.assertIn("Search results for `IssueView`", result.stdout)
         self.assertIn("IssueView.tsx", result.stdout)
         self.assertNotIn("test_issue_view", result.stdout)
+
+    def test_graph_search_ranks_beyond_first_250_candidates(self):
+        self.init_git()
+        (self.root / "src" / "ui").mkdir(parents=True)
+        (self.root / "src" / "support").mkdir(parents=True)
+        for idx in range(300):
+            (self.root / "src" / "support" / f"IssueViewFixture{idx}.py").write_text(
+                f"def issue_view_fixture_{idx}():\n    return {{}}\n"
+            )
+        (self.root / "src" / "ui" / "IssueView.tsx").write_text(
+            "export function IssueView() {\n  return null;\n}\n"
+        )
+
+        self._run_cli("graph", "build")
+        result = self._run_cli("graph", "search", "IssueView", "--limit", "5")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Candidate generation:", result.stdout)
+        lines = [line for line in result.stdout.splitlines() if line.startswith("- ") and "Candidate generation:" not in line]
+        self.assertTrue(lines)
+        self.assertIn("IssueView.tsx", lines[0])
 
     def test_graph_build_indexes_javascript_structurally(self):
         self.init_git()
