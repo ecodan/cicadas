@@ -54,14 +54,10 @@ def analyzer_capability() -> dict:
 
 
 def analyzer_status() -> str:
-    return str(analyzer_capability().get("mode", "fallback-structural"))
+    return "fallback-structural"
 
 
 def _fact_source_for_language(language: str | None) -> str:
-    if language == "typescript" and language_capability("typescript").get("available"):
-        return "tree-sitter"
-    if language == "javascript" and language_capability("javascript").get("available"):
-        return "tree-sitter"
     return "fallback-structural"
 
 

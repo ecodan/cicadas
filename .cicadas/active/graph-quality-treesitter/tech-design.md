@@ -106,7 +106,7 @@ src/cicadas/scripts/
 ├── graph_extract/
 │   ├── common.py                   # [MODIFIED] shared layered extraction contracts
 │   ├── tree_sitter_adapter.py      # [NEW] optional runtime adapter and grammar capability detection
-│   ├── javascript.py               # [MODIFIED] Tree-sitter-backed JS/TS structural extraction when available
+│   ├── javascript.py               # [MODIFIED] fallback JS/TS structural extraction with Tree-sitter capability reporting
 │   ├── rust.py                     # [MODIFIED] Rust structural extraction via Tree-sitter when available
 │   ├── python.py                   # [MODIFIED] streamed-build linked-test fix
 │   └── java.py                     # [MODIFIED] metadata alignment; semantic harness remains primary
@@ -294,7 +294,7 @@ Graph: available
 Build ID: ...
 Freshness: ...
 Indexed Languages: python, javascript, typescript, rust
-Analyzers: python=python-ast, javascript=tree-sitter, rust=tree-sitter, java=semantic
+Analyzers: python=python-ast, javascript=fallback-structural, rust=tree-sitter, java=semantic
 Tree-sitter: javascript=available, typescript=available, rust=unavailable
 Search Index: fts|basic
 ```
@@ -302,7 +302,7 @@ Search Index: fts|basic
 `graph search` result rows should include at least:
 
 ```text
-- symbol: IssueView (path; area: web-issue; source: tree-sitter; confidence: medium; surface: ui_surface)
+- symbol: IssueView (path; area: web-issue; source: fallback-structural; confidence: medium; surface: ui_surface)
 ```
 
 `graph neighbors` should identify graph vs fallback basis:
@@ -423,7 +423,7 @@ def test_scan_does_not_classify_markdown_heavy_repo_as_large(self):
 
 1. **Source classification foundation** *(blocking)* - add shared source classification and scan metadata changes with doc-heavy regression tests.
 2. **Graph metadata and extraction contracts** *(depends on 1)* - standardize extraction source/confidence metadata and fix streamed Python test links.
-3. **Optional Tree-sitter adapter and language extraction** *(depends on 2)* - add capability detection plus JS/TS and Rust structural extraction paths with fallback tests.
+3. **Optional Tree-sitter adapter and language extraction** *(depends on 2)* - add capability detection, Rust structural extraction, JS/TS fallback metadata, and fallback tests.
 4. **Query quality** *(depends on 2 and 3)* - improve search candidate generation, edge-based neighbors, and output confidence.
 5. **Mega-repo evaluation harness** *(depends on 4)* - add scenario schema, synthetic scale fixtures, local external-repo eval execution, and JSON/markdown reports.
 6. **Usage/value proxies** *(depends on 4 and informed by 5)* - add result summaries and local overlap reporting fields aligned with eval metrics.
