@@ -51,14 +51,14 @@ next_section: "## Partition: feat/source-aware-scan"
 
 ## Partition: feat/graph-query-quality
 
-- [ ] Add deterministic search candidate generation and optional SQLite FTS setup with basic fallback when FTS is unavailable <!-- id: 40 -->
-- [ ] Remove arbitrary pre-ranking `LIMIT 250` behavior from `graph search` and rank a deterministic candidate set <!-- id: 41 -->
-- [ ] Add regression test where the intended operational/UI result appears after more than 250 lower-quality matches but still ranks top 5 <!-- id: 42 -->
-- [ ] Implement graph-edge-based area adjacency scoring for `graph neighbors` using imports, references, calls, tests, owns/contains, and package/module relations where available <!-- id: 43 -->
-- [ ] Update neighbor output to label graph-connected vs metadata-fallback results and include basis/confidence fields <!-- id: 44 -->
-- [ ] Add bounded result summaries to graph query metadata and append them to usage entries <!-- id: 45 -->
-- [ ] Extend graph usage reports to show result-summary availability and overlap-ready fields while tolerating old log entries <!-- id: 46 -->
-- [ ] Run focused graph tests with `uv run pytest tests/test_graph.py` and fix regressions <!-- id: 47 -->
+- [x] Add deterministic search candidate generation and optional SQLite FTS setup with basic fallback when FTS is unavailable <!-- id: 40 -->
+- [x] Remove arbitrary pre-ranking `LIMIT 250` behavior from `graph search` and rank a deterministic candidate set <!-- id: 41 -->
+- [x] Add regression test where the intended operational/UI result appears after more than 250 lower-quality matches but still ranks top 5 <!-- id: 42 -->
+- [x] Implement graph-edge-based area adjacency scoring for `graph neighbors` using imports, references, calls, tests, owns/contains, and package/module relations where available <!-- id: 43 -->
+- [x] Update neighbor output to label graph-connected vs metadata-fallback results and include basis/confidence fields <!-- id: 44 -->
+- [x] Add bounded result summaries to graph query metadata and append them to usage entries <!-- id: 45 -->
+- [x] Extend graph usage reports to show result-summary availability and overlap-ready fields while tolerating old log entries <!-- id: 46 -->
+- [x] Run focused graph tests with `uv run pytest tests/test_graph.py` and fix regressions <!-- id: 47 -->
 
 ## Partition: feat/graph-eval-harness
 

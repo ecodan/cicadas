@@ -142,6 +142,28 @@ def _group_entries(entries: list[dict]) -> dict[str, list[dict]]:
     return grouped
 
 
+def _dict_payload(value: object) -> dict | None:
+    if isinstance(value, dict):
+        return value
+    return None
+
+
+def _entry_result_summary(entry: dict) -> dict | None:
+    summary = _dict_payload(entry.get("result_summary"))
+    if summary is not None:
+        return summary
+    metadata = _dict_payload(entry.get("metadata")) or {}
+    return _dict_payload(metadata.get("result_summary"))
+
+
+def _entry_overlap(entry: dict) -> dict | None:
+    overlap = _dict_payload(entry.get("overlap"))
+    if overlap is not None:
+        return overlap
+    metadata = _dict_payload(entry.get("metadata")) or {}
+    return _dict_payload(metadata.get("overlap"))
+
+
 def _avg(items: list[dict], field: str) -> int:
     values = [item.get(field) for item in items if isinstance(item.get(field), int | float)]
     if not values:
@@ -149,9 +171,43 @@ def _avg(items: list[dict], field: str) -> int:
     return round(sum(values) / len(values))
 
 
+def _summarize_structured_fields(items: list[dict]) -> dict:
+    result_summary_present = 0
+    overlap_present = 0
+    result_summary_fields: dict[str, int] = defaultdict(int)
+    overlap_fields: dict[str, int] = defaultdict(int)
+
+    for entry in items:
+        result_summary = _entry_result_summary(entry)
+        if result_summary is not None:
+            result_summary_present += 1
+            for key in result_summary:
+                result_summary_fields[key] += 1
+
+        overlap = _entry_overlap(entry)
+        if overlap is not None:
+            overlap_present += 1
+            for key in overlap:
+                overlap_fields[key] += 1
+
+    return {
+        "result_summary_present": result_summary_present,
+        "overlap_present": overlap_present,
+        "result_summary_fields": dict(sorted(result_summary_fields.items())),
+        "overlap_fields": dict(sorted(overlap_fields.items())),
+    }
+
+
+def _format_field_counts(fields: dict[str, int]) -> str:
+    if not fields:
+        return "none"
+    return ", ".join(f"{name}={count}" for name, count in fields.items())
+
+
 def render_usage_report(initiative: str | None = None, since: str | None = None, view: str = "table") -> str:
     entries, corrupt_count = _filtered_entries(initiative=initiative, since=since)
     grouped = _group_entries(entries)
+    structured_summary = _summarize_structured_fields(entries)
 
     if view == "json":
         return json.dumps(
@@ -160,6 +216,10 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
                 "since": since,
                 "corrupt_entries": corrupt_count,
                 "entries": entries,
+                "summary": {
+                    "total_entries": len(entries),
+                    **structured_summary,
+                },
             },
             indent=2,
         )
@@ -167,6 +227,7 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
     if view == "html":
         rows = []
         for query_kind, items in sorted(grouped.items()):
+            structured = _summarize_structured_fields(items)
             rows.append(
                 "<tr>"
                 f"<td>{query_kind}</td>"
@@ -174,9 +235,13 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
                 f"<td>{_avg(items, 'call_duration_ms')}</td>"
                 f"<td>{_avg(items, 'end_to_end_ms')}</td>"
                 f"<td>{_avg(items, 'graph_query_ms')}</td>"
+                f"<td>{structured['result_summary_present']}</td>"
+                f"<td>{_format_field_counts(structured['result_summary_fields'])}</td>"
+                f"<td>{structured['overlap_present']}</td>"
+                f"<td>{_format_field_counts(structured['overlap_fields'])}</td>"
                 "</tr>"
             )
-        body = "".join(rows) or "<tr><td colspan='5'>No graph usage recorded yet.</td></tr>"
+        body = "".join(rows) or "<tr><td colspan='9'>No graph usage recorded yet.</td></tr>"
         scope = []
         if initiative:
             scope.append(f"initiative={initiative}")
@@ -187,7 +252,11 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
             "<html><body><h1>Graph Usage</h1>"
             f"<p>Scope: {scope_text}</p>"
             f"<p>Corrupt entries ignored: {corrupt_count}</p>"
-            "<table><thead><tr><th>Query</th><th>Count</th><th>Avg call duration ms</th><th>Avg end-to-end ms</th><th>Avg graph query ms</th></tr></thead>"
+            f"<p>Result summaries present: {structured_summary['result_summary_present']}/{len(entries)}</p>"
+            f"<p>Result summary fields: {_format_field_counts(structured_summary['result_summary_fields'])}</p>"
+            f"<p>Overlap-ready fields present: {structured_summary['overlap_present']}/{len(entries)}</p>"
+            f"<p>Overlap fields: {_format_field_counts(structured_summary['overlap_fields'])}</p>"
+            "<table><thead><tr><th>Query</th><th>Count</th><th>Avg call duration ms</th><th>Avg end-to-end ms</th><th>Avg graph query ms</th><th>Result summaries</th><th>Result summary fields</th><th>Overlap-ready</th><th>Overlap fields</th></tr></thead>"
             f"<tbody>{body}</tbody></table></body></html>"
         )
 
@@ -204,7 +273,12 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
     lines.append(f"Entries: {len(entries)}")
     if corrupt_count:
         lines.append(f"Corrupt entries ignored: {corrupt_count}")
+    lines.append(f"Result summaries present: {structured_summary['result_summary_present']}/{len(entries)}")
+    lines.append(f"Result summary fields: {_format_field_counts(structured_summary['result_summary_fields'])}")
+    lines.append(f"Overlap-ready fields present: {structured_summary['overlap_present']}/{len(entries)}")
+    lines.append(f"Overlap fields: {_format_field_counts(structured_summary['overlap_fields'])}")
     for query_kind, items in sorted(grouped.items()):
+        structured = _summarize_structured_fields(items)
         avg_call_duration_ms = _avg(items, "call_duration_ms")
         avg_end_to_end_ms = _avg(items, "end_to_end_ms")
         avg_graph_query_ms = _avg(items, "graph_query_ms")
@@ -212,6 +286,10 @@ def render_usage_report(initiative: str | None = None, since: str | None = None,
             f"- {query_kind}: count={len(items)}, "
             f"avg_call_duration_ms={avg_call_duration_ms}, "
             f"avg_end_to_end_ms={avg_end_to_end_ms}, "
-            f"avg_graph_query_ms={avg_graph_query_ms}"
+            f"avg_graph_query_ms={avg_graph_query_ms}, "
+            f"result_summaries={structured['result_summary_present']}, "
+            f"result_summary_fields={_format_field_counts(structured['result_summary_fields'])}, "
+            f"overlap_ready={structured['overlap_present']}, "
+            f"overlap_fields={_format_field_counts(structured['overlap_fields'])}"
         )
     return "\n".join(lines)
