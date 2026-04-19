@@ -87,6 +87,13 @@
       "summary": "Exclude SDD installs (SKILL.md detection), SDD state dirs (substring match on root-level ./_ prefixed dirs for bmad/cicadas/gsd/openspec), and config-declared scan_exclude_paths from scan_repository traversal",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-04-19T03:34:19.080216+00:00",
+      "branch": "technical-initiative-profiles",
+      "summary": "Add initiative profiles with Technical Brief and Operator Experience guidance, templates, tests, and docs.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
