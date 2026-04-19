@@ -1,5 +1,12 @@
 # Release Notes
 
+## Unreleased
+
+### Added
+
+- **Initiative profiles**: The standard start flow now records `product`, `technical`, or `mixed` initiative profiles. Technical initiatives can use a new Technical Brief template and optional Operator Experience template while Tech Design, Approach, and Tasks remain mandatory for cross-module work.
+- **Template coverage**: `tests/test_templates.py` now verifies the technical-profile templates share the compact front matter contract and that profile-aware guidance stays documented.
+
 ## Version 0.8.1
 
 ### Fixed
