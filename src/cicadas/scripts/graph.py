@@ -12,7 +12,7 @@ from graph_doctor import render_doctor_report
 from graph_observe import render_progress_tail, watch_progress
 from graph_usage import append_usage_entry, render_usage_report
 from graph_query import dispatch_query
-from utils import format_graph_status
+from utils import format_graph_status, graph_experimental_disabled_message, graph_experimental_enabled
 
 
 def _safe_append_usage(**kwargs: object) -> None:
@@ -24,7 +24,7 @@ def _safe_append_usage(**kwargs: object) -> None:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="cicadas.py graph", description="Build and inspect the optional Code Graph subsystem.")
+    parser = argparse.ArgumentParser(prog="cicadas.py graph", description="Build and inspect the experimental Code Graph subsystem.")
     subparsers = parser.add_subparsers(dest="graph_command", required=True)
 
     build_parser = subparsers.add_parser("build", help="Build the local graph artifacts")
@@ -56,6 +56,19 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
     start = time.perf_counter()
+
+    if args.graph_command not in {"status", "doctor"} and not graph_experimental_enabled():
+        print(graph_experimental_disabled_message())
+        _safe_append_usage(
+            command=f"cicadas.py graph {args.graph_command}",
+            query_kind=args.graph_command,
+            target_type="repo",
+            operation_name=f"graph.disabled.{args.graph_command}",
+            end_to_end_ms=round((time.perf_counter() - start) * 1000),
+            result_count=0,
+            usefulness_tags=["graph-disabled"],
+        )
+        return 2
 
     if args.graph_command == "build":
         code = run_graph_build(language_filter=args.languages, force=args.force)

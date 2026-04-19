@@ -8,7 +8,7 @@ from pathlib import Path
 from graph_extract.java import analyzer_details as java_analyzer_details
 from graph_extract.javascript import analyzer_status as javascript_analyzer_status
 from graph_extract.rust import analyzer_status as rust_analyzer_status
-from utils import graph_db_path, graph_metadata_path, graph_progress_path, load_graph_metadata
+from utils import GRAPH_EXPERIMENTAL_ENV, graph_db_path, graph_experimental_enabled, graph_metadata_path, graph_progress_path, load_graph_metadata
 
 
 def render_doctor_report() -> str:
@@ -18,6 +18,7 @@ def render_doctor_report() -> str:
     lines = [
         "Graph doctor",
         f"- Root: {root}",
+        f"- Experimental gate: {'enabled' if graph_experimental_enabled() else 'disabled'}",
         f"- Graph metadata: {'present' if graph_metadata_path().exists() else 'missing'} ({graph_metadata_path()})",
         f"- Graph DB: {'present' if graph_db_path().exists() else 'missing'} ({graph_db_path()})",
         f"- Graph progress file: {'present' if graph_progress_path().exists() else 'missing'} ({graph_progress_path()})",
@@ -35,4 +36,6 @@ def render_doctor_report() -> str:
         lines.append("- Note: Java semantic extraction requires both `javac` and `java` on PATH.")
     if not java["semantic_source_exists"]:
         lines.append("- Note: vendored SemanticGraphExtractor.java is missing; Java falls back to structural mode.")
+    if not graph_experimental_enabled():
+        lines.append(f"- Note: graph build, query, observe, and usage commands require `{GRAPH_EXPERIMENTAL_ENV}=1` or config opt-in.")
     return "\n".join(lines)

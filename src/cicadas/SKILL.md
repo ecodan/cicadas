@@ -16,7 +16,7 @@ The Cicadas methodology is a sustainable spec-driven development approach where:
 - **Work is partitioned** — large initiatives are sliced into independent feature branches.
 - **Specs stay current during development** — a "Reflect" operation keeps active specs in sync with code.
 - **Teams coordinate asynchronously** — a "Signal" operation broadcasts breaking changes to peer branches.
-- **Optional graph routing** — when `.cicadas/graph/` exists, graph commands can shrink brownfield search space; when it does not, the canon-first workflow remains the default.
+- **Experimental graph routing** — graph commands are disabled by default and are only for explicitly opted-in local experiments; the canon-first workflow remains the default for large-repo routing.
 
 > Throughout this document, `main` refers to the project's default branch (typically `main` or `master`, as configured).
 
@@ -236,7 +236,7 @@ python {cicadas-dir}/scripts/cicadas.py kickoff {initiative-name} --intent "desc
 4. Review warnings from both the Agent (intent conflicts) and the Script (module overlaps).
 5. Branch is automatically pushed to remote by the script (`git push -u origin {branch-name}`), making it visible to collaborators.
 6. Apply **Branch Reset** before implementation: if the host supports clear/compact/fresh-start behavior, use it; then reload `canon/summary.md`, relevant spec front matter, and only the indexed sections needed for this branch.
-7. If the task begins from a symptom, failing test, file, or changed symbol and `.cicadas/graph/` is available, use `graph area`, `graph tests`, or `graph signature-impact` before broad code exploration.
+7. If the task begins from a symptom, failing test, file, or changed symbol, use canon summaries, slice canon, routing guides, and targeted code inspection first. Use graph commands only when the user has explicitly opted into graph experimentation for the repo.
 
 ### Complete a Feature Branch
 **When**: All task branches merged into the feature branch.
@@ -302,17 +302,18 @@ The Agent should check for signals when performing a Check Status operation and 
 
 When `.cicadas/active/{initiative}/lifecycle.json` exists, `status.py` also reports **Merged** (branch pairs where source is merged into target) and **Next** (suggested lifecycle step). Completion is detected via git only (no host API); the agent discovers "PR merged" on the next status run.
 
-### Optional Code Graph
+### Experimental Code Graph
 
-When `.cicadas/graph/metadata.json` and `.cicadas/graph/codegraph.sqlite` exist, the agent may use the graph as a routing aid. The graph is optional and never replaces canon.
+The code graph is experimental and disabled by default because large-repo benchmarks have not shown enough retrieval value yet. Agents should not use graph commands as a standard large-repo workflow. Use canon summaries, slice canon, routing guides, and targeted code inspection unless the user explicitly opts into graph experiments.
 
-- `python {cicadas-dir}/scripts/cicadas.py graph build` builds or refreshes local graph artifacts.
-- `python {cicadas-dir}/scripts/cicadas.py graph status` reports freshness and analyzer coverage.
-- `python {cicadas-dir}/scripts/cicadas.py graph area {artifact}` routes from a file, test, or symbol to a canon-seeded area.
-- `python {cicadas-dir}/scripts/cicadas.py graph tests {symbol}` and `graph signature-impact {symbol}` help find first tests and likely blast radius after a signature change.
-- `python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` summarizes local graph usage and end-to-end timings.
+- `python {cicadas-dir}/scripts/cicadas.py graph status` reports whether graph experimentation is enabled and whether artifacts exist.
+- `python {cicadas-dir}/scripts/cicadas.py graph doctor` reports analyzer readiness and the experimental gate state.
+- `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph build` builds or refreshes local graph artifacts for an experiment.
+- `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph area {artifact}` routes from a file, test, or symbol to a canon-seeded area during an experiment.
+- `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph tests {symbol}` and `graph signature-impact {symbol}` help find first tests and likely blast radius during an experiment.
+- `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` summarizes local graph usage and end-to-end timings.
 
-If the graph is missing or stale, continue with `canon/summary.md`, `canon/repo-context.md`, routing guides, and targeted code inspection. Do not block the workflow waiting for graph support.
+Graph build, query, observe, and usage commands require `CICADAS_GRAPH_EXPERIMENTAL=1` or `.cicadas/config.json` key `graph_experimental_enabled: true`. If the graph is missing, stale, disabled, or slow, continue with `canon/summary.md`, `canon/repo-context.md`, slice canon, routing guides, and targeted code inspection. Do not block the workflow waiting for graph support.
 
 ### Broadcast: Signal
 **Trigger**: A change that affects other feature branches.
@@ -558,10 +559,10 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 | **Prune** | `python {cicadas-dir}/scripts/cicadas.py prune {name} --type {branch\|initiative}` | Rollback & restore to drafts |
 | **Abort** | `python {cicadas-dir}/scripts/cicadas.py abort` | Context-aware escape hatch from current branch |
 | **History** | `python {cicadas-dir}/scripts/cicadas.py history [--output path]` | Generate HTML timeline to `.cicadas/canon/history.html` |
-| **Graph Build** | `python {cicadas-dir}/scripts/cicadas.py graph build [--languages auto]` | Build optional local graph artifacts |
+| **Graph Build** | `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph build [--languages auto]` | Build experimental local graph artifacts |
 | **Graph Status** | `python {cicadas-dir}/scripts/cicadas.py graph status` | Report graph freshness and analyzer coverage |
-| **Graph Route** | `python {cicadas-dir}/scripts/cicadas.py graph area\|neighbors\|tests\|callers\|callees\|signature-impact\|route ...` | Use the optional graph for routing and blast-radius analysis |
-| **Graph Usage** | `python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table\|json\|html]` | Summarize local graph usage and timings |
+| **Graph Route** | `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph area\|neighbors\|tests\|callers\|callees\|signature-impact\|route ...` | Use the experimental graph for local routing and blast-radius experiments |
+| **Graph Usage** | `CICADAS_GRAPH_EXPERIMENTAL=1 python {cicadas-dir}/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table\|json\|html]` | Summarize experimental graph usage and timings |
 | **Validate skill** | `python {cicadas-dir}/scripts/cicadas.py validate-skill {slug-or-path}` | Check Agent Skill spec compliance |
 | **Publish skill** | `python {cicadas-dir}/scripts/cicadas.py skill-publish {slug} [--publish-dir DIR] [--symlink] [--force]` | Copy/symlink active skill to publish destination (pre-validates) |
 

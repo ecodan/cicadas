@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
@@ -20,12 +21,18 @@ CLI_PATH = SCRIPTS_DIR / "cicadas.py"
 class TestGraphCli(CicadasTest):
     FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
-    def _run_cli(self, *args: str) -> subprocess.CompletedProcess[str]:
+    def _run_cli(self, *args: str, graph_enabled: bool = True) -> subprocess.CompletedProcess[str]:
+        env = os.environ.copy()
+        if graph_enabled:
+            env["CICADAS_GRAPH_EXPERIMENTAL"] = "1"
+        else:
+            env.pop("CICADAS_GRAPH_EXPERIMENTAL", None)
         return subprocess.run(
             [sys.executable, str(CLI_PATH), *args],
             cwd=self.root,
             text=True,
             capture_output=True,
+            env=env,
         )
 
     def _copy_fixture(self, name: str) -> None:
@@ -43,6 +50,30 @@ class TestGraphCli(CicadasTest):
 
         self.assertEqual(result.returncode, 0)
         self.assertIn("Graph: not initialized", result.stdout)
+
+    def test_graph_status_reports_experimental_disabled_by_default(self):
+        result = self._run_cli("graph", "status", graph_enabled=False)
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Graph: experimental disabled", result.stdout)
+        self.assertIn("CICADAS_GRAPH_EXPERIMENTAL=1", result.stdout)
+
+    def test_graph_build_requires_experimental_opt_in(self):
+        self.init_git()
+        (self.root / "src").mkdir()
+        (self.root / "src" / "demo.py").write_text("def demo():\n    return 1\n")
+
+        result = self._run_cli("graph", "build", graph_enabled=False)
+
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("Graph support is experimental and disabled by default", result.stdout)
+        self.assertFalse((self.cicadas_dir / "graph" / "codegraph.sqlite").exists())
+
+    def test_graph_doctor_reports_experimental_gate_state(self):
+        result = self._run_cli("graph", "doctor", graph_enabled=False)
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Experimental gate: disabled", result.stdout)
 
     def test_graph_build_creates_sqlite_and_metadata(self):
         self.init_git()

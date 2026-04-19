@@ -86,7 +86,7 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
 *   **Start Feature**: `python src/cicadas/scripts/cicadas.py branch {feature} --intent "..."`
     - Parallel `feat/` partitions still auto-create linked worktrees by default.
     - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts in.
-*   **Optional Code Graph**: Repo owners can opt in with `python src/cicadas/scripts/cicadas.py graph build`. The graph now writes staged SQLite data and progress artifacts under `.cicadas/graph/` as it runs, including `progress.json`, `progress-log.jsonl`, `area-plan.json`, spool files, and Java semantic harness logs under `.cicadas/graph/tools/`. When the graph exists, agents may use `graph area`, `graph neighbors`, `graph tests`, `graph callers`, `graph callees`, `graph signature-impact`, `graph route`, `graph search`, `graph tail`, `graph watch`, and `graph usage` to shrink the first-hop search space in large and mega repos. JavaScript/TypeScript coverage is currently structural, while Java can land as structural, semantic, or hybrid semantic depending on how much semantic enrichment succeeds locally. When graph artifacts are absent, Cicadas continues with `canon/summary.md`, `canon/repo-context.md`, routing guides, and targeted code reads.
+*   **Experimental Code Graph**: Graph commands are disabled by default while large-repo efficacy work continues. Repo owners can opt in locally with `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph build` or `.cicadas/config.json` key `graph_experimental_enabled: true`. Graph artifacts remain under `.cicadas/graph/`, but agents should use canon summaries, slice canon, routing guides, and targeted code reads as the default large-repo workflow.
 *   **Reflect**: When code implementation diverges from the plan, we update the active specs *immediately* (and before every commit on feat/task branches).
     - Reflect refreshes the affected specs' front matter as well as their prose content so the compact routing metadata stays accurate.
 *   **Code Review** (optional): After Reflect; before committing on feature branches; before opening a PR or merging. The agent evaluates the diff against specs, security, correctness, and quality — producing a structured `review.md` artifact with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` checks this verdict and blocks on `BLOCK`.
@@ -127,11 +127,11 @@ All scripts are in `src/cicadas/scripts/`.
 | **Unarchive** | `python src/cicadas/scripts/cicadas.py unarchive {name}` |
 | **Abort** | `python src/cicadas/scripts/cicadas.py abort` |
 | **Project History** | `python src/cicadas/scripts/cicadas.py history` |
-| **Graph Build** | `python src/cicadas/scripts/cicadas.py graph build` |
+| **Graph Build** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph build` |
 | **Graph Status** | `python src/cicadas/scripts/cicadas.py graph status` |
-| **Graph Query** | `python src/cicadas/scripts/cicadas.py graph area|neighbors|tests|callers|callees|signature-impact|route|search ...` |
-| **Graph Observe** | `python src/cicadas/scripts/cicadas.py graph tail|watch` |
-| **Graph Usage** | `python src/cicadas/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` |
+| **Graph Query** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph area|neighbors|tests|callers|callees|signature-impact|route|search ...` |
+| **Graph Observe** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph tail|watch` |
+| **Graph Usage** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` |
 | **Validate Skill** | `python src/cicadas/scripts/cicadas.py validate-skill {slug}` |
 | **Publish Skill** | `python src/cicadas/scripts/cicadas.py skill-publish {slug} [--publish-dir DIR] [--symlink] [--force]` |
 

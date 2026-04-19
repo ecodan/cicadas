@@ -106,6 +106,7 @@ GRAPH_AREA_PLAN_FILENAME = "area-plan.json"
 GRAPH_USAGE_FILENAME = "usage.jsonl"
 GRAPH_PROGRESS_FILENAME = "progress.json"
 GRAPH_PROGRESS_LOG_FILENAME = "progress-log.jsonl"
+GRAPH_EXPERIMENTAL_ENV = "CICADAS_GRAPH_EXPERIMENTAL"
 EXCLUDED_COMPLEXITY_PREFIXES = (
     ".agents",
     ".claude",
@@ -201,6 +202,29 @@ def save_graph_metadata(data: dict, root: Path | None = None) -> Path:
     return path
 
 
+def graph_experimental_enabled() -> bool:
+    env_value = os.environ.get(GRAPH_EXPERIMENTAL_ENV, "").strip().lower()
+    if env_value in {"1", "true", "yes", "on"}:
+        return True
+    if env_value in {"0", "false", "no", "off"}:
+        return False
+
+    config = load_config()
+    if config.get("graph_experimental_enabled") is True:
+        return True
+    experimental = config.get("experimental")
+    return isinstance(experimental, dict) and experimental.get("graph") is True
+
+
+def graph_experimental_disabled_message() -> str:
+    return (
+        "[ERR] Graph support is experimental and disabled by default.\n"
+        f"Enable for local experiments with `{GRAPH_EXPERIMENTAL_ENV}=1 python src/cicadas/scripts/cicadas.py graph ...` "
+        "or set `.cicadas/config.json` key `graph_experimental_enabled` to true.\n"
+        "Fallback: use `canon/repo-context.md`, `canon/summary.md`, slice canon, and targeted code inspection."
+    )
+
+
 def graph_available(root: Path | None = None) -> bool:
     db_path = graph_db_path(root)
     metadata_path = graph_metadata_path(root)
@@ -215,6 +239,12 @@ def graph_available(root: Path | None = None) -> bool:
 
 
 def format_graph_status(root: Path | None = None) -> str:
+    if not graph_experimental_enabled():
+        return (
+            "Graph: experimental disabled\n"
+            f"Enable: set `{GRAPH_EXPERIMENTAL_ENV}=1` for local graph experiments\n"
+            "Fallback: use `canon/repo-context.md`, `canon/summary.md`, slice canon, and targeted code inspection."
+        )
     metadata = load_graph_metadata(root)
     if metadata is None or not graph_available(root):
         return (
