@@ -43,6 +43,7 @@ def _safe_import(module_name: str) -> tuple[ModuleType | None, str | None]:
 def _call_language_loader(module: ModuleType, language: str) -> tuple[Any | None, str | None]:
     candidate_attrs = (
         language,
+        f"language_{language}",
         f"{language}_language",
         language.upper(),
         "LANGUAGE",
@@ -82,6 +83,23 @@ def _call_language_loader(module: ModuleType, language: str) -> tuple[Any | None
     return None, f"{module.__name__}: no language loader found"
 
 
+def _normalize_language_object(language_object: Any) -> tuple[Any | None, str | None]:
+    tree_sitter_module, tree_sitter_error = _safe_import("tree_sitter")
+    if tree_sitter_module is None:
+        return None, tree_sitter_error or "tree_sitter package is not installed"
+
+    language_class = getattr(tree_sitter_module, "Language", None)
+    if language_class is None:
+        return language_object, None
+    if isinstance(language_object, language_class):
+        return language_object, None
+
+    try:
+        return language_class(language_object), None
+    except Exception:
+        return language_object, None
+
+
 def load_language(language: str) -> tuple[Any | None, dict[str, object]]:
     language_key = language.lower().replace("-", "_")
     tree_sitter_module, tree_sitter_error = _safe_import("tree_sitter")
@@ -106,6 +124,10 @@ def load_language(language: str) -> tuple[Any | None, dict[str, object]]:
 
         language_object, language_error = _call_language_loader(module, language_key)
         if language_object is not None:
+            language_object, normalization_error = _normalize_language_object(language_object)
+            if language_object is None:
+                errors.append(normalization_error or f"{module.__name__}: language normalization failed")
+                continue
             return language_object, {
                 "available": True,
                 "package": module.__name__,
