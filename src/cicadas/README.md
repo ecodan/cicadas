@@ -16,7 +16,7 @@ Cicadas is a sustainable **spec-driven development** methodology designed for hi
 The system is split between the **Skill** (logic) and the **Institutional Memory** (data).
 
 ### 0. The Installer (`install.sh` — project root)
-A portable bash script for zero-friction setup. Run once to download Cicadas, check Python 3.11+, initialize `.cicadas/`, and optionally wire up agent integrations (`claude-code`, `antigravity`, `cursor`, `rovodev`).
+A portable bash script for zero-friction setup. Run once to download Cicadas, check Python 3.11+, initialize `.cicadas/`, and optionally wire up agent integrations (`claude-code`, `antigravity`, `cursor`, `rovodev`, `codex`).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash
