@@ -83,9 +83,18 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("initiative_profile", start_flow)
         self.assertIn("technical-brief.md", clarify)
         self.assertIn("operator-experience.md", ux)
+        self.assertIn("HTML/CSS mock-up", ux)
+        self.assertIn("mockups/", ux)
         self.assertIn("Tech Design remains mandatory", tech_design)
         self.assertIn("Approach remains mandatory", approach)
         self.assertIn("Tasks remain mandatory", tasks)
+
+    def test_ux_template_includes_mockup_section_for_visual_work(self):
+        text = (TEMPLATES / "ux.md").read_text()
+
+        self.assertIn("## HTML/CSS Mock-Ups", text)
+        self.assertIn("mockups/{screen-name}.html", text)
+        self.assertIn("N/A — No visual mock-up required", text)
 
     def test_tasks_template_matches_partition_workflow(self):
         text = (TEMPLATES / "tasks.md").read_text()

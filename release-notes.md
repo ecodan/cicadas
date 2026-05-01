@@ -7,6 +7,10 @@
 - **Initiative profiles**: The standard start flow now records `product`, `technical`, or `mixed` initiative profiles. Technical initiatives can use a new Technical Brief template and optional Operator Experience template while Tech Design, Approach, and Tasks remain mandatory for cross-module work.
 - **Template coverage**: `tests/test_templates.py` now verifies the technical-profile templates share the compact front matter contract and that profile-aware guidance stays documented.
 
+### Changed
+
+- **UXD mock-up contract**: Screen-based UX drafts now require at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/` before UX approval. The `ux.md` template includes a dedicated mock-up section, screenshot previews remain optional, and operator-only flows still use `operator-experience.md`.
+
 ## Version 0.8.1
 
 ### Fixed

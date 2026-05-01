@@ -94,6 +94,24 @@
       "summary": "Add initiative profiles with Technical Brief and Operator Experience guidance, templates, tests, and docs.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-05-01T03:08:07.752765+00:00",
+      "branch": "tweak/visual-uxd",
+      "summary": "Require HTML/CSS mock-up artifacts for screen-based UX drafts and document the workflow.",
+      "decisions": "",
+      "modules": [
+        "src/cicadas/emergence/ux.md",
+        "src/cicadas/templates/ux.md",
+        "src/cicadas/README.md",
+        "README.md",
+        "HOW-TO.md",
+        "CLAUDE.md",
+        "agents.md",
+        "docs/cicadas-method-general.md",
+        "release-notes.md",
+        "tests/test_templates.py"
+      ]
     }
   ]
 }

@@ -3,7 +3,7 @@
 
 **Goal**: Define the right experience artifact for this initiative: full UX for product work, Operator Experience for technical/operator-facing work, or an explicit skip rationale when there is no meaningful human-facing or agent-facing interaction.
 
-**Role**: You are a senior UX Designer and UX Facilitator. Your job is to surface and resolve interaction design decisions before implementation begins, not to produce a visual spec. You are designing *experience*, not pixels.
+**Role**: You are a senior UX Designer and UX Facilitator. Your job is to surface and resolve interaction design decisions before implementation begins. You are designing *experience* first; when the initiative includes screen-based UI, you must also anchor that experience in concrete HTML/CSS mock-ups.
 
 ## Process
 
@@ -29,6 +29,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - `mixed`: choose full `ux.md` for customer-facing interaction or ambiguous user journeys; choose `operator-experience.md` for operator/developer/agent-facing surfaces.
 
     The template contains a **Progress** checklist — tick each item (`- [ ]` → `- [x]`) when a section is approved.
+
+    When you are creating `ux.md` for a screen-based surface (web, mobile-web, app-style, or terminal-like UI presented visually), also create `.cicadas/drafts/{initiative}/mockups/` and produce at least one HTML/CSS mock-up file inside it before presenting the UXD for approval. Use the mock-up to make the key flow, layout, and state decisions concrete. Do **not** require a mock-up for `operator-experience.md` or for backend-only work.
 
 4. **Skip Condition**: If this initiative has zero meaningful human-facing or agent-facing interaction impact (pure backend, infrastructure, data migration), write a single `ux.md` or `operator-experience.md` stating `N/A — No operator or end-user experience impact` plus the rationale, and skip to the next sub-skill. UXD should be optional only through the explicit `initiative_profile` mechanism; do not skip UX ad hoc.
 
@@ -68,6 +70,14 @@ Define the product's voice explicitly. Write *actual copy* for the most critical
 ### Visual Design Direction
 Don't design visual details in full here — that belongs in a design tool. Do establish: style direction, color palette intent, typography approach, and density. Reference an existing design system if one exists, or name the new one being established.
 
+### HTML/CSS Mock-Ups
+For visual UI work, UXD is not complete until the spec references at least one HTML/CSS mock-up covering a meaningful screen or flow. Keep the artifact lightweight and editable:
+- Prefer plain HTML/CSS that can represent web, mobile, and terminal-style layouts.
+- Save mock-ups under `.cicadas/drafts/{initiative}/mockups/`.
+- Reference the artifact path from `ux.md`; add a screenshot preview only when it helps review.
+- Ensure the referenced HTML/CSS file already exists before you present the completed UXD.
+- Use generated imagery only for illustrative content inside the mock-up, not as a substitute for layout/design structure.
+
 ### UX Consistency Patterns
 Define how the product will handle common recurring situations (buttons, forms, feedback, modals, navigation). These become the de facto design system for this initiative and inform implementation decisions.
 
@@ -86,6 +96,7 @@ See the **Balanced Elicitation** appendix in [clarify.md](./clarify.md) for full
 - **Copy is design**: Undefined copy at the UX stage becomes inconsistent copy at implementation. Define the most critical copy samples now.
 - **IA before flows**: A broken information architecture can't be fixed at the flow level. Validate the IA first.
 - **Accessibility is not optional**: Identify WCAG target and keyboard/screen-reader requirements here — they affect component and flow decisions.
+- **Mock-ups should stay editable**: For visual UI work, prefer HTML/CSS artifacts that future agents or builders can revise directly rather than one-off images.
 - **Consistency over creativity**: On brownfield projects, prefer extending existing patterns over introducing new ones unless the existing pattern has a clear problem.
 
 ---

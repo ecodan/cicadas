@@ -152,14 +152,14 @@ Progressive spec authoring using subagents or manual drafting:
 |------|----------|-------|
 | 0. Intake | `requirements.md` / `loom.md` | **Raw Requirements**. Unstructured input for Clarify subagent via Docs, Loom, or Q&A. |
 | 1. Clarify | `prd.md` / `technical-brief.md` | **What & Why**. Product problem, technical problem, users/operators, success criteria. |
-| 2. UX | `ux.md` / `operator-experience.md` | **Experience**. Product interaction flow, or operator-facing CLI/log/error/docs/agent workflow. |
+| 2. UX | `ux.md` / `operator-experience.md` | **Experience**. Product interaction flow plus an HTML/CSS mock-up for screen-based UI, or operator-facing CLI/log/error/docs/agent workflow. |
 | 3. Tech | `tech-design.md` | **Architecture**. Components, data flow, schemas. |
 | 4. Approach | `approach.md` | **Strategy & Partitioning**. Implementation plan, sequencing, dependencies, and logical partitions. |
 | 5. Tasks | `tasks.md` | **Execution**. Ordered, testable checklist. |
 
 **Critical**: `approach.md` MUST define logical partitions (e.g., "Auth Module", "Frontend Shell", "Data Layer"). These partitions become **Feature Branches**.
 
-**Profile, Pace & Limits**: At the start of Clarify, the Builder chooses an initiative profile (`product` / `technical` / `mixed`) and a review cadence (`section` / `doc` / `all`) stored in `emergence-config.json`. Product initiatives use full PRD and UX artifacts. Technical initiatives use `technical-brief.md` and skip UX only when there is no meaningful human-facing or agent-facing surface; otherwise they use `operator-experience.md`. Mixed initiatives choose the appropriate artifact per surface. The standard start flow also records **Building on AI?** (yes/no) and, if yes, eval status (already have / will do); initiatives with "will do" may add an eval spec and placement in Approach. A `tokens.json` log actively captures LLM usage during drafting and updates throughout the initiative.
+**Profile, Pace & Limits**: At the start of Clarify, the Builder chooses an initiative profile (`product` / `technical` / `mixed`) and a review cadence (`section` / `doc` / `all`) stored in `emergence-config.json`. Product initiatives use full PRD and UX artifacts. Technical initiatives use `technical-brief.md` and skip UX only when there is no meaningful human-facing or agent-facing surface; otherwise they use `operator-experience.md`. Mixed initiatives choose the appropriate artifact per surface. For screen-based UX work, the completed `ux.md` must reference at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/` before approval; screenshot previews are optional. The standard start flow also records **Building on AI?** (yes/no) and, if yes, eval status (already have / will do); initiatives with "will do" may add an eval spec and placement in Approach. A `tokens.json` log actively captures LLM usage during drafting and updates throughout the initiative.
 
 **Compact Context Contract**: The five core initiative specs (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) now carry machine-readable front matter with:
 

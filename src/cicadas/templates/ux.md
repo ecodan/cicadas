@@ -17,6 +17,7 @@ index:
   ui_states: "## UI States"
   copy_tone: "## Copy & Tone"
   visual_design: "## Visual Design Direction"
+  mockups: "## HTML/CSS Mock-Ups"
   consistency: "## UX Consistency Patterns"
   accessibility: "## Responsive & Accessibility"
 next_section: "Design Goals & Constraints"
@@ -33,6 +34,7 @@ next_section: "Design Goals & Constraints"
 - [ ] UI States
 - [ ] Copy & Tone
 - [ ] Visual Design Direction
+- [ ] HTML/CSS Mock-Ups
 - [ ] UX Consistency Patterns
 - [ ] Responsive & Accessibility
 
@@ -169,6 +171,20 @@ next_section: "Design Goals & Constraints"
 **Existing design system:** {Name of system to follow, or "Establish new — see above"}
 
 **Mood reference:** {Optional: describe the "feel" — e.g., "VS Code meets Linear — focused, dark, fast"}
+
+---
+
+## HTML/CSS Mock-Ups
+
+{For visual UI work, reference at least one HTML/CSS mock-up stored under `.cicadas/drafts/{initiative}/mockups/`. If the initiative is operator-only or otherwise non-visual, state `N/A — No visual mock-up required` and explain why.}
+
+### Mock-Up 1: {Screen or Flow Name}
+
+**Artifact path:** `.cicadas/drafts/{initiative}/mockups/{screen-name}.html`
+**Viewport target:** {Desktop / tablet / mobile dimensions}
+**Purpose:** {Which flow, screen, or state this mock-up makes concrete}
+**Screenshot preview:** {Optional path to PNG/JPEG preview if you generated one}
+**Notes:** {Important layout, interaction, or placeholder-content caveats. The referenced HTML/CSS file should exist when this UXD is reviewed.}
 
 ---
 

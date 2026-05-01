@@ -112,7 +112,7 @@ Cicadas uses a two-layer branching hierarchy to manage concurrent work and ensur
 
 Whenever you ask to **start an initiative**, **start a tweak**, **start a bug**, or **create a skill**, the agent runs a **standard start flow** first: name (confirmed even if you already said it) → create draft folder → initiative profile (`product`, `technical`, or `mixed`) for initiatives → **Building on AI?** (yes/no; if yes, eval status: already have / will do — skipped for skills) → requirements source and pace (initiatives only) → publish destination (skills only) → PR preference → then collect requirements or draft the spec. This keeps the "start" experience repeatable. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** in the tweaklet/buglet; Cicadas does not run evals. The flow is defined in the skill at `emergence/start-flow.md` and is embedded in the Clarify, Tweak, Bug Fix, and Skill Create instruction modules.
 
-Initiative profiles control the planning artifacts. `product` uses the full PRD and UX flow. `technical` uses `technical-brief.md` and skips UX only when there is no meaningful human-facing or agent-facing surface; otherwise it uses `operator-experience.md` for CLI output, logs, errors, docs, or agent instructions. `mixed` chooses the product or technical artifact per surface while still requiring Tech Design, Approach, and Tasks.
+Initiative profiles control the planning artifacts. `product` uses the full PRD and UX flow. `technical` uses `technical-brief.md` and skips UX only when there is no meaningful human-facing or agent-facing surface; otherwise it uses `operator-experience.md` for CLI output, logs, errors, docs, or agent instructions. `mixed` chooses the product or technical artifact per surface while still requiring Tech Design, Approach, and Tasks. For screen-based UX work, the UX phase now also requires at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/`; screenshot previews are optional, and operator-only flows stay on `operator-experience.md`.
 
 ## Compact Context Contract
 
@@ -141,7 +141,7 @@ If the host agent/runtime supports context clearing or compaction, the skill ask
 
 1.  **Initialize**: *"Initialize cicadas for this project."*
 2.  **Clarify**: *"I want to build [Product Name]. Help me clarify the requirements."* You can provide requirements via **Q&A** (interactive), a **doc** (`.cicadas/drafts/{initiative}/requirements.md`), or a **Loom transcript** (`.cicadas/drafts/{initiative}/loom.md`); the agent fills the PRD or Technical Brief from the doc or transcript based on the selected initiative profile.
-3.  **Draft Appearance**: Use prompts like *"Draft the UX"* and *"Draft the tech design"*.
+3.  **Draft Appearance**: Use prompts like *"Draft the UX"* and *"Draft the tech design"*. For visual UX work, the completed `ux.md` should reference a real HTML/CSS mock-up file under `.cicadas/drafts/{initiative}/mockups/` before approval.
 4.  **Define Strategy (Approach)**: *"Draft the approach."*
     - **Note**: This is where you define the **Partitions** (future Feature Branches).
 5.  **Draft Tasks**: *"Draft the tasks."*
@@ -248,7 +248,7 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 
 ## 🤖 Agents & Skills
 
-- **Emergence Agent**: Authors specs (PRD or Technical Brief, UX or Operator Experience, Tech, Approach, Tasks).
+- **Emergence Agent**: Authors specs (PRD or Technical Brief, UX or Operator Experience, Tech, Approach, Tasks) and, for screen-based UX work, ensures `ux.md` points at a real HTML/CSS mock-up artifact.
 - **Implementation Agent**: Focuses on `tasks.md` and writing code.
 - **Synthesis Agent**: Operates on `main` to update the authoritative Canon.
 
