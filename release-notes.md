@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.8.2
+
+### Deprecated
+
+- **Skill Builder**: Cicadas We'll no longer field requests to create new skills as there are many standalone skill builders available.
+
 ## Version 0.8.1
 
 ### Fixed
