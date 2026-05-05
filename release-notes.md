@@ -1,6 +1,12 @@
 # Release Notes
 
-## Unreleased
+## Version 0.8.2
+
+### Deprecated
+
+- **Skill builder removal**: Removed the built-in skill-builder triggers from `src/cicadas/SKILL.md` and marked the legacy skill-authoring docs as deprecated.
+
+## Version 0.8.1
 
 ### Added
 
@@ -10,17 +16,6 @@
 ### Changed
 
 - **UXD mock-up contract**: Screen-based UX drafts now require at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/` before UX approval. The `ux.md` template includes a dedicated mock-up section, screenshot previews remain optional, and operator-only flows still use `operator-experience.md`.
-
-## Version 0.8.3
-
-### Unreleased
-
-- **Skill builder removal**: Removed the built-in skill-builder triggers from `src/cicadas/SKILL.md` and marked the legacy skill-authoring docs as deprecated.
-
-## Version 0.8.2
-
-### Unreleased
-
 - **Scan exclusions**: `scan_repository` now skips directories containing a `SKILL.md` file (SDD installs and agent skill bundles at arbitrary paths), root-level hidden/underscore dirs whose names contain a known SDD tool substring (`bmad`, `cicadas`, `gsd`, `openspec`), and any paths listed in the new `scan_exclude_paths` key in `.cicadas/config.json`. This prevents SDD state/output directories like `_bmad-output/` and vendored SDD installs from inflating `meaningful_file_count`, `estimated_loc`, and slice candidates.
 
 ## Version 0.8.0
