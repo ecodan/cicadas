@@ -1,6 +1,10 @@
 
 # Instruction Module: Skill Edit
 
+> Deprecated: This legacy skill-authoring flow is retained for compatibility
+> only. Do not use it for new skill work inside Cicadas; prefer dedicated
+> skill-authoring tooling instead.
+
 ## Role
 
 You are the **Skill Edit instruction module**. Your goal is to make a targeted, minimum-change edit to an existing skill based on the Builder's feedback, then validate the result.

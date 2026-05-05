@@ -71,8 +71,8 @@ bash install.sh --update
 ## The Workflow
 
 ### Phase 1: Emergence (Drafting)
-When you start an initiative, tweak, bug, or skill, the agent runs a **standard start flow** first (name → draft folder → initiative profile for initiatives → **Building on AI?** (yes/no; if yes, eval status) → requirements source/pace for initiatives → publish destination for skills → PR preference), then drafts specs. Initiative profiles are `product`, `technical`, or `mixed`: product keeps the full PRD + UX path, technical uses a Technical Brief plus optional Operator Experience, and mixed chooses the appropriate artifact per surface. For screen-based UX work, the UX phase now also requires at least one editable HTML/CSS mock-up under `drafts/{initiative}/mockups/`, with screenshot previews optional; operator-only flows stay on `operator-experience.md`. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** (tweaks/bugs); Cicadas does not run evals. We draft specifications in `.cicadas/drafts/` using specialized instruction modules (Clarify, UX, Tech, Approach, Tasks, Skill Create). **Clarify** can be driven by Q&A, a requirements doc (`drafts/{initiative}/requirements.md`), or a Loom transcript (`drafts/{initiative}/loom.md`).
-Every core initiative spec now carries compact machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved state without re-reading entire drafting threads. The Technical Brief and Operator Experience templates use the same front matter contract.
+When you start an initiative, tweak, or bug, the agent runs a **standard start flow** first (name → draft folder → **Building on AI?** (yes/no; if yes, eval status) → requirements source/pace for initiatives → PR preference), then drafts specs. A deprecated legacy skill-authoring path still exists in `emergence/start-flow.md`, including the old publish-destination step, but Cicadas no longer treats skill authoring as a first-class workflow. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** (tweaks/bugs); Cicadas does not run evals. We draft specifications in `.cicadas/drafts/` using specialized instruction modules (Clarify, UX, Tech, Approach, Tasks). **Clarify** can be driven by Q&A, a requirements doc (`drafts/{initiative}/requirements.md`), or a Loom transcript (`drafts/{initiative}/loom.md`).
+Every core initiative spec now carries compact machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved state without re-reading entire drafting threads.
 *   **Key Artifact**: `approach.md` defines the partitions (feature branches).
 
 ### Phase 2: Kickoff
@@ -86,7 +86,7 @@ Work happens in **Feature Branches** (registered) and **Task Branches** (ephemer
 *   **Start Feature**: `python src/cicadas/scripts/cicadas.py branch {feature} --intent "..."`
     - Parallel `feat/` partitions still auto-create linked worktrees by default.
     - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts in.
-*   **Experimental Code Graph**: Graph commands are disabled by default while large-repo efficacy work continues. Repo owners can opt in locally with `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph build` or `.cicadas/config.json` key `graph_experimental_enabled: true`. Graph artifacts remain under `.cicadas/graph/`, but agents should use canon summaries, slice canon, routing guides, and targeted code reads as the default large-repo workflow.
+*   **Optional Code Graph**: Repo owners can opt in with `python src/cicadas/scripts/cicadas.py graph build`. The graph now writes staged SQLite data and progress artifacts under `.cicadas/graph/` as it runs, including `progress.json`, `progress-log.jsonl`, `area-plan.json`, spool files, and Java semantic harness logs under `.cicadas/graph/tools/`. When the graph exists, agents may use `graph area`, `graph neighbors`, `graph tests`, `graph callers`, `graph callees`, `graph signature-impact`, `graph route`, `graph search`, `graph tail`, `graph watch`, `graph usage`, and `graph eval` to shrink the first-hop search space in large and mega repos and measure whether the graph is helping. JavaScript/TypeScript and Rust use fallback structural extraction and report Tree-sitter coverage when optional local Tree-sitter packages and grammars are available; Python uses AST extraction, and Java can land as structural, semantic, or hybrid semantic depending on local enrichment. Tree-sitter is optional and absence is reported as analyzer metadata. When graph artifacts are absent, Cicadas continues with `canon/summary.md`, `canon/repo-context.md`, routing guides, and targeted code reads.
 *   **Reflect**: When code implementation diverges from the plan, we update the active specs *immediately* (and before every commit on feat/task branches).
     - Reflect refreshes the affected specs' front matter as well as their prose content so the compact routing metadata stays accurate.
 *   **Code Review** (optional): After Reflect; before committing on feature branches; before opening a PR or merging. The agent evaluates the diff against specs, security, correctness, and quality — producing a structured `review.md` artifact with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` checks this verdict and blocks on `BLOCK`.
@@ -127,11 +127,12 @@ All scripts are in `src/cicadas/scripts/`.
 | **Unarchive** | `python src/cicadas/scripts/cicadas.py unarchive {name}` |
 | **Abort** | `python src/cicadas/scripts/cicadas.py abort` |
 | **Project History** | `python src/cicadas/scripts/cicadas.py history` |
-| **Graph Build** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph build` |
+| **Graph Build** | `python src/cicadas/scripts/cicadas.py graph build` |
 | **Graph Status** | `python src/cicadas/scripts/cicadas.py graph status` |
-| **Graph Query** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph area|neighbors|tests|callers|callees|signature-impact|route|search ...` |
-| **Graph Observe** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph tail|watch` |
-| **Graph Usage** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` |
+| **Graph Query** | `python src/cicadas/scripts/cicadas.py graph area|neighbors|tests|callers|callees|signature-impact|route|search ...` |
+| **Graph Observe** | `python src/cicadas/scripts/cicadas.py graph tail|watch` |
+| **Graph Usage** | `python src/cicadas/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` |
+| **Graph Eval** | `python src/cicadas/scripts/cicadas.py graph eval --repo path --scenario-file scenarios.jsonl --output report.json` |
 | **Validate Skill** | `python src/cicadas/scripts/cicadas.py validate-skill {slug}` |
 | **Publish Skill** | `python src/cicadas/scripts/cicadas.py skill-publish {slug} [--publish-dir DIR] [--symlink] [--force]` |
 

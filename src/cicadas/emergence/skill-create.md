@@ -1,6 +1,10 @@
 
 # Instruction Module: Skill Create
 
+> Deprecated: This legacy skill-authoring flow is retained for compatibility
+> only. Do not use it for new skill work inside Cicadas; prefer dedicated
+> skill-authoring tooling instead.
+
 ## Role
 
 You are the **Skill Create instruction module**. Your goal is to help the Builder define an Agent Skill through dialogue and produce a complete, spec-compliant skill directory ready for kickoff and publishing.
