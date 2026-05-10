@@ -51,6 +51,54 @@ class TestOpenPr(CicadasTest):
         self.assertIsNone(open_pr._bitbucket_pr_url("https://github.com/u/r", "feat/x", "main"))
         self.assertIsNone(open_pr._bitbucket_pr_url("", "feat/x", "main"))
 
+    def test_open_pr_hint_present_when_run_as_main(self):
+        """When run as __main__ with TTY, open_pr prints hint."""
+        import io
+        import runpy
+        from unittest.mock import patch
+        
+        self.init_git()
+        subprocess.run(["git", "checkout", "-b", "feat/test"], cwd=self.root, check=True, capture_output=True)
+        
+        buf = io.StringIO()
+        test_args = ["open_pr.py", "--base", "master"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    try:
+                        runpy.run_module("open_pr", run_name="__main__", alter_sys=True)
+                    except SystemExit:
+                        pass
+        
+        output = buf.getvalue()
+        self.assertIn("Next: merge the PR, then complete the initiative", output)
+
+    def test_open_pr_hint_suppressed_with_no_hints_flag(self):
+        """When run as __main__ with --no-hints, open_pr suppresses hint."""
+        import io
+        import runpy
+        from unittest.mock import patch
+        
+        self.init_git()
+        subprocess.run(["git", "checkout", "-b", "feat/test"], cwd=self.root, check=True, capture_output=True)
+        
+        buf = io.StringIO()
+        test_args = ["open_pr.py", "--base", "master", "--no-hints"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    try:
+                        runpy.run_module("open_pr", run_name="__main__", alter_sys=True)
+                    except SystemExit:
+                        pass
+        
+        output = buf.getvalue()
+        self.assertNotIn("Next: merge the PR, then complete the initiative", output)
+
 
 if __name__ == "__main__":
     unittest.main()

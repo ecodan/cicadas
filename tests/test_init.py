@@ -59,9 +59,58 @@ class TestInit(CicadasTest):
 
         # Patch utils.get_project_root so the re-executed import picks it up
         with patch("utils.get_project_root", return_value=new_root):
-            runpy.run_module("init", run_name="__main__", alter_sys=True)
+            with patch("sys.argv", ["init.py"]):
+                runpy.run_module("init", run_name="__main__", alter_sys=True)
 
         self.assertTrue((new_root / ".cicadas").exists())
+
+    def test_init_hint_present_when_run_as_main(self):
+        """When run as __main__ with TTY, init prints hint."""
+        import io
+        from unittest.mock import patch
+        
+        new_root = self.root / "hint_project"
+        new_root.mkdir()
+        
+        buf = io.StringIO()
+        test_args = ["init.py"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    with patch("utils.get_project_root", return_value=new_root):
+                        try:
+                            runpy.run_module("init", run_name="__main__", alter_sys=True)
+                        except SystemExit:
+                            pass
+        
+        output = buf.getvalue()
+        self.assertIn("Welcome to Cicadas! Start your first initiative.", output)
+
+    def test_init_hint_suppressed_with_no_hints_flag(self):
+        """When run as __main__ with --no-hints, init suppresses hint."""
+        import io
+        from unittest.mock import patch
+        
+        new_root = self.root / "no_hint_project"
+        new_root.mkdir()
+        
+        buf = io.StringIO()
+        test_args = ["init.py", "--no-hints"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    with patch("utils.get_project_root", return_value=new_root):
+                        try:
+                            runpy.run_module("init", run_name="__main__", alter_sys=True)
+                        except SystemExit:
+                            pass
+        
+        output = buf.getvalue()
+        self.assertNotIn("Welcome to Cicadas! Start your first initiative.", output)
 
 
 if __name__ == "__main__":

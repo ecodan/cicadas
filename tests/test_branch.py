@@ -341,5 +341,57 @@ class TestBranchWorktree(CicadasTest):
         self.assertEqual(ev["data"]["intent"], "event intent")
 
 
+class TestBranchHints(CicadasTest):
+    """Tests for hint output in branch.py."""
+
+    def setUp(self):
+        super().setUp()
+        self.init_git()
+        from utils import get_default_branch
+        self.main_branch = get_default_branch()
+
+    def test_branch_hint_present_when_run_as_main(self):
+        """When run as __main__ with TTY, branch prints hint."""
+        import io
+        import runpy
+        from unittest.mock import patch
+        
+        buf = io.StringIO()
+        test_args = ["branch.py", "feat/test-hint", "--intent", "test hint intent", "--modules", "src/foo.py"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    try:
+                        runpy.run_module("branch", run_name="__main__", alter_sys=True)
+                    except SystemExit:
+                        pass
+        
+        output = buf.getvalue()
+        self.assertIn("Next: implement, then complete the partition", output)
+
+    def test_branch_hint_suppressed_with_no_hints_flag(self):
+        """When run as __main__ with --no-hints, branch suppresses hint."""
+        import io
+        import runpy
+        from unittest.mock import patch
+        
+        buf = io.StringIO()
+        test_args = ["branch.py", "feat/no-hint", "--intent", "no hint test", "--modules", "src/foo.py", "--no-hints"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    try:
+                        runpy.run_module("branch", run_name="__main__", alter_sys=True)
+                    except SystemExit:
+                        pass
+        
+        output = buf.getvalue()
+        self.assertNotIn("Next: implement, then complete the partition", output)
+
+
 if __name__ == "__main__":
     unittest.main()
