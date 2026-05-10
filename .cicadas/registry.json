@@ -116,6 +116,28 @@
       "owner": "unknown",
       "created_at": "2026-05-10T00:05:33.024762+00:00",
       "initiative": "ftue-and-flow"
+    },
+    "feat/tutorial": {
+      "intent": "Implement interactive tutorial script with 7 steps, mock outputs, completion screen, and init.py first-run integration",
+      "modules": [
+        "tests/test_tutorial.py",
+        "src/cicadas/scripts/cicadas.py",
+        "src/cicadas/scripts/init.py",
+        "src/cicadas/scripts/tutorial.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-10T00:32:58.431080+00:00",
+      "initiative": "ftue-and-flow"
+    },
+    "feat/docs-rewrite": {
+      "intent": "Rewrite README Getting Started as 7-step narrative with agent prompts and Quick Reference cheatsheet; update HOW-TO with tutorial and hint-toggling sections; review all user-facing docs to replace raw CLI references with agent prompts",
+      "modules": [
+        "HOW-TO.md",
+        "README.md"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-10T00:47:42.282125+00:00",
+      "initiative": "ftue-and-flow"
     }
   }
 }

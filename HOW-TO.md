@@ -135,9 +135,89 @@ If the host agent/runtime supports context clearing or compaction, the skill ask
 
 ---
 
+## 🎓 Interactive Tutorial
+
+Cicadas ships with an interactive 7-step walkthrough that shows the complete workflow using mock output — no real code required. It takes about 5 minutes.
+
+### Running the tutorial
+
+**On first `cicadas init`**: Cicadas detects that `.cicadas/` was just created and prompts:
+
+```
+Would you like to run the tutorial now? [Y/n]:
+```
+
+Type `Y` (or just press Enter) to start immediately.
+
+**Any time after that**, tell your agent:
+
+> 💬 *"Run the Cicadas tutorial"*
+
+Or pass a flag directly to init:
+
+```bash
+# Run tutorial without the interactive prompt:
+cicadas init --tutorial
+
+# Skip the tutorial prompt entirely:
+cicadas init --no-tutorial
+```
+
+### What the tutorial covers
+
+The tutorial walks through all 7 steps of the Cicadas workflow with realistic mock CLI output at each step:
+
+| Step | Title | 💬 Agent prompt shown |
+| :--- | :--- | :--- |
+| 1 | Start an initiative | *"Start an initiative called my-project"* |
+| 2 | Define specs (agent-guided) | *(agent-guided — no prompt needed)* |
+| 3 | Kickoff the initiative | *"Kickoff the initiative"* |
+| 4 | Implement a partition | *"Implement partition 1"* |
+| 5 | Code review and complete partition | *"Code review and complete partition"* |
+| 6 | Create a PR | *"Create a PR"* |
+| 7 | Complete the initiative | *"Complete the initiative"* |
+
+At the end, the tutorial prints the full 7-prompt cheatsheet so you have it handy.
+
+> **Note**: The tutorial is purely informational — it makes no changes to your git state or `.cicadas/` workspace.
+
+---
+
+## ⚙️ Hint Toggling
+
+Cicadas prints contextual next-step hints after key lifecycle commands (kickoff, branch, archive, open-pr, status, etc.). Each hint shows the natural-language agent prompt to use next, formatted in a bordered box.
+
+### Disabling hints globally
+
+Add `"hints": false` to `.cicadas/config.json`:
+
+```json
+{
+  "hints": false
+}
+```
+
+Hints are shown by default (no key needed). To re-enable, set `"hints": true` or remove the key entirely.
+
+### Disabling hints for a single command
+
+Pass `--no-hints` to any lifecycle command:
+
+```bash
+python src/cicadas/scripts/cicadas.py kickoff my-project --intent "..." --no-hints
+python src/cicadas/scripts/cicadas.py status --no-hints
+```
+
+### When hints are suppressed automatically
+
+Hints are automatically suppressed when stdout is not a TTY (e.g., piped output, CI environments, script capture). This means CI logs stay clean without any extra configuration.
+
+---
+
 ## 🟢 Greenfield: Starting a New Project
 
 1.  **Initialize**: *"Initialize cicadas for this project."*
+    - On first run, Cicadas offers the interactive tutorial. Type `Y` to run it.
 2.  **Clarify**: *"I want to build [Product Name]. Help me clarify the requirements."* You can provide requirements via **Q&A** (interactive), a **doc** (`.cicadas/drafts/{initiative}/requirements.md`), or a **Loom transcript** (`.cicadas/drafts/{initiative}/loom.md`); the agent fills the PRD from the doc or transcript.
 3.  **Draft Appearance**: Use prompts like *"Draft the UX"* and *"Draft the tech design"*.
 4.  **Define Strategy (Approach)**: *"Draft the approach."*
@@ -147,13 +227,13 @@ If the host agent/runtime supports context clearing or compaction, the skill ask
     - Agent promotes drafts to active and creates the **Initiative Branch**.
     - By default work continues in the current workspace. To create a linked initiative worktree, enable it in `.cicadas/config.json` or use `--worktree`.
 7.  **Implementation Loop**:
-    - **Start Feature**: *"Start feature [partition-name]."* (Forks from Initiative Branch).
+    - **Start Feature**: *"Implement partition [partition-name]."* (Forks from Initiative Branch).
       - Parallel `feat/` partitions still create linked worktrees by default.
       - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts into a worktree.
     - **Reflect**: The Agent keeps specs current as you build, including refreshing spec front matter so compact context stays accurate.
-    - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` blocks on `BLOCK`.
-    - **Complete Feature**: Merges back to the Initiative Branch.
-8.  **Complete Initiative**: *"Complete initiative [initiative-name]."*
+    - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict.
+    - **Complete Feature**: *"Code review and complete partition"* — merges back to the Initiative Branch.
+8.  **Complete Initiative**: *"Complete the initiative."*
     - Merges Initiative Branch to `main`, updates Canon on `main`, and **Archives** the specs.
     - `normal-repo` initiatives run the traditional broad synthesis pass.
     - `large-repo` and `mega-repo` initiatives run targeted canon reconcile: touched slices first, neighboring slices only when the work changed interfaces, boundaries, or invariants, and global orientation docs only when repo-wide truth changed.
@@ -240,7 +320,7 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 4.  **Complete**: Merge to `main`, optionally update Canon, and Archive.
     - **Note**: You can run `archive` and include the spec move in your PR to `main`. Use `unarchive` if you need to revert and make further changes.
 
-**Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent runs `python src/cicadas/scripts/cicadas.py abort` from the current branch, rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
+**Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
 
 ---
 
@@ -260,9 +340,9 @@ The agent runs the start flow (name, Building on AI?, publish destination, PR pr
 **Edit an existing skill**: *"The skill isn't triggering reliably."* or *"Edit skill db-migrations."*
 The agent asks one diagnostic question (under-triggering / over-triggering / wrong output), proposes a minimum targeted change as a before/after diff, and validates after applying.
 
-**Validate a skill**: `python src/cicadas/scripts/cicadas.py validate-skill {slug}`
+**Validate a skill**: *"Validate skill \<name\>"*
 
-**Publish a skill** (after merging `skill/{name}` to `main`): `python src/cicadas/scripts/cicadas.py skill-publish {slug}`
+**Publish a skill** (after merging `skill/{name}` to `main`): *"Publish skill \<name\>"*
 Reads `publish_dir` from `emergence-config.json`, runs validation before copying.
 
 ### Registering Cicadas as a Claude Code Skill
