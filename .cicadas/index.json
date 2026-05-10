@@ -126,6 +126,13 @@
       "summary": "P4 docs-rewrite: rewrote README Getting Started as 7-step agent-prompt narrative, added Quick Reference cheatsheet, added Tutorial and Hint Toggling sections to HOW-TO.md, replaced user-facing raw CLI refs with agent prompts throughout",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-05-10T04:34:55.676048+00:00",
+      "branch": "initiative/ftue-and-flow",
+      "summary": "ftue-and-flow: hints subsystem (print_hint, hints_enabled, ANSI utils), next-step hints on all lifecycle scripts, status.py inference, interactive 7-step tutorial with first-run prompt, README 7-step narrative + Quick Reference cheatsheet, HOW-TO tutorial and hint-toggling sections",
+      "decisions": "",
+      "modules": []
     }
   ]
 }

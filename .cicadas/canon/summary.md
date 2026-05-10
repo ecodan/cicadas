@@ -14,15 +14,16 @@ Cicadas is a spec-driven development orchestrator for human-AI teams that treats
 - Scripts are pure Python stdlib — no external dependencies at runtime; only `git` and Python 3.11+ required.
 - Agent operations (Reflect, Code Review, Synthesis) are LLM tasks defined in `emergence/` markdown prompts, not scripts. Clarify supports intake via Q&A, doc, or Loom. Start flow includes Building on AI? (yes/no) and eval status; stored in emergence-config.json. Initiatives: optional eval spec (eval-spec.md + template); Approach asks eval placement. Tweaks/bugs: optional eval/benchmark reminder. Cicadas does not run evals.
 - Context injection: `branch.py` writes `context.md` at branch creation time (canon summary + scoped module snapshots + specs); gitignored.
+- Hint subsystem: `utils.py` provides `hints_enabled(args, config)` (priority: `--no-hints` flag → `config['hints'] == False` → not TTY → True) and `print_hint(lines, args, config)` (66-char cyan box). Every lifecycle script (kickoff, branch, archive, update_index, open_pr, init) prints a next-step hint after its main output. `status.py` infers and prints a hint from registry state. Hints auto-suppress in non-TTY environments (CI/pipes).
 - Compact context contract: core initiative specs now carry machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved context from the specs themselves.
 - Reset workflow: `SKILL.md` defines Branch Reset, Phase Reset, and Partition Reset rules. They prefer `canon/summary.md`, spec front matter, and indexed sections before full-doc loading, and only use host-supported clear/compact behavior opportunistically.
 
 ## Modules
 
-scripts/init.py: bootstrap `.cicadas/` directory structure (idempotent)
+scripts/init.py: bootstrap `.cicadas/` directory structure (idempotent); on first run prompts "Would you like to run the Cicadas tutorial now? [Y/n]"; supports --tutorial (auto-run) and --no-tutorial (skip prompt) flags
 scripts/kickoff.py: promote drafts → active, register initiative, create initiative branch
 scripts/branch.py: create and register feature/fix/tweak branches; write context.md bundle
-scripts/status.py: report active initiatives/branches; Merged/Next when lifecycle.json present
+scripts/status.py: report active initiatives/branches; Merged/Next when lifecycle.json present; _infer_next_step() emits next-step hint based on registry state (no .cicadas → init; no initiatives → start; no branches → implement; no lifecycle → complete partition)
 scripts/check.py: detect module overlap conflicts across active branches
 scripts/create_lifecycle.py: create lifecycle.json with PR boundaries and step list
 scripts/open_pr.py: open PR via gh/glab/Bitbucket/fallback; blocks on BLOCK verdict
@@ -33,7 +34,8 @@ scripts/archive.py: deregister and expire active specs on initiative completion
 scripts/abort.py: context-aware rollback for any branch type
 scripts/history.py: generate HTML timeline from archive + index; includes token summaries
 scripts/tokens.py: append-only token usage log API (init_log, append_entry, load_log)
-scripts/utils.py: shared utilities (root detection, git helpers, JSON I/O, worktree ops, emit() non-fatal event emitter)
+scripts/utils.py: shared utilities (root detection, git helpers, JSON I/O, worktree ops, emit() non-fatal event emitter, ANSI color constants, hints_enabled(), print_hint() 66-char box, print_tutorial_banner(), print_tutorial_checkmark())
+scripts/tutorial.py: interactive 7-step tutorial; invoked by `cicadas tutorial` or `init.py --tutorial`; each step prints banner + concept + agent prompt + explanatory text + checkmark + pause; completion screen shows Quick Reference cheatsheet
 scripts/emit_event.py: append typed event to events.jsonl with fcntl.flock; CLI: --initiative, --type, --data
 scripts/get_events.py: read/filter events.jsonl; CLI: --initiative, --type, --since, --last; exits 0+empty if absent
 emergence/: markdown prompts for Clarify, UX, Tech, Approach (incl. Step 4b: Artifact Type, How to Run, AC generation per partition), Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec (Building on AI), Code Review; start-flow includes Building on AI? and eval status
@@ -49,6 +51,7 @@ tests/test_templates.py: regression checks for the front matter contract and com
 - Reflect (update active specs to match code) before every commit on feat/task branches.
 - Refresh front matter during Reflect when the meaning of a spec changes.
 - Code Review (writes review.md) after Reflect on feat branches; open_pr.py enforces BLOCK.
+- Hints are on by default; disable globally via `hints: false` in `.cicadas/config.json`, or per-command via `--no-hints` flag.
 - Tests use real temp filesystems + real git repos (no mocks for I/O); base class in `tests/base.py`.
 - PYTHONPATH=src/cicadas/scripts:tests for all test runs; system python3 (not .venv) for tests.
 - Ruff for lint/format; pre-commit hooks enforced.

@@ -6,12 +6,6 @@
       "owner": "unknown",
       "signals": [],
       "created_at": "2026-04-18T03:16:20.888253+00:00"
-    },
-    "ftue-and-flow": {
-      "intent": "Improve first-time user experience and add in-flow guidance so users understand the Cicadas method and can navigate the workflow without external help",
-      "owner": "unknown",
-      "signals": [],
-      "created_at": "2026-05-09T23:50:45.941005+00:00"
     }
   },
   "branches": {
@@ -81,63 +75,6 @@
       "created_at": "2026-04-18T14:16:48.374467+00:00",
       "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-quality-guidance",
       "initiative": "graph-quality-treesitter"
-    },
-    "feat/hints-subsystem": {
-      "intent": "Add centralized ANSI hint subsystem to utils.py: hints_enabled(), print_hint(), print_tutorial_banner(), print_tutorial_checkmark(), ANSI constants, and --no-hints global arg in cicadas.py",
-      "modules": [
-        "tests/test_hints.py",
-        "src/cicadas/scripts/cicadas.py",
-        "src/cicadas/scripts/utils.py"
-      ],
-      "owner": "unknown",
-      "created_at": "2026-05-09T23:56:45.783576+00:00",
-      "initiative": "ftue-and-flow"
-    },
-    "feat/lifecycle-hints": {
-      "intent": "Add print_hint() next-step guidance to kickoff, branch, archive, update_index, open_pr, and init scripts",
-      "modules": [
-        "src/cicadas/scripts/kickoff.py",
-        "src/cicadas/scripts/open_pr.py",
-        "src/cicadas/scripts/init.py",
-        "src/cicadas/scripts/update_index.py",
-        "src/cicadas/scripts/archive.py",
-        "src/cicadas/scripts/branch.py"
-      ],
-      "owner": "unknown",
-      "created_at": "2026-05-10T00:05:32.644573+00:00",
-      "initiative": "ftue-and-flow"
-    },
-    "feat/status-next-step": {
-      "intent": "Add _infer_next_step() to status.py so cicadas status always shows a next-step hint based on registry state",
-      "modules": [
-        "src/cicadas/scripts/status.py",
-        "tests/test_archive_status.py"
-      ],
-      "owner": "unknown",
-      "created_at": "2026-05-10T00:05:33.024762+00:00",
-      "initiative": "ftue-and-flow"
-    },
-    "feat/tutorial": {
-      "intent": "Implement interactive tutorial script with 7 steps, mock outputs, completion screen, and init.py first-run integration",
-      "modules": [
-        "tests/test_tutorial.py",
-        "src/cicadas/scripts/cicadas.py",
-        "src/cicadas/scripts/init.py",
-        "src/cicadas/scripts/tutorial.py"
-      ],
-      "owner": "unknown",
-      "created_at": "2026-05-10T00:32:58.431080+00:00",
-      "initiative": "ftue-and-flow"
-    },
-    "feat/docs-rewrite": {
-      "intent": "Rewrite README Getting Started as 7-step narrative with agent prompts and Quick Reference cheatsheet; update HOW-TO with tutorial and hint-toggling sections; review all user-facing docs to replace raw CLI references with agent prompts",
-      "modules": [
-        "HOW-TO.md",
-        "README.md"
-      ],
-      "owner": "unknown",
-      "created_at": "2026-05-10T00:47:42.282125+00:00",
-      "initiative": "ftue-and-flow"
     }
   }
 }
