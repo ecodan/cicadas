@@ -653,7 +653,6 @@ class TestStatusNextStepHints(CicadasTest):
         from unittest.mock import patch
         
         name = "feat-to-archive"
-        # Setup branch in registry and active spec
         with open(self.cicadas_dir / "registry.json", "r+") as f:
             reg = json.load(f)
             reg["branches"][name] = {"intent": "test"}
@@ -669,8 +668,7 @@ class TestStatusNextStepHints(CicadasTest):
         test_args = ["archive.py", name]
         
         with patch("sys.argv", test_args):
-            with patch("sys.stdout") as mock_stdout:
-                mock_stdout.isatty.return_value = True
+            with patch("utils.hints_enabled", return_value=True):
                 with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
                     try:
                         runpy.run_module("archive", run_name="__main__", alter_sys=True)
@@ -687,7 +685,6 @@ class TestStatusNextStepHints(CicadasTest):
         from unittest.mock import patch
         
         name = "feat-no-hint"
-        # Setup branch in registry and active spec
         with open(self.cicadas_dir / "registry.json", "r+") as f:
             reg = json.load(f)
             reg["branches"][name] = {"intent": "test"}
@@ -703,16 +700,15 @@ class TestStatusNextStepHints(CicadasTest):
         test_args = ["archive.py", name, "--no-hints"]
         
         with patch("sys.argv", test_args):
-            with patch("sys.stdout") as mock_stdout:
-                mock_stdout.isatty.return_value = True
-                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
-                    try:
-                        runpy.run_module("archive", run_name="__main__", alter_sys=True)
-                    except SystemExit:
-                        pass
+            with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                try:
+                    runpy.run_module("archive", run_name="__main__", alter_sys=True)
+                except SystemExit:
+                    pass
         
         output = buf.getvalue()
         self.assertNotIn("You're done! Start your next initiative any time.", output)
+
 
 
 if __name__ == "__main__":

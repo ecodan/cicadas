@@ -1,10 +1,12 @@
 # Copyright 2026 Cicadas Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+import argparse
 import subprocess
+import sys
 from pathlib import Path
 
-from utils import get_default_branch, get_project_root, get_registry_dir, load_json
+from utils import get_default_branch, get_project_root, get_registry_dir, load_json, hints_enabled, print_hint, load_config
 
 
 def _worktree_rows(registry: dict) -> list[tuple[str, str]]:
@@ -99,10 +101,83 @@ def _lifecycle_merge_status(
     return merged, next_step
 
 
-def show_status() -> None:
+def _infer_next_step(registry: dict, cicadas_exists: bool) -> list[str] | None:
+    """Infer next step hint lines based on registry state.
+
+    Returns a list of hint lines if a next-step hint should be shown,
+    or None if lifecycle.json is present (lifecycle-based hints already handle this).
+
+    Scenarios:
+      1. No .cicadas/ exists → init hint
+      2. .cicadas/ exists but no initiatives → start initiative hint
+      3. Initiatives exist but no feature branches → build partition hint
+      4. Feature branches exist but no lifecycle.json → complete partition hint
+      5. Lifecycle.json present → return None (lifecycle-based hints take over)
+    """
+    if not cicadas_exists:
+        return [
+            "No Cicadas project found.",
+            '  Tell your agent: 💬 "Initialize cicadas"',
+        ]
+
+    initiatives = registry.get("initiatives", {})
+    if not initiatives:
+        return [
+            "Start your first initiative.",
+            '  Tell your agent: 💬 "Start an initiative called <name>"',
+        ]
+
+    branches = registry.get("branches", {})
+    feature_branches = [
+        n for n, i in branches.items()
+        if i.get("initiative") in initiatives and not (n.startswith("fix/") or n.startswith("tweak/") or n.startswith("skill/"))
+    ]
+
+    if not feature_branches:
+        return [
+            "Next: build your first partition.",
+            '  Tell your agent: 💬 "Implement partition <name>"',
+        ]
+
+    # Check if any initiative has a lifecycle.json
+    root = get_project_root()
+    cicadas_dir = root / ".cicadas"
+    for init_name in initiatives:
+        lifecycle_path = cicadas_dir / "active" / init_name / "lifecycle.json"
+        if lifecycle_path.exists():
+            # Lifecycle-based hints will handle this case
+            return None
+
+    # Feature branches exist but no lifecycle.json found
+    return [
+        "Next: complete the current partition.",
+        '  Tell your agent: 💬 "Code review and complete partition"',
+    ]
+
+
+def show_status(args: argparse.Namespace | None = None) -> None:
     root: Path = get_project_root()
     cicadas: Path = root / ".cicadas"
-    registry: dict = load_json(get_registry_dir() / "registry.json")
+    cicadas_exists: bool = cicadas.exists()
+
+    # Handle missing .cicadas/ gracefully
+    if not cicadas_exists:
+        print("Project: " + root.name + "\n")
+        print("No Cicadas project initialized in this directory.")
+        try:
+            config = load_config()
+        except Exception:
+            config = {}
+        hint_lines = _infer_next_step({}, cicadas_exists=False)
+        if hint_lines:
+            print()
+            print_hint(hint_lines, args, config)
+        return
+
+    try:
+        registry: dict = load_json(get_registry_dir() / "registry.json")
+    except Exception:
+        registry = {}
 
     print(f"Project: {root.name}\n")
 
@@ -191,6 +266,19 @@ def show_status() -> None:
     except (KeyError, TypeError, ValueError):
         pass
 
+    # Print inferred next-step hint if no lifecycle.json exists
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    hint_lines = _infer_next_step(registry, cicadas_exists=True)
+    if hint_lines:
+        print()
+        print_hint(hint_lines, args, config)
+
 
 if __name__ == "__main__":
-    show_status()
+    parser = argparse.ArgumentParser(description="Show Cicadas project status")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
+    args = parser.parse_args()
+    show_status(args)

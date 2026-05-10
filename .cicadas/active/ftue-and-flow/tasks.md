@@ -83,22 +83,22 @@ next_section: "## Partition: feat/hints-subsystem"
 
 > **Parallel with feat/lifecycle-hints.** Depends on feat/hints-subsystem.
 
-- [ ] Add `_infer_next_step(registry, cicadas_exists)` to `status.py` — returns hint lines based on registry state: <!-- id: 40 -->
+- [x] Add `_infer_next_step(registry, cicadas_exists)` to `status.py` — returns hint lines based on registry state: <!-- id: 40 -->
   - No `.cicadas/`: "Initialize Cicadas" → 💬 "Initialize cicadas"
   - `.cicadas/` exists, no initiatives: "Start your first initiative" → 💬 "Start an initiative called \<name\>"
   - Initiative exists, no branches: "Build your first partition" → 💬 "Implement partition \<name\>"
   - Branches exist, no lifecycle: "Complete the partition" → 💬 "Code review and complete partition"
   - Lifecycle present: existing Next step (unchanged)
-- [ ] Wire `_infer_next_step()` into `status.py` output — call `print_hint()` with inferred lines after existing status output <!-- id: 41 -->
-- [ ] Handle the no-`.cicadas/` case gracefully in `status.py` — currently may error; should print friendly message + hint <!-- id: 42 -->
-- [ ] Add `--no-hints` arg to `status.py` <!-- id: 43 -->
-- [ ] Write new test cases in `tests/test_status.py` for each inference scenario: <!-- id: 44 -->
+- [x] Wire `_infer_next_step()` into `status.py` output — call `print_hint()` with inferred lines after existing status output <!-- id: 41 -->
+- [x] Handle the no-`.cicadas/` case gracefully in `status.py` — currently may error; should print friendly message + hint <!-- id: 42 -->
+- [x] Add `--no-hints` arg to `status.py` <!-- id: 43 -->
+- [x] Write new test cases in `tests/test_status.py` for each inference scenario: <!-- id: 44 -->
   - No `.cicadas/` → friendly message + hint
   - No initiatives → hint to start initiative
   - Initiative, no branches → hint to implement partition
   - Branches, no lifecycle → hint to complete partition
   - `--no-hints` → zero hint output in all cases
-- [ ] Verify all existing `test_status.py` tests pass unchanged <!-- id: 45 -->
+- [x] Verify all existing `test_status.py` tests pass unchanged <!-- id: 45 -->
 
 ---
 

@@ -92,6 +92,30 @@
       "owner": "unknown",
       "created_at": "2026-05-09T23:56:45.783576+00:00",
       "initiative": "ftue-and-flow"
+    },
+    "feat/lifecycle-hints": {
+      "intent": "Add print_hint() next-step guidance to kickoff, branch, archive, update_index, open_pr, and init scripts",
+      "modules": [
+        "src/cicadas/scripts/kickoff.py",
+        "src/cicadas/scripts/open_pr.py",
+        "src/cicadas/scripts/init.py",
+        "src/cicadas/scripts/update_index.py",
+        "src/cicadas/scripts/archive.py",
+        "src/cicadas/scripts/branch.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-10T00:05:32.644573+00:00",
+      "initiative": "ftue-and-flow"
+    },
+    "feat/status-next-step": {
+      "intent": "Add _infer_next_step() to status.py so cicadas status always shows a next-step hint based on registry state",
+      "modules": [
+        "src/cicadas/scripts/status.py",
+        "tests/test_archive_status.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-10T00:05:33.024762+00:00",
+      "initiative": "ftue-and-flow"
     }
   }
 }
