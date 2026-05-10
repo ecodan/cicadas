@@ -1106,3 +1106,95 @@ def emit(initiative: str, event_type: str, data: dict | None = None) -> None:
         emit_event(initiative, event_type, data or {})
     except Exception:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Hint subsystem
+# ---------------------------------------------------------------------------
+# ANSI escape codes — applied only when stdout is a TTY (see _colorize).
+
+_ANSI_CYAN = "\033[36m"
+_ANSI_GREEN = "\033[32m"
+_ANSI_BOLD = "\033[1m"
+_ANSI_DIM = "\033[2m"
+_ANSI_RESET = "\033[0m"
+
+_HINT_BOX_WIDTH = 66  # total width including border chars
+
+
+def _colorize(text: str, code: str) -> str:
+    """Apply an ANSI escape code to text only when stdout is a TTY."""
+    import sys
+    if sys.stdout.isatty():
+        return f"{code}{text}{_ANSI_RESET}"
+    return text
+
+
+def hints_enabled(args: object | None = None, config: dict | None = None) -> bool:
+    """Return True when next-step hints should be printed.
+
+    Priority (highest to lowest):
+      1. ``--no-hints`` flag present on *args* → False
+      2. ``config['hints'] == False`` → False
+      3. stdout is not a TTY (pipe / CI) → False
+      4. Otherwise → True
+    """
+    import sys
+    if args is not None and getattr(args, "no_hints", False):
+        return False
+    if config is not None and config.get("hints") is False:
+        return False
+    if not sys.stdout.isatty():
+        return False
+    return True
+
+
+def print_hint(lines: list[str], args: object | None = None, config: dict | None = None) -> None:
+    """Print a framed next-step hint block when hints are enabled.
+
+    *lines* is a list of plain-text strings to display inside the box.
+    Each line is truncated or padded to fit within the box interior
+    (``_HINT_BOX_WIDTH - 4`` chars: 2 border chars + 2 padding spaces).
+
+    The box is printed in cyan when stdout is a TTY; plain otherwise.
+    Does nothing when ``hints_enabled()`` returns False.
+    """
+    if not hints_enabled(args, config):
+        return
+
+    # Layout: ║ (1) + space (1) + content + space (1) + ║ (1) = content + 4
+    inner_width = _HINT_BOX_WIDTH - 4  # content area width
+    top = _colorize("╔" + "═" * (_HINT_BOX_WIDTH - 2) + "╗", _ANSI_CYAN)
+    bot = _colorize("╚" + "═" * (_HINT_BOX_WIDTH - 2) + "╝", _ANSI_CYAN)
+
+    print(top)
+    for line in lines:
+        # Truncate to inner width to keep box consistent.
+        truncated = line[:inner_width]
+        padded = truncated.ljust(inner_width)
+        border = _colorize("║", _ANSI_CYAN)
+        print(f"{border} {padded} {border}")
+    print(bot)
+
+
+def print_tutorial_banner(step: int, total: int, title: str) -> None:
+    """Print a bold tutorial step banner.
+
+    Example::
+
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+         STEP 2 of 7 — Kickoff the initiative
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    """
+    divider = _colorize("━" * 53, _ANSI_BOLD)
+    step_label = _colorize(f"STEP {step} of {total}", _ANSI_CYAN)
+    title_text = _colorize(title, _ANSI_BOLD)
+    print(divider)
+    print(f" {step_label} — {title_text}")
+    print(divider)
+
+
+def print_tutorial_checkmark(message: str) -> None:
+    """Print a green checkmark confirmation line."""
+    check = _colorize("✓", _ANSI_GREEN)
+    print(f" {check} {message}")
