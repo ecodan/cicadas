@@ -6,6 +6,12 @@
       "owner": "unknown",
       "signals": [],
       "created_at": "2026-04-18T03:16:20.888253+00:00"
+    },
+    "ftue-and-flow": {
+      "intent": "Improve first-time user experience and add in-flow guidance so users understand the Cicadas method and can navigate the workflow without external help",
+      "owner": "unknown",
+      "signals": [],
+      "created_at": "2026-05-09T23:50:45.941005+00:00"
     }
   },
   "branches": {
@@ -75,6 +81,17 @@
       "created_at": "2026-04-18T14:16:48.374467+00:00",
       "worktree_path": "/Users/dcripe/dev/code/thirdparty/cicadas-feat-graph-quality-guidance",
       "initiative": "graph-quality-treesitter"
+    },
+    "feat/hints-subsystem": {
+      "intent": "Add centralized ANSI hint subsystem to utils.py: hints_enabled(), print_hint(), print_tutorial_banner(), print_tutorial_checkmark(), ANSI constants, and --no-hints global arg in cicadas.py",
+      "modules": [
+        "tests/test_hints.py",
+        "src/cicadas/scripts/cicadas.py",
+        "src/cicadas/scripts/utils.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-09T23:56:45.783576+00:00",
+      "initiative": "ftue-and-flow"
     }
   }
 }
