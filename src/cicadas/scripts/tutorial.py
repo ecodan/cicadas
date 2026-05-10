@@ -23,17 +23,24 @@ from utils import print_tutorial_banner, print_tutorial_checkmark  # noqa: E402
 # ---------------------------------------------------------------------------
 
 MOCK_START = """\
-[INFO] context.md written to project root (canon summary + module snapshots + tasks)
-[OK]   Branch registered: initiative/my-project
-[OK]   Initiative 'my-project' kicked off on branch initiative/my-project"""
+Your agent will ask you a few questions about the project — for example,
+at what granularity you'd like to progress through the specs and where
+you want PRs — and then create the initiative.
+
+(Note: Initiatives are full-sized projects with PRD, UXD and Tech Designs.
+Tweak, Bug and Tech Initiatives are also available.)"""
 
 MOCK_SPECS = """\
-[agent] Drafting PRD...     ✓  .cicadas/drafts/my-project/prd.md
-[agent] Drafting UX...      ✓  .cicadas/drafts/my-project/ux.md
-[agent] Drafting tech...    ✓  .cicadas/drafts/my-project/tech-design.md
-[agent] Drafting approach...✓  .cicadas/drafts/my-project/approach.md
-[agent] Drafting tasks...   ✓  .cicadas/drafts/my-project/tasks.md
-[STOP]  Review and approve each doc before proceeding."""
+The agent will guide you through the process. Depending on whether you
+chose Section, Doc or All granularity, the agent will pause after each
+doc section, each doc, or at the end of all docs for you to ask
+questions and make corrections.
+
+Once you're happy with the specs, tell the agent to create an approach
+and task list. The approach defines the large-grained partitions — the
+logical work that belongs together — and includes a DAG showing how to
+sequence the work. The task list contains the individual work items the
+implementing agent will complete."""
 
 MOCK_KICKOFF = """\
 [OK]   Promoted specs: .cicadas/drafts/my-project → .cicadas/active/my-project
@@ -208,7 +215,6 @@ def main(args: argparse.Namespace | None = None) -> int:  # noqa: ARG001
             "  PRD → UX → Tech Design → Approach → Tasks",
             "",
             "You review and approve each one before the agent proceeds.",
-            "No raw CLI commands needed — the agent handles everything.",
         ],
         agent_prompt=None,
         mock_output=MOCK_SPECS,
