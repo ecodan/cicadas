@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 0.9.0
+
+### Added
+
+- **Interactive tutorial**: `cicadas init` now prompts first-time users to run a 7-step interactive tutorial. The tutorial walks through the full Cicadas workflow with mock output, concept explanations, and agent prompts at each step. Run any time via 💬 *"Run the Cicadas tutorial"* or `python src/cicadas/scripts/cicadas.py tutorial`. Supports `--tutorial` (auto-run) and `--no-tutorial` (skip prompt) flags on `init`.
+- **Next-step hints**: Every lifecycle command (kickoff, branch, archive, update_index, open_pr, init) now prints a 💬 next-step hint after its main output. `cicadas status` infers and prints a hint from registry state (no `.cicadas/` → init; no initiatives → start; no branches → implement; no lifecycle → complete partition).
+- **Hint subsystem**: `utils.py` provides `hints_enabled(args, config)` and `print_hint(lines, args, config)` (66-char cyan box, auto-suppressed when not a TTY). Disable globally via `hints: false` in `.cicadas/config.json`, or per-command with `--no-hints`.
+
+### Changed
+
+- **README workflow section**: Rewrote the Getting Started workflow as a 7-step narrative using 💬 agent prompts. No raw CLI commands exposed to users. Added Quick Reference cheatsheet table.
+- **HOW-TO.md**: Added Interactive Tutorial section (how to run, step overview) and Hint Toggling section (global config, per-command flag, CI auto-suppression).
+
 ## Version 0.8.2
 
 ### Deprecated

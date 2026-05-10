@@ -71,6 +71,9 @@ python src/cicadas/scripts/cicadas.py graph build
 python src/cicadas/scripts/cicadas.py graph search <query>
 python src/cicadas/scripts/cicadas.py graph watch
 python src/cicadas/scripts/cicadas.py graph usage --view table
+python src/cicadas/scripts/cicadas.py tutorial
+python src/cicadas/scripts/cicadas.py init --tutorial    # run tutorial automatically
+python src/cicadas/scripts/cicadas.py init --no-tutorial # skip tutorial prompt
 ```
 
 ## Architecture
