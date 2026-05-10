@@ -76,8 +76,7 @@ class TestInit(CicadasTest):
         test_args = ["init.py"]
         
         with patch("sys.argv", test_args):
-            with patch("sys.stdout") as mock_stdout:
-                mock_stdout.isatty.return_value = True
+            with patch("utils.hints_enabled", return_value=True):
                 with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
                     with patch("utils.get_project_root", return_value=new_root):
                         try:

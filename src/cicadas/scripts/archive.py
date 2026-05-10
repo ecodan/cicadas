@@ -7,7 +7,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from utils import WorktreeDirtyError, emit, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, emit, get_project_root, get_registry_dir, load_config, load_json, print_hint, remove_worktree, save_json
 
 
 def archive(name, type_="branch", force=False):
@@ -107,5 +107,14 @@ if __name__ == "__main__":
     parser.add_argument("name")
     parser.add_argument("--type", default="branch", choices=["branch", "initiative"], help="Type to archive: branch or initiative")
     parser.add_argument("--force", action="store_true", help="Force worktree removal even if dirty")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
     args = parser.parse_args()
     archive(args.name, args.type, force=args.force)
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    print_hint([
+        "You're done! Start your next initiative any time.",
+        '  Tell your agent: 💬 "Start an initiative called <name>"',
+    ], args, config)

@@ -85,8 +85,7 @@ class TestUpdateIndex(CicadasTest):
         test_args = ["update_index.py", "--branch", "feat/test", "--summary", "test summary"]
         
         with patch("sys.argv", test_args):
-            with patch("sys.stdout") as mock_stdout:
-                mock_stdout.isatty.return_value = True
+            with patch("utils.hints_enabled", return_value=True):
                 with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
                     try:
                         runpy.run_module("update_index", run_name="__main__", alter_sys=True)

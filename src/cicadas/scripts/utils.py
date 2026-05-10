@@ -6,6 +6,7 @@ import os
 import re
 import sqlite3
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -1124,7 +1125,6 @@ _HINT_BOX_WIDTH = 66  # total width including border chars
 
 def _colorize(text: str, code: str) -> str:
     """Apply an ANSI escape code to text only when stdout is a TTY."""
-    import sys
     if sys.stdout.isatty():
         return f"{code}{text}{_ANSI_RESET}"
     return text
@@ -1139,7 +1139,6 @@ def hints_enabled(args: object | None = None, config: dict | None = None) -> boo
       3. stdout is not a TTY (pipe / CI) → False
       4. Otherwise → True
     """
-    import sys
     if args is not None and getattr(args, "no_hints", False):
         return False
     if config is not None and config.get("hints") is False:
