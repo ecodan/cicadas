@@ -533,5 +533,119 @@ class TestStatusLifecycleMerge(CicadasTest):
         self.assertIn("branch.created", out)
 
 
+class TestStatusNextStepHints(CicadasTest):
+    """Tests for _infer_next_step() and status hint printing."""
+
+    def test_no_cicadas_dir_shows_init_hint(self):
+        """When .cicadas/ does not exist, status shows friendly message and init hint."""
+        import shutil
+        from unittest.mock import patch
+        # Remove .cicadas directory
+        shutil.rmtree(self.cicadas_dir)
+        
+        f = io.StringIO()
+        with redirect_stdout(f), patch("sys.stdout.isatty", return_value=True):
+            status.show_status()
+        out = f.getvalue()
+        
+        self.assertIn("No Cicadas project initialized", out)
+        self.assertIn("No Cicadas project found", out)
+        self.assertIn("Initialize cicadas", out)
+
+    def test_no_initiatives_shows_start_initiative_hint(self):
+        """When .cicadas/ exists but no initiatives, show start initiative hint."""
+        from unittest.mock import patch
+        # Registry exists but is empty
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump({"initiatives": {}, "branches": {}}, f)
+        
+        f = io.StringIO()
+        with redirect_stdout(f), patch("sys.stdout.isatty", return_value=True):
+            status.show_status()
+        out = f.getvalue()
+        
+        self.assertIn("Start your first initiative", out)
+        self.assertIn("Start an initiative called", out)
+
+    def test_initiative_no_branches_shows_build_partition_hint(self):
+        """When initiative exists but no feature branches, show build partition hint."""
+        from unittest.mock import patch
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump({
+                "initiatives": {"my-init": {"intent": "test"}},
+                "branches": {}
+            }, f)
+        
+        f = io.StringIO()
+        with redirect_stdout(f), patch("sys.stdout.isatty", return_value=True):
+            status.show_status()
+        out = f.getvalue()
+        
+        self.assertIn("Next: build your first partition", out)
+        self.assertIn("Implement partition", out)
+
+    def test_branches_no_lifecycle_shows_complete_partition_hint(self):
+        """When feature branches exist but no lifecycle.json, show complete partition hint."""
+        from unittest.mock import patch
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump({
+                "initiatives": {"my-init": {"intent": "test"}},
+                "branches": {"feat/test": {"intent": "test", "initiative": "my-init"}}
+            }, f)
+        
+        f = io.StringIO()
+        with redirect_stdout(f), patch("sys.stdout.isatty", return_value=True):
+            status.show_status()
+        out = f.getvalue()
+        
+        self.assertIn("Next: complete the current partition", out)
+        self.assertIn("Code review and complete partition", out)
+
+    def test_lifecycle_json_suppresses_infer_hint(self):
+        """When lifecycle.json exists, _infer_next_step returns None (lifecycle handles it)."""
+        init_name = "my-init"
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump({
+                "initiatives": {init_name: {"intent": "test"}},
+                "branches": {"feat/test": {"intent": "test", "initiative": init_name}}
+            }, f)
+        
+        # Create lifecycle.json
+        active_dir = self.cicadas_dir / "active" / init_name
+        active_dir.mkdir(parents=True, exist_ok=True)
+        (active_dir / "lifecycle.json").write_text('{"steps": []}')
+        
+        f = io.StringIO()
+        with redirect_stdout(f):
+            status.show_status()
+        out = f.getvalue()
+        
+        # Should not see the inferred hint (lifecycle takes over)
+        self.assertNotIn("Next: complete the current partition", out)
+
+    def test_no_hints_flag_suppresses_hint_output(self):
+        """When --no-hints is passed, hint box should not appear."""
+        import argparse
+        import sys
+        
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump({
+                "initiatives": {"my-init": {"intent": "test"}},
+                "branches": {}
+            }, f)
+        
+        # Simulate --no-hints argument
+        args = argparse.Namespace(no_hints=True)
+        
+        f = io.StringIO()
+        with redirect_stdout(f):
+            status.show_status(args)
+        out = f.getvalue()
+        
+        # Should see the status but NOT the hint box
+        self.assertIn("Active Initiatives", out)
+        self.assertNotIn("Start your first initiative", out)
+
+
 if __name__ == "__main__":
     unittest.main()

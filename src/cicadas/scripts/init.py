@@ -1,11 +1,12 @@
 # Copyright 2026 Cicadas Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+import argparse
 import shutil
 import stat
 from pathlib import Path
 
-from utils import get_project_root, save_json
+from utils import get_project_root, load_config, print_hint, save_json
 
 _HOOKS_SRC = Path(__file__).parent / "hooks"
 
@@ -53,4 +54,15 @@ def _install_hooks(root: Path) -> None:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Initialize Cicadas in a project")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
+    args = parser.parse_args()
     init_cicadas(get_project_root())
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    print_hint([
+        "Welcome to Cicadas! Start your first initiative.",
+        '  Tell your agent: \U0001f4ac "Start an initiative called <name>"',
+    ], args, config)

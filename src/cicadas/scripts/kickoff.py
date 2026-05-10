@@ -7,7 +7,7 @@ import subprocess
 from datetime import UTC, datetime
 
 from tokens import append_entry
-from utils import create_worktree, emit, get_project_root, get_registry_dir, load_config, load_json, parse_partitions_dag, save_json, worktree_path, worktree_policy
+from utils import create_worktree, emit, get_project_root, get_registry_dir, load_config, load_json, parse_partitions_dag, print_hint, save_json, worktree_path, worktree_policy
 
 
 def kickoff(name, intent, owner="unknown", force_worktree=False):
@@ -96,5 +96,14 @@ if __name__ == "__main__":
     parser.add_argument("name")
     parser.add_argument("--intent", required=True)
     parser.add_argument("--worktree", action="store_true", help="Create a linked worktree even if initiative worktrees are disabled by config")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
     args = parser.parse_args()
     kickoff(args.name, args.intent, force_worktree=args.worktree)
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    print_hint([
+        "Next: build your first partition",
+        '  Tell your agent: \U0001f4ac "Implement partition <name>"',
+    ], args, config)
