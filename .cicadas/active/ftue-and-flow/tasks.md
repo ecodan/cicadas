@@ -138,12 +138,12 @@ next_section: "## Partition: feat/hints-subsystem"
 
 > **Depends on feat/tutorial.** Tutorial UX must be finalized before documenting it.
 
-- [ ] Rewrite the "Getting Started" section of `README.md` as a narrative covering the full 7-step Cicadas flow with 💬 agent prompts at each step (no raw CLI commands exposed to users) <!-- id: 80 -->
-- [ ] Add a "Quick Reference" cheatsheet to `README.md` with the 7 agent prompts in a copyable table <!-- id: 81 -->
-- [ ] Update `HOW-TO.md`: add section documenting the interactive tutorial (how to run: 💬 "Run the Cicadas tutorial" or `cicadas init --tutorial`) <!-- id: 82 -->
-- [ ] Update `HOW-TO.md`: add section documenting hint toggling (`hints: false` in `.cicadas/config.json` to disable; `hints: true` or remove key to re-enable) <!-- id: 83 -->
-- [ ] Review all existing `HOW-TO.md` sections for consistency with the 7-step flow — update any references to raw CLI commands to use agent prompts <!-- id: 84 -->
-- [ ] Review `README.md` for any remaining references to raw CLI commands in user-facing sections — replace with 💬 agent prompts <!-- id: 85 -->
+- [x] Rewrite the "Getting Started" section of `README.md` as a narrative covering the full 7-step Cicadas flow with 💬 agent prompts at each step (no raw CLI commands exposed to users) <!-- id: 80 -->
+- [x] Add a "Quick Reference" cheatsheet to `README.md` with the 7 agent prompts in a copyable table <!-- id: 81 -->
+- [x] Update `HOW-TO.md`: add section documenting the interactive tutorial (how to run: 💬 "Run the Cicadas tutorial" or `cicadas init --tutorial`) <!-- id: 82 -->
+- [x] Update `HOW-TO.md`: add section documenting hint toggling (`hints: false` in `.cicadas/config.json` to disable; `hints: true` or remove key to re-enable) <!-- id: 83 -->
+- [x] Review all existing `HOW-TO.md` sections for consistency with the 7-step flow — update any references to raw CLI commands to use agent prompts <!-- id: 84 -->
+- [x] Review `README.md` for any remaining references to raw CLI commands in user-facing sections — replace with 💬 agent prompts <!-- id: 85 -->
 
 ---
 
