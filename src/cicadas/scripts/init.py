@@ -29,7 +29,12 @@ def _offer_tutorial(root: Path) -> None:
         print()
         return
     if answer in ("", "y", "yes"):
-        import tutorial as _tutorial
+        # Deferred import: tutorial.py is a sibling script, not a package.
+        # Importing at module level would require sys.path to already include
+        # the scripts directory at init.py load time, which isn't guaranteed
+        # when init.py is imported by other modules (e.g. tests). Deferring
+        # keeps init.py importable without side-effects.
+        import tutorial as _tutorial  # noqa: PLC0415
         _tutorial.main()
 
 

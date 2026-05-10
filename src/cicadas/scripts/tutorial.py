@@ -7,8 +7,14 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent))
+# When run as a subprocess by the CLI dispatcher, the scripts directory is
+# already on sys.path. When imported directly in tests or called from init.py
+# in-process, we may need to add it. Guard so we only insert when necessary.
+_SCRIPTS_DIR = str(Path(__file__).parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
 
 from utils import print_tutorial_banner, print_tutorial_checkmark  # noqa: E402
 
@@ -22,12 +28,12 @@ MOCK_START = """\
 [OK]   Initiative 'my-project' kicked off on branch initiative/my-project"""
 
 MOCK_SPECS = """\
-╔══════════════════════════════════════════════════════════════════════╗
-║ What would you like to build?                                        ║
-║   Tell your agent what the feature or product should do, and it     ║
-║   will draft a PRD, UX design, technical design, approach, and      ║
-║   task breakdown for your review.                                    ║
-╚══════════════════════════════════════════════════════════════════════╝"""
+[agent] Drafting PRD...     ✓  .cicadas/drafts/my-project/prd.md
+[agent] Drafting UX...      ✓  .cicadas/drafts/my-project/ux.md
+[agent] Drafting tech...    ✓  .cicadas/drafts/my-project/tech-design.md
+[agent] Drafting approach...✓  .cicadas/drafts/my-project/approach.md
+[agent] Drafting tasks...   ✓  .cicadas/drafts/my-project/tasks.md
+[STOP]  Review and approve each doc before proceeding."""
 
 MOCK_KICKOFF = """\
 [OK]   Promoted specs: .cicadas/drafts/my-project → .cicadas/active/my-project
