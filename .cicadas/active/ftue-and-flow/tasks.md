@@ -66,16 +66,16 @@ next_section: "## Partition: feat/hints-subsystem"
 
 > **Parallel with feat/status-next-step.** Depends on feat/hints-subsystem.
 
-- [ ] Add `--no-hints` arg and `print_hint()` call to `kickoff.py` — hint points to Step 4: 💬 "Implement partition \<name\>" <!-- id: 20 -->
-- [ ] Add `--no-hints` arg and `print_hint()` call to `branch.py` — hint points to Step 5: 💬 "Code review and complete partition" <!-- id: 21 -->
-- [ ] Add `--no-hints` arg and `print_hint()` call to `update_index.py` — hint points to Step 6: 💬 "Create a PR" <!-- id: 22 -->
-- [ ] Add `--no-hints` arg and `print_hint()` call to `open_pr.py` — hint points to Step 7: 💬 "Complete the initiative" <!-- id: 23 -->
-- [ ] Add `--no-hints` arg and `print_hint()` call to `archive.py` — hint points to starting next initiative: 💬 "Start an initiative called \<name\>" <!-- id: 24 -->
-- [ ] Add `--no-hints` arg and `print_hint()` call to `init.py` (non-tutorial path) — hint points to Step 1: 💬 "Start an initiative called \<name\>" <!-- id: 25 -->
-- [ ] Extend `tests/test_kickoff.py`: assert hint block present in TTY-patched output; assert zero hint output with `--no-hints` <!-- id: 26 -->
-- [ ] Extend `tests/test_branch.py`: assert hint block present; assert suppressed with `--no-hints` <!-- id: 27 -->
-- [ ] Extend existing tests for `archive`, `update_index`, `open_pr`, `init`: assert hint present / suppressed <!-- id: 28 -->
-- [ ] Verify all existing tests for modified scripts pass unchanged (non-TTY env suppresses hints automatically) <!-- id: 29 -->
+- [x] Add `--no-hints` arg and `print_hint()` call to `kickoff.py` — hint points to Step 4: 💬 "Implement partition \<name\>" <!-- id: 20 -->
+- [x] Add `--no-hints` arg and `print_hint()` call to `branch.py` — hint points to Step 5: 💬 "Code review and complete partition" <!-- id: 21 -->
+- [x] Add `--no-hints` arg and `print_hint()` call to `update_index.py` — hint points to Step 6: 💬 "Create a PR" <!-- id: 22 -->
+- [x] Add `--no-hints` arg and `print_hint()` call to `open_pr.py` — hint points to Step 7: 💬 "Complete the initiative" <!-- id: 23 -->
+- [x] Add `--no-hints` arg and `print_hint()` call to `archive.py` — hint points to starting next initiative: 💬 "Start an initiative called \<name\>" <!-- id: 24 -->
+- [x] Add `--no-hints` arg and `print_hint()` call to `init.py` (non-tutorial path) — hint points to Step 1: 💬 "Start an initiative called \<name\>" <!-- id: 25 -->
+- [x] Extend `tests/test_kickoff.py`: assert hint block present in TTY-patched output; assert zero hint output with `--no-hints` <!-- id: 26 -->
+- [x] Extend `tests/test_branch.py`: assert hint block present; assert suppressed with `--no-hints` <!-- id: 27 -->
+- [x] Extend existing tests for `archive`, `update_index`, `open_pr`, `init`: assert hint present / suppressed <!-- id: 28 -->
+- [x] Verify all existing tests for modified scripts pass unchanged (non-TTY env suppresses hints automatically) <!-- id: 29 -->
 
 ---
 
