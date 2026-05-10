@@ -17,7 +17,7 @@ import subprocess
 from pathlib import Path
 
 from review import parse_verdict
-from utils import emit, get_default_branch, get_project_root, load_json
+from utils import emit, get_default_branch, get_project_root, load_config, load_json, print_hint
 
 
 def _initiative_for_branch(root: "Path", branch: str) -> str:
@@ -154,5 +154,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Open a PR from current branch to target (host-agnostic)")
     parser.add_argument("--base", default=None, help="Target branch (default: default branch)")
     parser.add_argument("--body-file", default=None, help="Path to PR description file (relative to project root)")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
     args = parser.parse_args()
-    exit(open_pr(base_branch=args.base, body_file=args.body_file) or 0)
+    ret = open_pr(base_branch=args.base, body_file=args.body_file)
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    print_hint([
+        "Next: merge the PR, then complete the initiative",
+        '  Tell your agent: 💬 "Complete the initiative"',
+    ], args, config)
+    exit(ret or 0)

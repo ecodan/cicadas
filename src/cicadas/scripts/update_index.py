@@ -4,7 +4,7 @@
 import argparse
 from datetime import UTC, datetime
 
-from utils import get_registry_dir, load_json, save_json
+from utils import get_registry_dir, load_config, load_json, print_hint, save_json
 
 
 def update_index(branch, summary, decisions="", modules=""):
@@ -29,5 +29,14 @@ if __name__ == "__main__":
     parser.add_argument("--summary", required=True)
     parser.add_argument("--decisions", default="")
     parser.add_argument("--modules", default="")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
     args = parser.parse_args()
     update_index(args.branch, args.summary, args.decisions, args.modules)
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    print_hint([
+        "Next: create a PR when all partitions are done",
+        '  Tell your agent: 💬 "Create a PR"',
+    ], args, config)

@@ -112,6 +112,20 @@
         "release-notes.md",
         "tests/test_templates.py"
       ]
+    },
+    {
+      "timestamp": "2026-05-10T00:37:18.202401+00:00",
+      "branch": "feat/tutorial",
+      "summary": "P3 tutorial: implemented 7-step interactive tutorial (tutorial.py), init.py first-run integration with --tutorial/--no-tutorial flags, registered tutorial CLI subcommand, 11 passing tests",
+      "decisions": "",
+      "modules": []
+    },
+    {
+      "timestamp": "2026-05-10T00:51:17.722522+00:00",
+      "branch": "feat/docs-rewrite",
+      "summary": "P4 docs-rewrite: rewrote README Getting Started as 7-step agent-prompt narrative, added Quick Reference cheatsheet, added Tutorial and Hint Toggling sections to HOW-TO.md, replaced user-facing raw CLI refs with agent prompts throughout",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
