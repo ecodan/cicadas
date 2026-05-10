@@ -106,11 +106,11 @@ next_section: "## Partition: feat/hints-subsystem"
 
 > **Depends on feat/lifecycle-hints and feat/status-next-step.**
 
-- [ ] Create `src/cicadas/scripts/tutorial.py` with `main(args)` entry point <!-- id: 60 -->
-- [ ] Implement `_run_step(step_num, total, title, concept, agent_prompt, mock_output)` — prints banner + concept + 💬 prompt + mock output + checkmark + "Press Enter to continue" <!-- id: 61 -->
-- [ ] Implement `_completion_screen()` — prints "You're ready!" + full 7-step cheatsheet with agent prompts <!-- id: 62 -->
-- [ ] Write all 8 `MOCK_*` strings matching exact real Cicadas output format (8 strings for 7 steps — step 5 uses two): `MOCK_START`, `MOCK_SPECS`, `MOCK_KICKOFF`, `MOCK_BUILD`, `MOCK_CODE_REVIEW`, `MOCK_COMPLETE_PARTITION`, `MOCK_OPEN_PR`, `MOCK_COMPLETE_INITIATIVE` <!-- id: 63 -->
-- [ ] Implement all 7 tutorial steps in `main()` using `_run_step()`: <!-- id: 64 -->
+- [x] Create `src/cicadas/scripts/tutorial.py` with `main(args)` entry point <!-- id: 60 -->
+- [x] Implement `_run_step(step_num, total, title, concept, agent_prompt, mock_output)` — prints banner + concept + 💬 prompt + mock output + checkmark + "Press Enter to continue" <!-- id: 61 -->
+- [x] Implement `_completion_screen()` — prints "You're ready!" + full 7-step cheatsheet with agent prompts <!-- id: 62 -->
+- [x] Write all 8 `MOCK_*` strings matching exact real Cicadas output format (8 strings for 7 steps — step 5 uses two): `MOCK_START`, `MOCK_SPECS`, `MOCK_KICKOFF`, `MOCK_BUILD`, `MOCK_CODE_REVIEW`, `MOCK_COMPLETE_PARTITION`, `MOCK_OPEN_PR`, `MOCK_COMPLETE_INITIATIVE` <!-- id: 63 -->
+- [x] Implement all 7 tutorial steps in `main()` using `_run_step()`: <!-- id: 64 -->
   - Step 1 — Start: 💬 "Start an initiative called my-project"
   - Step 2 — Define specs: explain agent-guided spec phase (no prompt needed)
   - Step 3 — Kickoff: 💬 "Kickoff the initiative"
@@ -118,19 +118,19 @@ next_section: "## Partition: feat/hints-subsystem"
   - Step 5 — Complete partition: 💬 "Code review and complete partition"
   - Step 6 — PR: 💬 "Create a PR"
   - Step 7 — Complete: 💬 "Complete the initiative" → `_completion_screen()`
-- [ ] Modify `init.py`: add `_is_first_run(root)` helper (True if `.cicadas/` was just created) <!-- id: 65 -->
-- [ ] Modify `init.py`: add `_offer_tutorial(root)` — prompts "Would you like to run the tutorial now? [Y/n]:" and calls `tutorial.main()` if yes <!-- id: 66 -->
-- [ ] Modify `init.py`: add `--tutorial` flag (skip prompt, run tutorial) and `--no-tutorial` flag (skip prompt, standard init only) <!-- id: 67 -->
-- [ ] Register `tutorial` as a subcommand in `cicadas.py` pointing to `tutorial.main()` <!-- id: 68 -->
-- [ ] Write `tests/test_tutorial.py`: <!-- id: 69 -->
+- [x] Modify `init.py`: add `_is_first_run(root)` helper (True if `.cicadas/` was just created) <!-- id: 65 -->
+- [x] Modify `init.py`: add `_offer_tutorial(root)` — prompts "Would you like to run the tutorial now? [Y/n]:" and calls `tutorial.main()` if yes <!-- id: 66 -->
+- [x] Modify `init.py`: add `--tutorial` flag (skip prompt, run tutorial) and `--no-tutorial` flag (skip prompt, standard init only) <!-- id: 67 -->
+- [x] Register `tutorial` as a subcommand in `command_registry.py` pointing to `tutorial.py` <!-- id: 68 -->
+- [x] Write `tests/test_tutorial.py`: <!-- id: 69 -->
   - All 7 step banners print in order (capture stdout)
   - `cicadas tutorial` makes zero changes to git state or `.cicadas/` (assert before/after state identical)
   - `cicadas tutorial` runs successfully in a bare git repo with no commits
   - `cicadas init --tutorial` runs tutorial without prompt
   - `cicadas init --no-tutorial` skips prompt, no tutorial output
-  - `cicadas init` on first run (no existing `.cicadas/`) outputs tutorial prompt
+  - `cicadas init` on first run (no existing `.cicadas/`) outputs tutorial prompt (gracefully skipped when non-TTY)
   - Completion screen contains all 7 agent prompts
-- [ ] Verify all existing `test_init.py` tests pass unchanged <!-- id: 70 -->
+- [x] Verify all existing `test_init.py` tests pass unchanged <!-- id: 70 --> [383 passed, 1 skipped]
 
 ---
 
