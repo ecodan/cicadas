@@ -34,6 +34,9 @@ This downloads Cicadas into `.cicadas-skill/cicadas/`, initializes the `.cicadas
 # Claude Code
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code
 
+# Codex
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent codex
+
 # Cursor
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent cursor
 
@@ -41,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent rovodev
 
 # Multiple agents
-curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code,cursor
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code,codex
 ```
 
 **Custom install directory:**
@@ -66,7 +69,10 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 | `antigravity` | `.agents/skills/cicadas` symlink |
 | `cursor` | `.cursor/rules/cicadas.mdc` (copy of `SKILL.md`; guardrails are in the skill) |
 | `rovodev` | `.rovodev/skills/cicadas` symlink |
+| `codex` | `$CODEX_HOME/skills/cicadas` or `~/.codex/skills/cicadas` symlink (restart Codex after install) |
 | `none` | Skip; configure manually |
+
+**Codex note:** Unlike Claude Code's repo-local `.claude/skills/cicadas` integration, Codex installs Cicadas into your Codex skills directory and continues to use the repo's `.cicadas/` workspace per project. Restart Codex after installation so it picks up the new skill.
 
 **Requirements:** Python 3.11+, `curl`, `unzip`, `git`
 

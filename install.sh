@@ -34,14 +34,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ---------------------------------------------------------------------------
-# Git repo check (skip when updating — already in a repo)
-# ---------------------------------------------------------------------------
-if ! git rev-parse --git-dir > /dev/null 2>&1; then
-  err "No git repository found. Run 'git init' first."
-  exit 1
-fi
-
-# ---------------------------------------------------------------------------
 # Python 3.11+ check
 # ---------------------------------------------------------------------------
 PYTHON_BIN=""
@@ -142,6 +134,8 @@ download_and_extract() {
 setup_agents() {
   local install_dir="$1"
   local agents_csv="$2"
+  local absolute_install_dir
+  absolute_install_dir="$(cd "$install_dir" && pwd)"
 
   # Determine relative path from project root to install_dir
   local rel_path="$install_dir"
@@ -191,10 +185,18 @@ setup_agents() {
         ln -sf "${prefix}${rel_path}" .rovodev/skills/cicadas
         ok ".rovodev/skills/cicadas → ${rel_path}"
         ;;
+      codex)
+        log "Setting up codex integration..."
+        local codex_home="${CODEX_HOME:-$HOME/.codex}"
+        mkdir -p "$codex_home/skills"
+        ln -sfn "$absolute_install_dir" "$codex_home/skills/cicadas"
+        ok "$codex_home/skills/cicadas → $absolute_install_dir"
+        log "Restart Codex to pick up the new skill."
+        ;;
       none|"")
         ;;
       *)
-        err "Unknown agent: $agent (supported: claude-code, antigravity, cursor, rovodev, none)"
+        err "Unknown agent: $agent (supported: claude-code, antigravity, cursor, rovodev, codex, none)"
         ;;
     esac
   done
@@ -207,7 +209,7 @@ prompt_for_agents() {
   if [ -t 0 ]; then
     blank
     log "Which AI coding agents are you using? (comma-separated, or 'none')"
-    log "  Supported: claude-code, antigravity, cursor, rovodev"
+    log "  Supported: claude-code, antigravity, cursor, rovodev, codex"
     printf "[cicadas] > "
     read -r AGENTS
   else
@@ -225,6 +227,11 @@ main() {
   blank
   log "Cicadas Installer"
   blank
+
+  if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    err "No git repository found. Run 'git init' first."
+    exit 1
+  fi
 
   if [ "$UPDATE_ONLY" = true ]; then
     log "Update mode: refreshing skill files in $INSTALL_DIR/..."
@@ -268,4 +275,6 @@ main() {
   blank
 }
 
-main
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
+  main
+fi

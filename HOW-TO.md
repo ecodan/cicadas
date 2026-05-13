@@ -25,6 +25,9 @@ This will:
 # Claude Code
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code
 
+# Codex
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent codex
+
 # Cursor
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent cursor
 
@@ -35,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 **All flags:**
 ```
 --dir <path>     Install location (default: .cicadas-skill/cicadas/)
---agent <list>   Agent integrations: claude-code, antigravity, cursor, rovodev, none (comma-separated)
+--agent <list>   Agent integrations: claude-code, antigravity, cursor, rovodev, codex, none (comma-separated)
 --update         Re-download skill files only; never touches .cicadas/
 ```
 
@@ -47,8 +50,11 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 | `antigravity` | `.agents/skills/cicadas` → symlink to install dir |
 | `cursor` | `.cursor/rules/cicadas.mdc` (copy of `SKILL.md`) |
 | `rovodev` | `.rovodev/skills/cicadas` → symlink to install dir |
+| `codex` | `$CODEX_HOME/skills/cicadas` or `~/.codex/skills/cicadas` → symlink to install dir |
 
 **Where implementation guardrails come from:** `CLAUDE.md` is used only by **Claude Code** (it lists commands, architecture, and points to `implementation.md` in the skill dir). **Cursor** and other environments do not use `CLAUDE.md`; they get lifecycle and implementation rules from the **skill file** (`SKILL.md` / `cicadas.mdc`) alone. The skill includes an "Implementation agent rules" section so the same guardrails apply in every environment.
+
+**Codex behavior:** Claude Code uses the repo-local `.claude/skills/cicadas` link. Codex uses a global skill install at `$CODEX_HOME/skills/cicadas` or `~/.codex/skills/cicadas`, while each repo still keeps its own `.cicadas/` workspace. Restart Codex after installation so it loads the new skill.
 
 ### 2. Update Cicadas
 
