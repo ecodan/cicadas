@@ -11,6 +11,7 @@ from pathlib import Path
 
 from base import CicadasTest, SCRIPTS_DIR
 import graph_extract.java as graph_java
+import graph_extract.python as graph_python
 import graph_store
 from graph_ir import GraphEdge, GraphNode
 
@@ -315,6 +316,79 @@ class TestGraphCli(CicadasTest):
         self.assertIn("com.acme.CalculatorTest#testAdd", result.stdout)
         self.assertIn("Linked tests: 1", result.stdout)
         self.assertIn("com.acme.CalculatorTest#testAdd()", result.stdout)
+
+    def test_python_streaming_extraction_emits_tests_edges(self):
+        (self.root / "src").mkdir()
+        (self.root / "tests").mkdir()
+        (self.root / "src" / "helpers.py").write_text("def helper():\n    return 1\n")
+        (self.root / "tests" / "test_helpers.py").write_text(
+            "from src.helpers import helper\n\n"
+            "def test_helper():\n    assert helper() == 1\n"
+        )
+        emitted_nodes: list[GraphNode] = []
+        emitted_edges: list[GraphEdge] = []
+
+        nodes, edges, _stats = graph_python.extract_python_graph(
+            self.root,
+            [
+                {"path": "src/helpers.py", "language": "python"},
+                {"path": "tests/test_helpers.py", "language": "python"},
+            ],
+            "build-1",
+            {},
+            emit=lambda batch_nodes, batch_edges: (emitted_nodes.extend(batch_nodes), emitted_edges.extend(batch_edges)),
+        )
+
+        node_names = {node.node_id: node.name for node in emitted_nodes}
+        tests_edges = [edge for edge in emitted_edges if edge.kind == "tests"]
+        self.assertEqual(nodes, [])
+        self.assertEqual(edges, [])
+        self.assertEqual(len(tests_edges), 1)
+        self.assertEqual(node_names[tests_edges[0].src_id], "test_helper")
+        self.assertEqual(node_names[tests_edges[0].dst_id], "helper")
+
+    def test_java_structural_streaming_extraction_emits_tests_edges(self):
+        main_path = self.root / "src" / "main" / "java" / "com" / "acme"
+        test_path = self.root / "src" / "test" / "java" / "com" / "acme"
+        main_path.mkdir(parents=True)
+        test_path.mkdir(parents=True)
+        (main_path / "Calculator.java").write_text(
+            "package com.acme;\n\n"
+            "public class Calculator {\n"
+            "  public int add() {\n"
+            "    return 1;\n"
+            "  }\n"
+            "}\n"
+        )
+        (test_path / "CalculatorTest.java").write_text(
+            "package com.acme;\n\n"
+            "public class CalculatorTest {\n"
+            "  public void testAdd() {\n"
+            "    add();\n"
+            "  }\n"
+            "}\n"
+        )
+        emitted_nodes: list[GraphNode] = []
+        emitted_edges: list[GraphEdge] = []
+
+        nodes, edges, _stats = graph_java._extract_java_graph_structural(
+            self.root,
+            [
+                {"path": "src/main/java/com/acme/Calculator.java", "language": "java"},
+                {"path": "src/test/java/com/acme/CalculatorTest.java", "language": "java"},
+            ],
+            "build-1",
+            {},
+            emit=lambda batch_nodes, batch_edges: (emitted_nodes.extend(batch_nodes), emitted_edges.extend(batch_edges)),
+        )
+
+        node_names = {node.node_id: node.name for node in emitted_nodes}
+        tests_edges = [edge for edge in emitted_edges if edge.kind == "tests"]
+        self.assertEqual(nodes, [])
+        self.assertEqual(edges, [])
+        self.assertEqual(len(tests_edges), 1)
+        self.assertEqual(node_names[tests_edges[0].src_id], "com.acme.CalculatorTest#testAdd()")
+        self.assertEqual(node_names[tests_edges[0].dst_id], "com.acme.Calculator#add")
 
     def test_graph_doctor_reports_java_harness_readiness(self):
         result = self._run_cli("graph", "doctor")

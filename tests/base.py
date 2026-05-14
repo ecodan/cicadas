@@ -61,7 +61,7 @@ class CicadasTest(unittest.TestCase):
 
     def init_git(self):
         """Initialize a git repo in the test directory."""
-        subprocess.run(["git", "init"], check=True, capture_output=True)
+        subprocess.run(["git", "init", "--initial-branch=master"], check=True, capture_output=True)
         # Configure local git user for commits
         subprocess.run(["git", "config", "user.email", "test@example.com"], check=True)
         subprocess.run(["git", "config", "user.name", "Test User"], check=True)

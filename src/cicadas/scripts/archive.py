@@ -7,7 +7,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from utils import WorktreeDirtyError, emit, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, active_dir_name_for_branch, emit, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 
 def archive(name, type_="branch", force=False):
@@ -48,9 +48,16 @@ def archive(name, type_="branch", force=False):
                 sys.exit(1)
 
     # Move active specs to archive
-    active = cicadas / "active" / name
+    registry_entry = registry.get(registry_key, {}).get(name, {})
+    active_name = name
+    if type_ == "branch":
+        active_name = active_dir_name_for_branch(name, registry_entry.get("initiative"))
+    active = cicadas / "active" / active_name
+    legacy_active = cicadas / "active" / name
+    if type_ == "branch" and not active.exists() and legacy_active.exists():
+        active = legacy_active
     ts = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
-    husk = cicadas / "archive" / f"{ts}-{name}"
+    husk = cicadas / "archive" / f"{ts}-{active_name}"
 
     if active.exists():
         # Save metadata snapshot for unarchive

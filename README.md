@@ -27,7 +27,7 @@ Cicadas reverses the traditional relationship between code and documentation. In
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash
 ```
 
-This downloads Cicadas into `.cicadas-skill/cicadas/`, initializes the `.cicadas/` workspace, and optionally sets up agent integrations.
+This downloads Cicadas into `.cicadas-skill/cicadas/`, initializes the `.cicadas/` workspace, and optionally sets up agent integrations. Re-running initialization is idempotent: existing registry, index, config, and active state are preserved.
 
 **With agent integration:**
 ```bash

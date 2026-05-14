@@ -10,6 +10,7 @@ from pathlib import Path
 
 from scan_repo import run_scan
 from utils import (
+    active_dir_name_for_branch,
     build_canon_plan,
     build_reconcile_scope,
     canon_dir,
@@ -78,7 +79,11 @@ def gather_context(name, is_initiative=False):
         "canon_plan": plan,
     }
 
-    source_dir = cicadas / "active" / name
+    branch_info = registry.get("branches", {}).get(name, {})
+    source_dir = cicadas / "active" / active_dir_name_for_branch(name, branch_info.get("initiative"))
+    legacy_source_dir = cicadas / "active" / name
+    if not source_dir.exists() and legacy_source_dir.exists():
+        source_dir = legacy_source_dir
     if source_dir.exists():
         for doc in source_dir.glob("*.md"):
             context["active_docs"][doc.name] = doc.read_text()
@@ -166,6 +171,7 @@ def generate_prompt(context):
 def apply_response(response_text):
     root = get_project_root()
     cicadas = root / ".cicadas"
+    canon_root = (cicadas / "canon").resolve()
 
     pattern = r"File: (canon/[\w\/\.-]+)\n```(?:markdown|python|json|jsonl|text)?\n(.*?)\n```"
     matches = re.findall(pattern, response_text, re.DOTALL)
@@ -175,7 +181,13 @@ def apply_response(response_text):
         return
 
     for file_path, content in matches:
-        target = cicadas / file_path.replace("canon/", "canon/", 1)
+        rel_path = Path(file_path.removeprefix("canon/"))
+        target = (canon_root / rel_path).resolve()
+        try:
+            target.relative_to(canon_root)
+        except ValueError:
+            print(f"Skipped unsafe canon path: {file_path}")
+            continue
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content.strip() + "\n")
         print(f"✅ Updated {file_path}")

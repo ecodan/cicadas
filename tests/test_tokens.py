@@ -2,11 +2,26 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import multiprocessing
 import unittest
 from pathlib import Path
+from queue import Empty
 
 from base import CicadasTest
 from tokens import VALID_SOURCES, append_entry, init_log, load_log
+
+
+def _append_token_entries(log_path: Path, worker_id: int, count: int, errors) -> None:
+    try:
+        for i in range(count):
+            append_entry(
+                log_path,
+                initiative=f"worker-{worker_id}",
+                phase=f"phase-{worker_id}-{i}",
+                source="unavailable",
+            )
+    except Exception as e:
+        errors.put(f"{type(e).__name__}: {e}")
 
 
 class TestInitLog(CicadasTest):
@@ -136,6 +151,45 @@ class TestAppendEntry(CicadasTest):
         log = self.root / "nested" / "tokens.json"
         append_entry(log, initiative="test", phase="lifecycle", source="unavailable")
         self.assertTrue(log.exists())
+
+    def test_concurrent_process_appends_preserve_all_entries(self):
+        log = self._log()
+        process_count = 8
+        entries_per_process = 25
+        ctx = multiprocessing.get_context("fork")
+        errors = ctx.Queue()
+        processes = [
+            ctx.Process(
+                target=_append_token_entries,
+                args=(log, worker_id, entries_per_process, errors),
+            )
+            for worker_id in range(process_count)
+        ]
+
+        for process in processes:
+            process.start()
+        for process in processes:
+            process.join(10)
+
+        failures = []
+        for process in processes:
+            if process.is_alive():
+                process.terminate()
+                process.join()
+                failures.append(f"process {process.pid} did not finish")
+        while True:
+            try:
+                failures.append(errors.get_nowait())
+            except Empty:
+                break
+        self.assertEqual(failures, [])
+        self.assertTrue(all(process.exitcode == 0 for process in processes))
+
+        data = json.loads(log.read_text())
+        entries = data["entries"]
+        self.assertEqual(len(entries), process_count * entries_per_process)
+        phases = {entry["phase"] for entry in entries}
+        self.assertEqual(len(phases), process_count * entries_per_process)
 
 
 class TestKickoffTokenIntegration(CicadasTest):

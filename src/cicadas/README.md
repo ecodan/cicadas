@@ -16,7 +16,7 @@ Cicadas is a sustainable **spec-driven development** methodology designed for hi
 The system is split between the **Skill** (logic) and the **Institutional Memory** (data).
 
 ### 0. The Installer (`install.sh` — project root)
-A portable bash script for zero-friction setup. Run once to download Cicadas, check Python 3.11+, initialize `.cicadas/`, and optionally wire up agent integrations (`claude-code`, `antigravity`, `cursor`, `rovodev`).
+A portable bash script for zero-friction setup. Run once to download Cicadas, check Python 3.11+, initialize `.cicadas/`, and optionally wire up agent integrations (`claude-code`, `antigravity`, `cursor`, `rovodev`). Initialization is idempotent and preserves existing registry, index, config, and active state on rerun.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash
@@ -75,6 +75,8 @@ Merge back to `main`. The agent then updates Canon from the code and active spec
 `tests/test_templates.py` provides lightweight regression coverage for the context contract: it checks the shared front matter structure in the core and technical-profile templates, the branch-start cue in `canon-summary.md`, and the Clarify/profile instructions that keep the new metadata current.
 
 `tests/test_graph.py` covers the optional code graph CLI, including build/status behavior, routed queries, local observability output such as `usage.jsonl` entries and `graph usage` summaries, Java semantic batching, and staged graph persistence behavior. `tests/test_scan_repo.py` covers repo inventory, scale classification, slice seeding, and scan exclusion logic — including that local Cicadas workspaces (`.cicadas-skill/`), SDD installs at arbitrary paths (SKILL.md detection), known SDD tool state dirs (substring matching on root-level `./` and `_` dirs), and `scan_exclude_paths` config entries all stay out of file counts and routing signals.
+
+Focused regression tests also cover initialization rerun preservation, safe synthesis apply path handling, token-log concurrent appends, active-dir naming for lightweight branches, graph streaming linked-test edges, deterministic temporary git defaults, and out-of-repo module context rejection.
 
 ---
 

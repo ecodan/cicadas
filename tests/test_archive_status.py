@@ -91,6 +91,30 @@ class TestArchiveStatus(CicadasTest):
         # Verify something was written to the archive directory
         self.assertTrue(any((self.cicadas_dir / "archive").iterdir()))
 
+    def test_archive_registered_lightweight_branch_uses_initiative_active_dir(self):
+        init_name = "my-bug"
+        branch_name = "fix/my-bug"
+        with open(self.cicadas_dir / "registry.json", "r+") as f:
+            reg = json.load(f)
+            reg["initiatives"][init_name] = {"intent": "bug"}
+            reg["branches"][branch_name] = {"intent": "bug", "initiative": init_name}
+            f.seek(0)
+            json.dump(reg, f)
+            f.truncate()
+
+        active_dir = self.cicadas_dir / "active" / init_name
+        active_dir.mkdir(parents=True)
+        (active_dir / "buglet.md").write_text("# Bug")
+
+        archive.archive(branch_name, type_="branch")
+
+        self.assertFalse(active_dir.exists())
+        archived_files = list((self.cicadas_dir / "archive").glob("*-my-bug/buglet.md"))
+        self.assertEqual(len(archived_files), 1)
+        with open(self.cicadas_dir / "registry.json") as f:
+            reg = json.load(f)
+        self.assertNotIn(branch_name, reg["branches"])
+
     def test_archive_initiative_deregisters_associated_branches(self):
         """Archiving an initiative must also remove its linked branches from the registry."""
         init_name = "my-initiative"

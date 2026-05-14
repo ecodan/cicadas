@@ -54,6 +54,23 @@ class TestSynthesize(CicadasTest):
         self.assertTrue((self.cicadas_dir / "canon" / REPO_TREE_FILENAME).exists())
         self.assertTrue((self.cicadas_dir / "canon" / REPO_CONTEXT_FILENAME).exists())
 
+    def test_gather_context_registered_branch_uses_initiative_active_dir(self):
+        branch_name = "fix/my-bug"
+        initiative = "my-bug"
+        active_dir = self.cicadas_dir / "active" / initiative
+        active_dir.mkdir(parents=True)
+        (active_dir / "buglet.md").write_text("Active buglet")
+        with open(self.cicadas_dir / "registry.json") as f:
+            registry = json.load(f)
+        registry["initiatives"][initiative] = {"intent": "fix bug"}
+        registry["branches"][branch_name] = {"initiative": initiative, "modules": []}
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump(registry, f)
+
+        context = synthesize.gather_context(branch_name)
+
+        self.assertEqual(context["active_docs"]["buglet.md"], "Active buglet")
+
     def test_generate_prompt(self):
         context = {
             "canon_docs": {"overview.md": "Canon"},
@@ -259,6 +276,23 @@ Change guide
         synthesize.apply_response(response)
         self.assertEqual((self.cicadas_dir / "canon/slices/core/summary.md").read_text().strip(), "Slice summary")
         self.assertEqual((self.cicadas_dir / "canon/slices/core/change-guide.md").read_text().strip(), "Change guide")
+
+    def test_apply_response_skips_path_traversal(self):
+        response = """
+File: canon/../../outside.md
+```markdown
+Do not write
+```
+
+File: canon/safe.md
+```markdown
+Safe
+```
+"""
+        synthesize.apply_response(response)
+
+        self.assertFalse((self.root / "outside.md").exists())
+        self.assertEqual((self.cicadas_dir / "canon/safe.md").read_text().strip(), "Safe")
 
 
 if __name__ == "__main__":
