@@ -1,0 +1,26 @@
+{
+  "name": "visual-uxd",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Require HTML/CSS mock-ups during UXD drafting for visual UI surfaces.",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-05-01T02:55:42.233678+00:00"
+  },
+  "timestamp": "20260501-030807",
+  "associated_branches": {
+    "tweak/visual-uxd": {
+      "intent": "Implement HTML/CSS mock-up requirements in the UX emergence flow and template.",
+      "modules": [
+        "README.md",
+        "tests/test_templates.py",
+        "src/cicadas/README.md",
+        "src/cicadas/templates/ux.md",
+        "src/cicadas/emergence/ux.md"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-01T02:58:23.784560+00:00",
+      "initiative": "visual-uxd"
+    }
+  }
+}

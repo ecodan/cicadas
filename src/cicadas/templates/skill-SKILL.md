@@ -10,6 +10,10 @@ license: Apache-2.0
 # allowed-tools: Read, Write, Edit, Shell, Glob, Grep
 ---
 
+> Deprecated: This scaffold is retained for compatibility with the legacy
+> Cicadas skill-authoring flow. Prefer dedicated skill-authoring tooling for
+> new skills.
+
 # Your Skill Name
 
 ## Overview

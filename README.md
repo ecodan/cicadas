@@ -34,6 +34,9 @@ This downloads Cicadas into `.cicadas-skill/cicadas/`, initializes the `.cicadas
 # Claude Code
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code
 
+# Codex
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent codex
+
 # Cursor
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent cursor
 
@@ -41,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent rovodev
 
 # Multiple agents
-curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code,cursor
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code,codex
 ```
 
 **Custom install directory:**
@@ -53,6 +56,10 @@ bash install.sh --dir tools/cicadas --agent claude-code
 ```bash
 bash install.sh --update
 ```
+- or - 
+```bash
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --update
+```
 
 **Supported agents:**
 
@@ -62,78 +69,114 @@ bash install.sh --update
 | `antigravity` | `.agents/skills/cicadas` symlink |
 | `cursor` | `.cursor/rules/cicadas.mdc` (copy of `SKILL.md`; guardrails are in the skill) |
 | `rovodev` | `.rovodev/skills/cicadas` symlink |
+| `codex` | `$CODEX_HOME/skills/cicadas` or `~/.codex/skills/cicadas` symlink (restart Codex after install) |
 | `none` | Skip; configure manually |
+
+**Codex note:** Unlike Claude Code's repo-local `.claude/skills/cicadas` integration, Codex installs Cicadas into your Codex skills directory and continues to use the repo's `.cicadas/` workspace per project. Restart Codex after installation so it picks up the new skill.
 
 **Requirements:** Python 3.11+, `curl`, `unzip`, `git`
 
 ---
 
+### Your First Time: Run the Tutorial
+
+After installing, run the interactive tutorial to see the full Cicadas workflow in about 5 minutes:
+
+> 💬 **Tell your agent:** *"Run the Cicadas tutorial"*
+
+Or, if you initialized Cicadas yourself and skipped the prompt:
+
+> 💬 **Tell your agent:** *"cicadas init --tutorial"*
+
+The tutorial walks you through all 7 steps with mock output so you know exactly what to expect before touching real code.
+
+---
+
 ## The Workflow
 
-### Phase 1: Emergence (Drafting)
-When you start an initiative, tweak, bug, or skill, the agent runs a **standard start flow** first (name → draft folder → initiative profile for initiatives → **Building on AI?** (yes/no; if yes, eval status) → requirements source/pace for initiatives → publish destination for skills → PR preference), then drafts specs. Initiative profiles are `product`, `technical`, or `mixed`: product keeps the full PRD + UX path, technical uses a Technical Brief plus optional Operator Experience, and mixed chooses the appropriate artifact per surface. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** (tweaks/bugs); Cicadas does not run evals. We draft specifications in `.cicadas/drafts/` using specialized instruction modules (Clarify, UX, Tech, Approach, Tasks, Skill Create). **Clarify** can be driven by Q&A, a requirements doc (`drafts/{initiative}/requirements.md`), or a Loom transcript (`drafts/{initiative}/loom.md`).
-Every core initiative spec now carries compact machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved state without re-reading entire drafting threads. The Technical Brief and Operator Experience templates use the same front matter contract.
-*   **Key Artifact**: `approach.md` defines the partitions (feature branches).
+Cicadas is designed to be driven entirely through natural-language agent prompts — you rarely need to type a CLI command yourself. Here is the full 7-step flow.
 
-### Phase 2: Kickoff
-We promote drafts to **Active Specs** and register the initiative.
-*   **Command**: `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..."`
-*   **Result**: Creates `initiative/{name}` branch and `.cicadas/active/{name}/`. By default Cicadas continues in the current workspace; a linked git worktree is created only when `.cicadas/config.json` enables initiative worktrees or when kickoff is run with `--worktree`.
+### Step 1 — Start an initiative
 
-### Phase 3: Execution (The Dual Loop)
-Work happens in **Feature Branches** (registered) and **Task Branches** (ephemeral).
+Tell your agent what you want to build. Cicadas creates a draft folder and begins an agent-guided spec authoring session.
 
-*   **Start Feature**: `python src/cicadas/scripts/cicadas.py branch {feature} --intent "..."`
-    - Parallel `feat/` partitions still auto-create linked worktrees by default.
-    - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts in.
-*   **Experimental Code Graph**: Graph commands are disabled by default while large-repo efficacy work continues. Repo owners can opt in locally with `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph build` or `.cicadas/config.json` key `graph_experimental_enabled: true`. Graph artifacts remain under `.cicadas/graph/`, but agents should use canon summaries, slice canon, routing guides, and targeted code reads as the default large-repo workflow.
-*   **Reflect**: When code implementation diverges from the plan, we update the active specs *immediately* (and before every commit on feat/task branches).
-    - Reflect refreshes the affected specs' front matter as well as their prose content so the compact routing metadata stays accurate.
-*   **Code Review** (optional): After Reflect; before committing on feature branches; before opening a PR or merging. The agent evaluates the diff against specs, security, correctness, and quality — producing a structured `review.md` artifact with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` checks this verdict and blocks on `BLOCK`.
-*   **Signal**: If a change affects other branches, we broadcast it: `python src/cicadas/scripts/cicadas.py signal "..."`
+> 💬 **Tell your agent:** *"Start an initiative called \<name\>"*
 
-### Phase 4: Completion (Synthesis)
-When all features are merged into the initiative branch, we merge to `main` and then:
-1.  **Synthesize Canon**: An AI agent reads the code on `main` + the active specs and generates fresh documentation in `.cicadas/canon/`. `canon/summary.md` remains the universal branch-start snapshot, while adaptive repo scans also maintain `repo.json`, `repo-tree.jsonl`, and `repo-context.md`. `normal-repo` projects keep the canon flat; `large-repo` and `mega-repo` projects seed lightweight `slices/` packs and reconcile only the touched canon at initiative completion.
-    2.  **Archive**: Active specs are moved to `.cicadas/archive/`.
-    - **1-PR Flow**: You can include the `archive` move and registry cleanup in your main PR for a single-commit finalization. If rework is needed, use `unarchive` to restore the state instantly.
+The agent runs a brief start flow (confirms the name, asks whether the feature uses LLMs, sets up your PR preference) and then moves into spec drafting.
+
+### Step 2 — Define specs (agent-guided)
+
+Your agent guides you through five spec documents, one at a time — each approved before the next begins:
+
+- **PRD** — What and why (problem, users, success criteria)
+- **UX** — Experience and interaction flow
+- **Tech Design** — Architecture, components, data flow
+- **Approach** — Partitions (the feature branches you will implement)
+- **Tasks** — Ordered, testable checklist grouped by partition
+
+You review and approve each document. No raw CLI commands needed at this step — the agent handles everything.
+
+### Step 3 — Kickoff the initiative
+
+Once specs are approved, kickoff promotes them from drafts to active, registers the initiative, and creates the initiative branch.
+
+> 💬 **Tell your agent:** *"Kickoff the initiative"*
+
+### Step 4 — Implement a partition
+
+Your agent implements one partition (feature branch) at a time: creates task branches, writes code, keeps specs current via Reflect, and marks tasks complete as it goes.
+
+> 💬 **Tell your agent:** *"Implement partition \<name\>"*
+
+Repeat for each partition defined in your Approach. Partitions that don't depend on each other can run in parallel.
+
+### Step 5 — Code review and complete the partition
+
+Before merging, the agent runs a structured code review against specs, security patterns, and code quality, then merges the partition into the initiative branch.
+
+> 💬 **Tell your agent:** *"Code review and complete partition"*
+
+Repeat Steps 4–5 for each partition.
+
+### Step 6 — Create a PR
+
+When all partitions are complete, the agent opens a pull request from the initiative branch to `main`.
+
+> 💬 **Tell your agent:** *"Create a PR"*
+
+Review and merge the PR in your usual code review tool.
+
+### Step 7 — Complete the initiative
+
+After the PR is merged, the agent synthesizes updated Canon documentation on `main` and archives the active specs.
+
+> 💬 **Tell your agent:** *"Complete the initiative"*
+
+---
 
 ### Context Reset Discipline
 
-Cicadas treats branch starts, approved spec boundaries, and partition handoffs as **reset points**. The skill now tells the agent to:
+Cicadas treats branch starts, approved spec boundaries, and partition handoffs as **reset points**. The skill tells the agent to:
 
 - Prefer approved file-backed state over prior chat history.
 - Reload from `canon/summary.md`, then `canon/repo-context.md` when present, plus spec front matter and indexed sections first.
 - Opportunistically clear or compact conversational context when the host supports it, without relying on that behavior for correctness.
 
+---
 
-### Quick Command Reference
-All scripts are in `src/cicadas/scripts/`.
+### Quick Reference — 7 Agent Prompts
 
-| Action | Command |
-| :--- | :--- |
-| **Kickoff Initiative** | `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..."` |
-| **Kickoff Initiative in worktree** | `python src/cicadas/scripts/cicadas.py kickoff {name} --intent "..." --worktree` |
-| **Start Feature** | `python src/cicadas/scripts/cicadas.py branch {name} --intent "..."` |
-| **Start Branch in worktree** | `python src/cicadas/scripts/cicadas.py branch {name} --intent "..." --worktree` |
-| **Check Status** | `python src/cicadas/scripts/cicadas.py status` (shows Merged/Next when lifecycle exists) |
-| **Check Conflicts** | `python src/cicadas/scripts/cicadas.py check` |
-| **Send Signal** | `python src/cicadas/scripts/cicadas.py signal "Message..."` |
-| **Log Work** | `python src/cicadas/scripts/cicadas.py update-index --branch {name} ...` |
-| **Lifecycle** | `python src/cicadas/scripts/cicadas.py create-lifecycle {name}` (PR boundaries + steps in drafts/active) |
-| **Open PR** | `python src/cicadas/scripts/cicadas.py open-pr [--base branch]` (gh/glab/Bitbucket/fallback; blocks on BLOCK verdict) |
-| **Check Review** | `python src/cicadas/scripts/cicadas.py review [--initiative name]` (read verdict from review.md) |
-| **Archive** | `python src/cicadas/scripts/cicadas.py archive {name} [--type initiative]` (now snapshots metadata) |
-| **Unarchive** | `python src/cicadas/scripts/cicadas.py unarchive {name}` |
-| **Abort** | `python src/cicadas/scripts/cicadas.py abort` |
-| **Project History** | `python src/cicadas/scripts/cicadas.py history` |
-| **Graph Build** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph build` |
-| **Graph Status** | `python src/cicadas/scripts/cicadas.py graph status` |
-| **Graph Query** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph area|neighbors|tests|callers|callees|signature-impact|route|search ...` |
-| **Graph Observe** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph tail|watch` |
-| **Graph Usage** | `CICADAS_GRAPH_EXPERIMENTAL=1 python src/cicadas/scripts/cicadas.py graph usage [--initiative name] [--since ISO8601] [--view table|json|html]` |
-| **Validate Skill** | `python src/cicadas/scripts/cicadas.py validate-skill {slug}` |
-| **Publish Skill** | `python src/cicadas/scripts/cicadas.py skill-publish {slug} [--publish-dir DIR] [--symlink] [--force]` |
+| Step | What happens | 💬 Tell your agent |
+| :--- | :--- | :--- |
+| **1 — Start** | Creates draft folder, runs start flow | *"Start an initiative called \<name\>"* |
+| **2 — Spec** | Agent-guided PRD → UX → Tech → Approach → Tasks | *(agent-guided — no prompt needed)* |
+| **3 — Kickoff** | Promotes specs, creates initiative branch | *"Kickoff the initiative"* |
+| **4 — Build** | Implements partition on a feature branch | *"Implement partition \<name\>"* |
+| **5 — Complete partition** | Code review + merge to initiative branch | *"Code review and complete partition"* |
+| **6 — PR** | Opens pull request to `main` | *"Create a PR"* |
+| **7 — Complete** | Synthesizes Canon, archives specs | *"Complete the initiative"* |
+
+> **Tip**: run 💬 *"Check status"* at any time to see what Cicadas suggests as the next step.
 
 ---
 

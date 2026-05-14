@@ -8,10 +8,11 @@ from collections import Counter
 from collections.abc import Callable
 from pathlib import Path
 
-from graph_ir import GraphEdge, GraphNode
+from graph_ir import GraphEdge, GraphNode, fact_metadata
 from graph_extract.javascript import extract_javascript_graph
 from graph_extract.java import extract_java_graph
 from graph_extract.python import extract_python_graph
+from graph_extract.rust import extract_rust_graph
 from utils import (
     get_project_root,
     load_repo_metadata,
@@ -176,10 +177,11 @@ def build_structural_graph(
     total_python_files = sum(1 for entry in file_entries if entry.get("language") == "python")
     total_javascript_files = sum(1 for entry in file_entries if entry.get("language") in {"javascript", "typescript"})
     total_java_files = sum(1 for entry in file_entries if entry.get("language") == "java")
+    total_rust_files = sum(1 for entry in file_entries if entry.get("language") == "rust")
 
     repo_name = root.name
     repo_id = _node_id("repo", repo_name)
-    nodes.append(GraphNode(node_id=repo_id, kind="repo", name=repo_name, build_id=build_id, metadata={"root": str(root)}))
+    nodes.append(GraphNode(node_id=repo_id, kind="repo", name=repo_name, build_id=build_id, metadata=fact_metadata("inventory", "high", root=str(root))))
     if progress is not None:
         progress(
             {
@@ -214,10 +216,11 @@ def build_structural_graph(
                     "routing_confidence": area.get("routing_confidence", "low"),
                     "modernity": area.get("modernity", "mixed"),
                     "parent_area": area.get("parent_area"),
+                    **fact_metadata("inventory", "medium"),
                 },
             )
         )
-        edges.append(GraphEdge(edge_id=_edge_id("contains", repo_id, area_id), kind="contains", src_id=repo_id, dst_id=area_id, build_id=build_id))
+        edges.append(GraphEdge(edge_id=_edge_id("contains", repo_id, area_id), kind="contains", src_id=repo_id, dst_id=area_id, build_id=build_id, metadata=fact_metadata("inventory", "medium")))
     if emit is not None and (nodes or edges):
         emit(nodes, edges)
         nodes = []
@@ -258,13 +261,19 @@ def build_structural_graph(
                 path=rel_path,
                 area=area_name,
                 build_id=build_id,
-                metadata={"extension": entry.get("extension"), "summary": entry.get("summary")},
+                metadata=fact_metadata(
+                    "inventory",
+                    "high",
+                    extension=entry.get("extension"),
+                    summary=entry.get("summary"),
+                    source_class=entry.get("source_class"),
+                ),
             )
         )
         if area_name and area_name in area_ids:
             area_id = area_ids[area_name]
-            structural_edges.append(GraphEdge(edge_id=_edge_id("contains", area_id, file_id), kind="contains", src_id=area_id, dst_id=file_id, build_id=build_id))
-            structural_edges.append(GraphEdge(edge_id=_edge_id("owns", area_id, file_id), kind="owns", src_id=area_id, dst_id=file_id, build_id=build_id, derived=True))
+            structural_edges.append(GraphEdge(edge_id=_edge_id("contains", area_id, file_id), kind="contains", src_id=area_id, dst_id=file_id, build_id=build_id, metadata=fact_metadata("inventory", "high")))
+            structural_edges.append(GraphEdge(edge_id=_edge_id("owns", area_id, file_id), kind="owns", src_id=area_id, dst_id=file_id, build_id=build_id, derived=True, metadata=fact_metadata("inventory", "medium")))
 
         rel_lower = rel_path.lower()
         if "test" in rel_lower or rel_path.startswith("tests/"):
@@ -278,10 +287,10 @@ def build_structural_graph(
                     path=rel_path,
                     area=area_name,
                     build_id=build_id,
-                    metadata={"source_file": rel_path},
+                    metadata=fact_metadata("fallback-structural", "low", source_file=rel_path),
                 )
             )
-            structural_edges.append(GraphEdge(edge_id=_edge_id("declares", file_id, test_id), kind="declares", src_id=file_id, dst_id=test_id, build_id=build_id))
+            structural_edges.append(GraphEdge(edge_id=_edge_id("declares", file_id, test_id), kind="declares", src_id=file_id, dst_id=test_id, build_id=build_id, metadata=fact_metadata("fallback-structural", "low")))
         if emit is not None and (len(structural_nodes) >= 500 or len(structural_edges) >= 1000):
             emit(structural_nodes, structural_edges)
             structural_nodes = []
@@ -467,6 +476,55 @@ def build_structural_graph(
     if progress is not None:
         progress(
             {
+                "phase": "rust_extraction",
+                "message": f"starting rust extraction ({total_rust_files} files)",
+                "repo_entries_total": len(repo_tree),
+                "structural_files_total": len(file_entries),
+                "structural_files_processed": processed_files,
+                "python_files_total": total_python_files,
+                "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
+                "java_files_total": total_java_files,
+                "java_files_processed": java_stats.get("java_files_processed", 0),
+                "rust_files_total": total_rust_files,
+                "rust_files_processed": 0,
+            }
+        )
+    rust_nodes, rust_edges, rust_stats = extract_rust_graph(
+        root=root,
+        file_entries=file_entries,
+        build_id=build_id,
+        area_lookup=area_lookup,
+        progress=progress,
+        emit=emit,
+    )
+    nodes.extend(rust_nodes)
+    edges.extend(rust_edges)
+    if progress is not None:
+        progress(
+            {
+                "phase": "rust_extraction",
+                "message": "rust extraction finished "
+                f"({rust_stats.get('rust_files_processed', 0)} files, {rust_stats.get('symbols_indexed', 0)} symbols)",
+                "repo_entries_total": len(repo_tree),
+                "structural_files_total": len(file_entries),
+                "structural_files_processed": processed_files,
+                "python_files_total": total_python_files,
+                "python_files_processed": python_stats.get("python_files_processed", 0),
+                "javascript_files_total": total_javascript_files,
+                "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
+                "java_files_total": total_java_files,
+                "java_files_processed": java_stats.get("java_files_processed", 0),
+                "rust_files_total": total_rust_files,
+                "rust_files_processed": rust_stats.get("rust_files_processed", 0),
+                "rust_symbols_indexed": rust_stats.get("symbols_indexed", 0),
+            }
+        )
+
+    if progress is not None:
+        progress(
+            {
                 "phase": "assembly",
                 "message": f"graph assembly finished ({len(nodes)} nodes, {len(edges)} edges before dedupe)",
                 "repo_entries_total": len(repo_tree),
@@ -478,6 +536,8 @@ def build_structural_graph(
                 "javascript_files_processed": javascript_stats.get("javascript_files_processed", 0),
                 "java_files_total": total_java_files,
                 "java_files_processed": java_stats.get("java_files_processed", 0),
+                "rust_files_total": total_rust_files,
+                "rust_files_processed": rust_stats.get("rust_files_processed", 0),
                 "nodes_count": len(nodes),
                 "edges_count": len(edges),
             }
@@ -502,4 +562,5 @@ def build_structural_graph(
         "python_stats": python_stats,
         "javascript_stats": javascript_stats,
         "java_stats": java_stats,
+        "rust_stats": rust_stats,
     }

@@ -99,7 +99,37 @@ def initialize_schema(conn: sqlite3.Connection) -> None:
         "INSERT OR REPLACE INTO graph_meta_stage(key, value) VALUES(?, ?)",
         ("schema_version", str(GRAPH_SCHEMA_VERSION)),
     )
+    _initialize_fts(conn)
     conn.commit()
+
+
+def _initialize_fts(conn: sqlite3.Connection) -> bool:
+    try:
+        conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS graph_nodes_fts
+            USING fts5(node_id UNINDEXED, kind, name, path, area)
+            """
+        )
+        return True
+    except sqlite3.Error:
+        return False
+
+
+def _sync_fts(conn: sqlite3.Connection) -> None:
+    if not _initialize_fts(conn):
+        return
+    try:
+        conn.execute("DELETE FROM graph_nodes_fts")
+        conn.execute(
+            """
+            INSERT INTO graph_nodes_fts(node_id, kind, name, path, area)
+            SELECT node_id, kind, name, COALESCE(path, ''), COALESCE(area, '')
+            FROM graph_nodes
+            """
+        )
+    except sqlite3.Error:
+        return
 
 
 def _dedupe_nodes(nodes: list[GraphNode]) -> list[GraphNode]:
@@ -163,6 +193,7 @@ def replace_graph(conn: sqlite3.Connection, nodes: list[GraphNode], edges: list[
         "INSERT OR REPLACE INTO graph_meta(key, value) VALUES(?, ?)",
         ("active_build_id", build_id),
     )
+    _sync_fts(conn)
     conn.commit()
 
 
@@ -290,3 +321,4 @@ def promote_stage_graph(conn: sqlite3.Connection, build_id: str) -> None:
             "INSERT OR REPLACE INTO graph_meta(key, value) VALUES(?, ?)",
             ("active_build_id", build_id),
         )
+        _sync_fts(conn)

@@ -19,6 +19,7 @@ from utils import (
     load_config,
     load_json,
     parse_partitions_dag,
+    print_hint,
     save_json,
     worktree_path,
     worktree_policy,
@@ -219,6 +220,7 @@ if __name__ == "__main__":
     parser.add_argument("--worktree-dir", dest="worktree_dir", help="Override default worktree directory path")
     parser.add_argument("--worktree", action="store_true", help="Force a linked worktree even if the default policy would use the current workspace")
     parser.add_argument("--no-worktree", action="store_true", help="Force plain branch even if depends_on is empty")
+    parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
     args = parser.parse_args()
     create_branch(
         args.name,
@@ -230,3 +232,11 @@ if __name__ == "__main__":
         no_worktree=args.no_worktree,
         force_worktree=args.worktree,
     )
+    try:
+        config = load_config()
+    except Exception:
+        config = {}
+    print_hint([
+        "Next: implement, then complete the partition",
+        '  Tell your agent: 💬 "Code review and complete partition"',
+    ], args, config)

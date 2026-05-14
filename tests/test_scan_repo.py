@@ -44,11 +44,17 @@ class TestScanRepo(CicadasTest):
         self.assertEqual(metadata["scan"]["context_path"], REPO_CONTEXT_FILENAME)
         self.assertIn("meaningful_file_count", metadata["scan"])
         self.assertIn("estimated_loc", metadata["scan"])
+        self.assertEqual(metadata["scan"]["code_file_count"], 1)
+        self.assertEqual(metadata["scan"]["test_file_count"], 1)
+        self.assertEqual(metadata["scan"]["source_file_count"], 2)
+        self.assertGreaterEqual(metadata["scan"]["estimated_code_loc"], 3)
 
         lines = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
         self.assertTrue(any(line["kind"] == "directory" for line in lines))
         self.assertTrue(any(line["kind"] == "file" for line in lines))
         self.assertTrue(any(line["path"] == "src/pkg/mod.py" for line in lines))
+        self.assertTrue(any(line["path"] == "src/pkg/mod.py" and line["source_class"] == "code" for line in lines))
+        self.assertTrue(any(line["path"] == "tests/test_mod.py" and line["source_class"] == "test" for line in lines))
         self.assertIn("# Repo Context", context_path.read_text())
 
     def test_scan_excludes_agentic_and_archive_paths_from_complexity_scoring(self):
@@ -224,6 +230,32 @@ class TestScanRepo(CicadasTest):
         self.assertEqual(metadata["candidate_slices"], [])
         self.assertEqual(metadata["slice_strategy"]["unit"], "module")
         self.assertNotIn("Seeded slices:", context_path.read_text())
+
+    def test_markdown_heavy_repo_stays_normal_when_code_volume_is_small(self):
+        requirements_dir = self.root / "requirements"
+        requirements_dir.mkdir()
+        for idx in range(5000):
+            (requirements_dir / f"story_{idx}.md").write_text(f"# Story {idx}\n\nAcceptance criteria.\n")
+        src_dir = self.root / "src" / "app"
+        src_dir.mkdir(parents=True)
+        for idx in range(10):
+            (src_dir / f"mod_{idx}.py").write_text("print('small')\n")
+
+        tree_path, metadata_path, context_path = scan_repo.run_scan()
+        metadata = json.loads(metadata_path.read_text())
+        entries = [json.loads(line) for line in tree_path.read_text().splitlines() if line.strip()]
+        doc_entries = [entry for entry in entries if entry.get("source_class") == "documentation"]
+
+        self.assertEqual(metadata["classification"]["scale_class"], "normal-repo")
+        self.assertEqual(metadata["repo_mode"], "normal-repo")
+        self.assertEqual(metadata["scan"]["code_file_count"], 10)
+        self.assertEqual(metadata["scan"]["test_file_count"], 0)
+        self.assertEqual(metadata["scan"]["source_file_count"], 10)
+        self.assertGreaterEqual(metadata["scan"]["documentation_file_count"], 5000)
+        self.assertGreaterEqual(metadata["scan"]["estimated_documentation_loc"], 10000)
+        self.assertGreaterEqual(len(doc_entries), 5000)
+        self.assertIn("Source volume:", context_path.read_text())
+        self.assertIn("Documentation/context volume:", context_path.read_text())
 
     def test_scan_spools_tree_to_disk_during_inventory_build(self):
         src_dir = self.root / "src" / "pkg"

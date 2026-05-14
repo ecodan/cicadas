@@ -25,6 +25,9 @@ This will:
 # Claude Code
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent claude-code
 
+# Codex
+curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent codex
+
 # Cursor
 curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --agent cursor
 
@@ -35,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 **All flags:**
 ```
 --dir <path>     Install location (default: .cicadas-skill/cicadas/)
---agent <list>   Agent integrations: claude-code, antigravity, cursor, rovodev, none (comma-separated)
+--agent <list>   Agent integrations: claude-code, antigravity, cursor, rovodev, codex, none (comma-separated)
 --update         Re-download skill files only; never touches .cicadas/
 ```
 
@@ -47,8 +50,11 @@ curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | 
 | `antigravity` | `.agents/skills/cicadas` → symlink to install dir |
 | `cursor` | `.cursor/rules/cicadas.mdc` (copy of `SKILL.md`) |
 | `rovodev` | `.rovodev/skills/cicadas` → symlink to install dir |
+| `codex` | `$CODEX_HOME/skills/cicadas` or `~/.codex/skills/cicadas` → symlink to install dir |
 
 **Where implementation guardrails come from:** `CLAUDE.md` is used only by **Claude Code** (it lists commands, architecture, and points to `implementation.md` in the skill dir). **Cursor** and other environments do not use `CLAUDE.md`; they get lifecycle and implementation rules from the **skill file** (`SKILL.md` / `cicadas.mdc`) alone. The skill includes an "Implementation agent rules" section so the same guardrails apply in every environment.
+
+**Codex behavior:** Claude Code uses the repo-local `.claude/skills/cicadas` link. Codex uses a global skill install at `$CODEX_HOME/skills/cicadas` or `~/.codex/skills/cicadas`, while each repo still keeps its own `.cicadas/` workspace. Restart Codex after installation so it loads the new skill.
 
 ### 2. Update Cicadas
 
@@ -108,11 +114,9 @@ Cicadas uses a two-layer branching hierarchy to manage concurrent work and ensur
 
 ---
 
-## Starting any initiative, tweak, bug, or skill
+## Starting any initiative, tweak, or bug
 
-Whenever you ask to **start an initiative**, **start a tweak**, **start a bug**, or **create a skill**, the agent runs a **standard start flow** first: name (confirmed even if you already said it) → create draft folder → initiative profile (`product`, `technical`, or `mixed`) for initiatives → **Building on AI?** (yes/no; if yes, eval status: already have / will do — skipped for skills) → requirements source and pace (initiatives only) → publish destination (skills only) → PR preference → then collect requirements or draft the spec. This keeps the "start" experience repeatable. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** in the tweaklet/buglet; Cicadas does not run evals. The flow is defined in the skill at `emergence/start-flow.md` and is embedded in the Clarify, Tweak, Bug Fix, and Skill Create instruction modules.
-
-Initiative profiles control the planning artifacts. `product` uses the full PRD and UX flow. `technical` uses `technical-brief.md` and skips UX only when there is no meaningful human-facing or agent-facing surface; otherwise it uses `operator-experience.md` for CLI output, logs, errors, docs, or agent instructions. `mixed` chooses the product or technical artifact per surface while still requiring Tech Design, Approach, and Tasks.
+Whenever you ask to **start an initiative**, **start a tweak**, or **start a bug**, the agent runs a **standard start flow** first: name (confirmed even if you already said it) → create draft folder → **Building on AI?** (yes/no; if yes, eval status: already have / will do) → requirements source and pace (initiatives only) → PR preference → then collect requirements or draft the spec. This keeps the "start" experience repeatable. For work that builds on AI, the agent may later offer an **eval spec** (initiatives) or an **eval/benchmark reminder** in the tweaklet/buglet; Cicadas does not run evals. The flow is defined in the skill at `emergence/start-flow.md` and is embedded in the Clarify, Tweak, and Bug Fix instruction modules. A deprecated legacy skill-authoring path remains documented there for compatibility.
 
 ## Compact Context Contract
 
@@ -137,10 +141,90 @@ If the host agent/runtime supports context clearing or compaction, the skill ask
 
 ---
 
+## 🎓 Interactive Tutorial
+
+Cicadas ships with an interactive 7-step walkthrough that shows the complete workflow using mock output — no real code required. It takes about 5 minutes.
+
+### Running the tutorial
+
+**On first `cicadas init`**: Cicadas detects that `.cicadas/` was just created and prompts:
+
+```
+Would you like to run the tutorial now? [Y/n]:
+```
+
+Type `Y` (or just press Enter) to start immediately.
+
+**Any time after that**, tell your agent:
+
+> 💬 *"Run the Cicadas tutorial"*
+
+Or pass a flag directly to init:
+
+```bash
+# Run tutorial without the interactive prompt:
+cicadas init --tutorial
+
+# Skip the tutorial prompt entirely:
+cicadas init --no-tutorial
+```
+
+### What the tutorial covers
+
+The tutorial walks through all 7 steps of the Cicadas workflow with realistic mock CLI output at each step:
+
+| Step | Title | 💬 Agent prompt shown |
+| :--- | :--- | :--- |
+| 1 | Start an initiative | *"Start an initiative called my-project"* |
+| 2 | Define specs (agent-guided) | *(agent-guided — no prompt needed)* |
+| 3 | Kickoff the initiative | *"Kickoff the initiative"* |
+| 4 | Implement a partition | *"Implement partition 1"* |
+| 5 | Code review and complete partition | *"Code review and complete partition"* |
+| 6 | Create a PR | *"Create a PR"* |
+| 7 | Complete the initiative | *"Complete the initiative"* |
+
+At the end, the tutorial prints the full 7-prompt cheatsheet so you have it handy.
+
+> **Note**: The tutorial is purely informational — it makes no changes to your git state or `.cicadas/` workspace.
+
+---
+
+## ⚙️ Hint Toggling
+
+Cicadas prints contextual next-step hints after key lifecycle commands (kickoff, branch, archive, open-pr, status, etc.). Each hint shows the natural-language agent prompt to use next, formatted in a bordered box.
+
+### Disabling hints globally
+
+Add `"hints": false` to `.cicadas/config.json`:
+
+```json
+{
+  "hints": false
+}
+```
+
+Hints are shown by default (no key needed). To re-enable, set `"hints": true` or remove the key entirely.
+
+### Disabling hints for a single command
+
+Pass `--no-hints` to any lifecycle command:
+
+```bash
+python src/cicadas/scripts/cicadas.py kickoff my-project --intent "..." --no-hints
+python src/cicadas/scripts/cicadas.py status --no-hints
+```
+
+### When hints are suppressed automatically
+
+Hints are automatically suppressed when stdout is not a TTY (e.g., piped output, CI environments, script capture). This means CI logs stay clean without any extra configuration.
+
+---
+
 ## 🟢 Greenfield: Starting a New Project
 
 1.  **Initialize**: *"Initialize cicadas for this project."*
-2.  **Clarify**: *"I want to build [Product Name]. Help me clarify the requirements."* You can provide requirements via **Q&A** (interactive), a **doc** (`.cicadas/drafts/{initiative}/requirements.md`), or a **Loom transcript** (`.cicadas/drafts/{initiative}/loom.md`); the agent fills the PRD or Technical Brief from the doc or transcript based on the selected initiative profile.
+    - On first run, Cicadas offers the interactive tutorial. Type `Y` to run it.
+2.  **Clarify**: *"I want to build [Product Name]. Help me clarify the requirements."* You can provide requirements via **Q&A** (interactive), a **doc** (`.cicadas/drafts/{initiative}/requirements.md`), or a **Loom transcript** (`.cicadas/drafts/{initiative}/loom.md`); the agent fills the PRD from the doc or transcript.
 3.  **Draft Appearance**: Use prompts like *"Draft the UX"* and *"Draft the tech design"*.
 4.  **Define Strategy (Approach)**: *"Draft the approach."*
     - **Note**: This is where you define the **Partitions** (future Feature Branches).
@@ -149,13 +233,13 @@ If the host agent/runtime supports context clearing or compaction, the skill ask
     - Agent promotes drafts to active and creates the **Initiative Branch**.
     - By default work continues in the current workspace. To create a linked initiative worktree, enable it in `.cicadas/config.json` or use `--worktree`.
 7.  **Implementation Loop**:
-    - **Start Feature**: *"Start feature [partition-name]."* (Forks from Initiative Branch).
+    - **Start Feature**: *"Implement partition [partition-name]."* (Forks from Initiative Branch).
       - Parallel `feat/` partitions still create linked worktrees by default.
       - Lightweight `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts into a worktree.
     - **Reflect**: The Agent keeps specs current as you build, including refreshing spec front matter so compact context stays accurate.
-    - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict. `python src/cicadas/scripts/cicadas.py open-pr ...` blocks on `BLOCK`.
-    - **Complete Feature**: Merges back to the Initiative Branch.
-8.  **Complete Initiative**: *"Complete initiative [initiative-name]."*
+    - **Code Review** (optional): *"Code review"* — the Agent evaluates the diff against specs, security, correctness, and code quality and writes `review.md` with a `PASS` / `PASS WITH NOTES` / `BLOCK` verdict.
+    - **Complete Feature**: *"Code review and complete partition"* — merges back to the Initiative Branch.
+8.  **Complete Initiative**: *"Complete the initiative."*
     - Merges Initiative Branch to `main`, updates Canon on `main`, and **Archives** the specs.
     - `normal-repo` initiatives run the traditional broad synthesis pass.
     - `large-repo` and `mega-repo` initiatives run targeted canon reconcile: touched slices first, neighboring slices only when the work changed interfaces, boundaries, or invariants, and global orientation docs only when repo-wide truth changed.
@@ -242,29 +326,31 @@ For trivial changes, Cicadas supports a "fast path" that reduces documentation o
 4.  **Complete**: Merge to `main`, optionally update Canon, and Archive.
     - **Note**: You can run `archive` and include the spec move in your PR to `main`. Use `unarchive` if you need to revert and make further changes.
 
-**Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent runs `python src/cicadas/scripts/cicadas.py abort` from the current branch, rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
+**Aborting a Lightweight Path**: Say *"Abort"* at any point. The agent rolls back the branch and registry entry, and prompts whether to move the promoted spec back to drafts or delete it entirely.
 
 ---
 
 ## 🤖 Agents & Skills
 
-- **Emergence Agent**: Authors specs (PRD or Technical Brief, UX or Operator Experience, Tech, Approach, Tasks).
+- **Emergence Agent**: Authors specs (PRD, UX, Tech, Approach, Tasks).
 - **Implementation Agent**: Focuses on `tasks.md` and writing code.
 - **Synthesis Agent**: Operates on `main` to update the authoritative Canon.
 
-### Authoring Agent Skills
+### Authoring Agent Skills (Deprecated)
 
-Cicadas manages the full lifecycle of **Agent Skills** — portable instruction modules you can ship alongside your project to teach agents new capabilities.
+Cicadas no longer treats Agent Skill authoring as a first-class workflow. The
+legacy docs and templates remain in the repo for compatibility, but new skill
+work should use dedicated skill-authoring tooling instead.
 
-**Create a new skill**: *"Create a skill that handles our database migration runbook."*
-The agent runs the start flow (name, Building on AI?, publish destination, PR preference), then a dialogue-driven authoring session: 4 clarifying questions → complete `SKILL.md` + optional bundled `scripts/`, `references/`, or `assets/` → `eval_queries.json` draft → kickoff + branch (`skill/{name}`) + validate.
+**Legacy create flow**: `src/cicadas/emergence/skill-create.md`
+The deprecated path still documents the old start flow (name, Building on AI?, publish destination, PR preference), then a dialogue-driven authoring session: 4 clarifying questions → complete `SKILL.md` + optional bundled `scripts/`, `references/`, or `assets/` → `eval_queries.json` draft → kickoff + branch (`skill/{name}`) + validate.
 
-**Edit an existing skill**: *"The skill isn't triggering reliably."* or *"Edit skill db-migrations."*
-The agent asks one diagnostic question (under-triggering / over-triggering / wrong output), proposes a minimum targeted change as a before/after diff, and validates after applying.
+**Legacy edit flow**: `src/cicadas/emergence/skill-edit.md`
+The deprecated path still documents the old edit loop: one diagnostic question (under-triggering / over-triggering / wrong output), a minimum targeted before/after diff, and validation after applying.
 
-**Validate a skill**: `python src/cicadas/scripts/cicadas.py validate-skill {slug}`
+**Validate a skill**: *"Validate skill \<name\>"*
 
-**Publish a skill** (after merging `skill/{name}` to `main`): `python src/cicadas/scripts/cicadas.py skill-publish {slug}`
+**Publish a skill** (after merging `skill/{name}` to `main`): *"Publish skill \<name\>"*
 Reads `publish_dir` from `emergence-config.json`, runs validation before copying.
 
 ### Registering Cicadas as a Claude Code Skill

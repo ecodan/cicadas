@@ -61,6 +61,17 @@ def _missing_graph_message() -> str:
     return "[ERR] Graph support is not initialized for this repo.\n" + format_graph_status()
 
 
+def _result_summary(rows: list[sqlite3.Row], *, max_items: int = 10) -> dict:
+    files = [row["path"] for row in rows if "path" in row.keys() and row["path"]]
+    areas = [row["area"] for row in rows if "area" in row.keys() and row["area"]]
+    symbols = [row["name"] for row in rows if "kind" in row.keys() and row["kind"] in {"symbol", "entrypoint", "test"} and row["name"]]
+    return {
+        "files": list(dict.fromkeys(files))[:max_items],
+        "areas": list(dict.fromkeys(areas))[:max_items],
+        "symbols": list(dict.fromkeys(symbols))[:max_items],
+    }
+
+
 def _success_meta(*, result_count: int, usefulness_tags: list[str] | None = None, metadata: dict | None = None) -> dict:
     return {
         "result_count": result_count,
@@ -120,6 +131,15 @@ def _row_surface_kind(row: sqlite3.Row) -> str:
     if metadata.get("surface_kind"):
         return metadata["surface_kind"]
     return _surface_kind(row["path"], row["name"], row["kind"])
+
+
+def _fts_available(conn: sqlite3.Connection) -> bool:
+    return conn.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'graph_nodes_fts'").fetchone() is not None
+
+
+def _fts_query(target: str) -> str:
+    escaped = target.replace('"', '""')
+    return f'"{escaped}"'
 
 
 def _search_rank(row: sqlite3.Row, query: str, area_details: dict[str, dict]) -> tuple[int, int, str, str]:
@@ -202,7 +222,12 @@ def query_area(target: str, *, exclude_tests: bool = False) -> tuple[int, str, d
             return 0, "\n".join(lines), _success_meta(
                 result_count=1,
                 usefulness_tags=["helped-route"],
-                metadata={"target": target, "top_area": file_row["area"], "exclude_tests": exclude_tests},
+                metadata={
+                    "target": target,
+                    "top_area": file_row["area"],
+                    "exclude_tests": exclude_tests,
+                    "result_summary": {"areas": [file_row["area"]] if file_row["area"] else [], "files": [file_row["path"]], "symbols": []},
+                },
             )
 
         symbol_row = _resolve_symbol(conn, target)
@@ -218,7 +243,16 @@ def query_area(target: str, *, exclude_tests: bool = False) -> tuple[int, str, d
             return 0, "\n".join(lines), _success_meta(
                 result_count=1,
                 usefulness_tags=["helped-route"],
-                metadata={"target": target, "top_area": symbol_row["area"], "exclude_tests": exclude_tests},
+                metadata={
+                    "target": target,
+                    "top_area": symbol_row["area"],
+                    "exclude_tests": exclude_tests,
+                    "result_summary": {
+                        "areas": [symbol_row["area"]] if symbol_row["area"] else [],
+                        "files": [symbol_row["path"]] if symbol_row["path"] else [],
+                        "symbols": [symbol_row["name"]],
+                    },
+                },
             )
 
     return 1, f"[ERR] No graph results found for `{target}`.", _success_meta(result_count=0, metadata={"target": target, "exclude_tests": exclude_tests})
@@ -256,7 +290,7 @@ def query_tests(target: str, *, exclude_tests: bool = False) -> tuple[int, str, 
         return 0, "\n".join(lines), _success_meta(
             result_count=len(rows),
             usefulness_tags=["helped-find-tests"],
-            metadata={"target": target, "top_test": rows[0]["path"], "exclude_tests": exclude_tests},
+            metadata={"target": target, "top_test": rows[0]["path"], "exclude_tests": exclude_tests, "result_summary": _result_summary(rows)},
         )
 
 
@@ -274,23 +308,88 @@ def query_neighbors(target: str, *, exclude_tests: bool = False) -> tuple[int, s
         else:
             area_name = target
 
-        metadata = load_graph_metadata() or {}
-        seeded_areas = metadata.get("seeded_areas") or []
-        owning_area = next((area for area in seeded_areas if area.get("name") == area_name), None)
-        owning_parent = (owning_area or {}).get("parent_area")
-        neighbors = [area for area in seeded_areas if area.get("name") != area_name]
-        if owning_parent:
-            sibling_neighbors = [area for area in neighbors if area.get("parent_area") == owning_parent]
-            if sibling_neighbors:
-                neighbors = sibling_neighbors
-        neighbors = sorted(
-            neighbors,
-            key=lambda area: (
-                0 if area.get("routing_confidence") == "high" else 1 if area.get("routing_confidence") == "medium" else 2,
-                0 if area.get("modernity") == "modern" else 1,
-                area.get("name", ""),
-            ),
-        )
+        area_details = _area_index()
+        connected_rows = conn.execute(
+            """
+            SELECT
+                CASE WHEN src.area = ? THEN dst.area ELSE src.area END AS neighbor_area,
+                e.kind AS edge_kind,
+                COUNT(*) AS edge_count
+            FROM graph_edges e
+            JOIN graph_nodes src ON src.node_id = e.src_id
+            JOIN graph_nodes dst ON dst.node_id = e.dst_id
+            WHERE e.kind IN ('imports', 'references', 'calls', 'tests', 'owns', 'contains', 'depends_on', 'neighbors')
+              AND (
+                (src.area = ? AND dst.area IS NOT NULL AND dst.area != ?)
+                OR (dst.area = ? AND src.area IS NOT NULL AND src.area != ?)
+              )
+            GROUP BY neighbor_area, e.kind
+            """,
+            (area_name, area_name, area_name, area_name, area_name),
+        ).fetchall()
+        neighbor_scores: dict[str, dict] = {}
+        edge_weights = {
+            "calls": 5,
+            "tests": 5,
+            "references": 4,
+            "imports": 3,
+            "depends_on": 3,
+            "neighbors": 2,
+            "owns": 1,
+            "contains": 1,
+        }
+        for row in connected_rows:
+            neighbor_area = row["neighbor_area"]
+            if not neighbor_area:
+                continue
+            entry = neighbor_scores.setdefault(
+                neighbor_area,
+                {
+                    "name": neighbor_area,
+                    "paths": area_details.get(neighbor_area, {}).get("paths", []),
+                    "routing_confidence": area_details.get(neighbor_area, {}).get("routing_confidence", "low"),
+                    "file_count": area_details.get(neighbor_area, {}).get("file_count", 0),
+                    "basis": "graph-connected",
+                    "edge_count": 0,
+                    "edge_kinds": {},
+                    "score": 0,
+                },
+            )
+            count = int(row["edge_count"] or 0)
+            entry["edge_count"] += count
+            entry["edge_kinds"][row["edge_kind"]] = count
+            entry["score"] += count * edge_weights.get(row["edge_kind"], 1)
+
+        neighbors = sorted(neighbor_scores.values(), key=lambda area: (-area["score"], area["name"]))
+        basis = "graph-connected"
+        if not neighbors:
+            metadata = load_graph_metadata() or {}
+            seeded_areas = metadata.get("seeded_areas") or []
+            owning_area = next((area for area in seeded_areas if area.get("name") == area_name), None)
+            owning_parent = (owning_area or {}).get("parent_area")
+            fallback_neighbors = [area for area in seeded_areas if area.get("name") != area_name]
+            if owning_parent:
+                sibling_neighbors = [area for area in fallback_neighbors if area.get("parent_area") == owning_parent]
+                if sibling_neighbors:
+                    fallback_neighbors = sibling_neighbors
+            neighbors = sorted(
+                [
+                    {
+                        **area,
+                        "basis": "metadata-fallback",
+                        "edge_count": 0,
+                        "edge_kinds": {},
+                        "score": 0,
+                    }
+                    for area in fallback_neighbors
+                ],
+                key=lambda area: (
+                    0 if area.get("routing_confidence") == "high" else 1 if area.get("routing_confidence") == "medium" else 2,
+                    0 if area.get("modernity") == "modern" else 1,
+                    area.get("name", ""),
+                ),
+            )
+            basis = "metadata-fallback"
         lines = _header(f"Neighbors for `{target}`")
         lines.append(f"- Owning area: {area_name or 'unknown'}")
         if not neighbors:
@@ -299,16 +398,29 @@ def query_neighbors(target: str, *, exclude_tests: bool = False) -> tuple[int, s
 
         top_neighbors = neighbors[:5]
         for area in top_neighbors:
+            edge_kinds = ", ".join(f"{kind}:{count}" for kind, count in sorted((area.get("edge_kinds") or {}).items())) or "none"
             lines.append(
                 f"- Neighbor: {area['name']} "
                 f"(paths: {', '.join(area.get('paths', []))}; confidence: {area.get('routing_confidence', 'low')}; "
+                f"basis: {area.get('basis', basis)}; edges: {area.get('edge_count', 0)}; edge_kinds: {edge_kinds}; "
                 f"files: {area.get('file_count', 0)})"
             )
-        lines.append("- Note: neighbor results are currently seeded from canon routing areas.")
+        if basis == "metadata-fallback":
+            lines.append("- Note: no graph-connected neighboring areas were found; results are metadata fallback.")
         return 0, "\n".join(lines), _success_meta(
             result_count=len(top_neighbors),
             usefulness_tags=["helped-route"],
-            metadata={"target": target, "top_area": area_name, "exclude_tests": exclude_tests},
+            metadata={
+                "target": target,
+                "top_area": area_name,
+                "exclude_tests": exclude_tests,
+                "basis": basis,
+                "result_summary": {
+                    "areas": [area["name"] for area in top_neighbors],
+                    "files": [],
+                    "symbols": [],
+                },
+            },
         )
 
 
@@ -346,7 +458,7 @@ def query_callers(target: str, *, exclude_tests: bool = False) -> tuple[int, str
         return 0, "\n".join(lines), _success_meta(
             result_count=len(rows),
             usefulness_tags=["helped-blast-radius"],
-            metadata={"target": target, "exclude_tests": exclude_tests},
+            metadata={"target": target, "exclude_tests": exclude_tests, "result_summary": _result_summary(rows)},
         )
 
 
@@ -381,7 +493,7 @@ def query_callees(target: str, *, exclude_tests: bool = False) -> tuple[int, str
         for row in rows:
             lines.append(f"- {row['name']} ({row['path']})")
 
-        return 0, "\n".join(lines), _success_meta(result_count=len(rows), metadata={"target": target, "exclude_tests": exclude_tests})
+        return 0, "\n".join(lines), _success_meta(result_count=len(rows), metadata={"target": target, "exclude_tests": exclude_tests, "result_summary": _result_summary(rows)})
 
 
 def query_signature_impact(target: str, *, exclude_tests: bool = False) -> tuple[int, str, dict]:
@@ -434,7 +546,7 @@ def query_signature_impact(target: str, *, exclude_tests: bool = False) -> tuple
         return 0, "\n".join(lines), _success_meta(
             result_count=len(callers) + len(tests),
             usefulness_tags=["helped-blast-radius"],
-            metadata={"target": target, "top_area": area, "exclude_tests": exclude_tests},
+            metadata={"target": target, "top_area": area, "exclude_tests": exclude_tests, "result_summary": _result_summary([*callers, *tests])},
         )
 
 
@@ -463,7 +575,13 @@ def query_route(target: str, *, exclude_tests: bool = False) -> tuple[int, str, 
     return 0, "\n".join(lines), _success_meta(
         result_count=min(len(seeded_areas), 5),
         usefulness_tags=["helped-route"],
-        metadata={"target": target, "exclude_tests": exclude_tests, "top_area": top_area, "routing_confidence": top_confidence},
+        metadata={
+            "target": target,
+            "exclude_tests": exclude_tests,
+            "top_area": top_area,
+            "routing_confidence": top_confidence,
+            "result_summary": {"areas": [area["name"] for area in ranked_areas[:5]] if seeded_areas else [], "files": [], "symbols": []},
+        },
     )
 
 
@@ -484,28 +602,75 @@ def query_search(
         predicates.append(f"kind IN ({', '.join('?' for _ in valid_kinds)})")
         params.extend(valid_kinds)
 
+    fts_rows: list[sqlite3.Row] = []
+    candidate_generation = "deterministic-sql"
+    sql_score = """
+        (CASE WHEN lower(name) = lower(?) THEN 100 ELSE 0 END)
+        + (CASE WHEN lower(path) = lower(?) THEN 90 ELSE 0 END)
+        + (CASE WHEN lower(name) LIKE lower(?) THEN 40 ELSE 0 END)
+        + (CASE WHEN lower(path) LIKE lower(?) THEN 30 ELSE 0 END)
+        + (CASE WHEN kind = 'entrypoint' THEN 8 WHEN kind = 'symbol' THEN 5 WHEN kind = 'file' THEN 3 ELSE 0 END)
+    """
+    sql_params: list[object] = [target, target, f"%{target}%", f"%{target}%", *params]
+    candidate_limit = max(1000, limit * 100)
     with _connect() as conn:
+        if _fts_available(conn):
+            fts_kind_clause = ""
+            fts_params: list[object] = [_fts_query(target)]
+            if valid_kinds:
+                fts_kind_clause = f"AND n.kind IN ({', '.join('?' for _ in valid_kinds)})"
+                fts_params.extend(valid_kinds)
+            try:
+                fts_rows = conn.execute(
+                    f"""
+                    SELECT n.kind, n.name, n.path, n.area, n.metadata_json, bm25(graph_nodes_fts) * -1 AS sql_score
+                    FROM graph_nodes_fts
+                    JOIN graph_nodes n ON n.node_id = graph_nodes_fts.node_id
+                    WHERE graph_nodes_fts MATCH ?
+                    {fts_kind_clause}
+                    ORDER BY sql_score DESC, n.kind, n.path, n.name
+                    LIMIT ?
+                    """,
+                    tuple([*fts_params, candidate_limit]),
+                ).fetchall()
+            except sqlite3.Error:
+                fts_rows = []
         rows = conn.execute(
             f"""
-            SELECT kind, name, path, area, metadata_json
+            SELECT kind, name, path, area, metadata_json, {sql_score} AS sql_score
             FROM graph_nodes
             WHERE {' AND '.join(predicates)}
-            LIMIT 250
+            ORDER BY sql_score DESC, kind, path, name
+            LIMIT ?
             """,
-            tuple(params),
+            tuple([*sql_params, candidate_limit]),
         ).fetchall()
+    if fts_rows:
+        by_identity: dict[tuple[str, str, str], sqlite3.Row] = {}
+        for row in [*fts_rows, *rows]:
+            by_identity[(row["kind"], row["name"], row["path"] or "")] = row
+        rows = list(by_identity.values())
+        candidate_generation = "fts+deterministic-sql"
     rows = _filter_test_rows(rows, exclude_tests=exclude_tests)
     area_details = _area_index()
     ranked_rows = sorted(rows, key=lambda row: _search_rank(row, target, area_details), reverse=True)[: max(1, limit)]
 
     lines = _header(f"Search results for `{target}`")
+    lines.append(f"- Candidate generation: {candidate_generation}")
     if not ranked_rows:
         lines.append("- No matching graph nodes found.")
         if exclude_tests:
             lines.append("- Test artifacts were excluded from results.")
         return 0, "\n".join(lines), _success_meta(
             result_count=0,
-            metadata={"target": target, "exclude_tests": exclude_tests, "kinds": list(valid_kinds), "limit": limit},
+            metadata={
+                "target": target,
+                "exclude_tests": exclude_tests,
+                "kinds": list(valid_kinds),
+                "limit": limit,
+                "candidate_generation": candidate_generation,
+                "candidate_count": len(rows),
+            },
         )
 
     for row in ranked_rows:
@@ -526,8 +691,11 @@ def query_search(
             "exclude_tests": exclude_tests,
             "kinds": list(valid_kinds),
             "limit": limit,
+            "candidate_generation": candidate_generation,
+            "candidate_count": len(rows),
             "top_kind": ranked_rows[0]["kind"] if ranked_rows else None,
             "top_area": ranked_rows[0]["area"] if ranked_rows else None,
+            "result_summary": _result_summary(ranked_rows),
         },
     )
 

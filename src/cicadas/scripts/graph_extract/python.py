@@ -10,7 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from graph_ir import GraphEdge, GraphNode
+from graph_ir import GraphEdge, GraphNode, fact_metadata
 
 
 def _hash_id(*parts: str) -> str:
@@ -56,10 +56,10 @@ class _FunctionCollector(ast.NodeVisitor):
             path=self.rel_path,
             area=self.area,
             build_id=self.build_id,
-            metadata={"symbol_type": "class", "simple_name": node.name},
+            metadata=fact_metadata("python-ast", "high", analyzer="python-ast", symbol_type="class", simple_name=node.name),
         )
         self.symbols.append(_DiscoveredSymbol(node=class_node, simple_name=node.name, file_path=self.rel_path, is_test_symbol=False))
-        self.declare_edges.append(GraphEdge(edge_id=_edge_id("declares", self._current_file_id, class_id), kind="declares", src_id=self._current_file_id, dst_id=class_id, build_id=self.build_id))
+        self.declare_edges.append(GraphEdge(edge_id=_edge_id("declares", self._current_file_id, class_id), kind="declares", src_id=self._current_file_id, dst_id=class_id, build_id=self.build_id, metadata=fact_metadata("python-ast", "high", analyzer="python-ast")))
         self.class_stack.append(node.name)
         self.generic_visit(node)
         self.class_stack.pop()
@@ -82,10 +82,10 @@ class _FunctionCollector(ast.NodeVisitor):
             path=self.rel_path,
             area=self.area,
             build_id=self.build_id,
-            metadata={"symbol_type": "function", "simple_name": node.name},
+            metadata=fact_metadata("python-ast", "high", analyzer="python-ast", symbol_type="function", simple_name=node.name),
         )
         self.symbols.append(_DiscoveredSymbol(node=symbol_node, simple_name=node.name, file_path=self.rel_path, is_test_symbol=is_test_symbol))
-        self.declare_edges.append(GraphEdge(edge_id=_edge_id("declares", self._current_file_id, symbol_id), kind="declares", src_id=self._current_file_id, dst_id=symbol_id, build_id=self.build_id))
+        self.declare_edges.append(GraphEdge(edge_id=_edge_id("declares", self._current_file_id, symbol_id), kind="declares", src_id=self._current_file_id, dst_id=symbol_id, build_id=self.build_id, metadata=fact_metadata("python-ast", "high", analyzer="python-ast")))
         if is_test_symbol:
             test_id = _node_id("test", f"{self.rel_path}:{qualname}")
             self.test_nodes.append(
@@ -97,10 +97,10 @@ class _FunctionCollector(ast.NodeVisitor):
                     path=self.rel_path,
                     area=self.area,
                     build_id=self.build_id,
-                    metadata={"source_symbol": symbol_id, "simple_name": node.name},
+                    metadata=fact_metadata("python-ast", "high", analyzer="python-ast", source_symbol=symbol_id, simple_name=node.name),
                 )
             )
-            self.declare_edges.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, test_id), kind="declares", src_id=symbol_id, dst_id=test_id, build_id=self.build_id))
+            self.declare_edges.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, test_id), kind="declares", src_id=symbol_id, dst_id=test_id, build_id=self.build_id, metadata=fact_metadata("python-ast", "high", analyzer="python-ast")))
         self.generic_visit(node)
 
 
@@ -221,6 +221,11 @@ def extract_python_graph(
     for item in discovered:
         by_simple_name[item.simple_name].append(item)
         by_qualified_name[item.node.name] = item
+    for node in nodes:
+        if node.kind == "test" and node.node_id not in test_nodes_by_symbol.values():
+            source_symbol = node.metadata.get("source_symbol")
+            if source_symbol:
+                test_nodes_by_symbol[source_symbol] = node.node_id
 
     for item in discovered:
         edge_batch: list[GraphEdge] = []
@@ -236,6 +241,7 @@ def extract_python_graph(
                     src_id=item.node.node_id,
                     dst_id=target.node.node_id,
                     build_id=build_id,
+                    metadata=fact_metadata("python-ast", "medium", analyzer="python-ast", semantic_resolution="heuristic"),
                 )
             )
             if item.is_test_symbol and item.node.node_id in test_nodes_by_symbol:
@@ -248,6 +254,7 @@ def extract_python_graph(
                         dst_id=target.node.node_id,
                         build_id=build_id,
                         derived=True,
+                        metadata=fact_metadata("python-ast", "medium", analyzer="python-ast", semantic_resolution="heuristic"),
                     )
                 )
         if emit is not None and edge_batch:

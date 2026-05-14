@@ -50,6 +50,7 @@ SCRIPT_COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec("emit-event", "Append a typed event to the initiative event log", "emit_event.py", aliases=("emit_event",)),
     CommandSpec("get-events", "Read and filter the initiative event log", "get_events.py", aliases=("get_events",)),
     CommandSpec("unarchive", "Restore an archived initiative or branch", "unarchive.py"),
+    CommandSpec("tutorial", "Run the interactive Cicadas tutorial", "tutorial.py", supports_script_help=False),
 )
 
 TOKENS_USAGE = """usage: cicadas.py tokens {init,show,append} ...

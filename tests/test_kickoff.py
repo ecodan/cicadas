@@ -205,6 +205,55 @@ class TestKickoff(CicadasTest):
         self.assertEqual(event["initiative"], name)
         self.assertEqual(event["data"]["intent"], "event test intent")
 
+    def test_kickoff_hint_present_when_run_as_main(self):
+        """When run as __main__ with TTY, kickoff prints hint."""
+        import io
+        import runpy
+        from unittest.mock import patch
+        
+        name = "hint-init"
+        self.init_git()
+        
+        buf = io.StringIO()
+        test_args = ["kickoff.py", name, "--intent", "hint test intent"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                # Redirect actual print calls to buffer to capture output
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    try:
+                        runpy.run_module("kickoff", run_name="__main__", alter_sys=True)
+                    except SystemExit:
+                        pass
+        
+        output = buf.getvalue()
+        self.assertIn("Next: build your first partition", output)
+
+    def test_kickoff_hint_suppressed_with_no_hints_flag(self):
+        """When run as __main__ with --no-hints, kickoff suppresses hint."""
+        import io
+        import runpy
+        from unittest.mock import patch
+        
+        name = "no-hint-init"
+        self.init_git()
+        
+        buf = io.StringIO()
+        test_args = ["kickoff.py", name, "--intent", "no hint test", "--no-hints"]
+        
+        with patch("sys.argv", test_args):
+            with patch("sys.stdout") as mock_stdout:
+                mock_stdout.isatty.return_value = True
+                with patch("builtins.print", side_effect=lambda *a, **kw: buf.write(" ".join(str(x) for x in a) + "\n")):
+                    try:
+                        runpy.run_module("kickoff", run_name="__main__", alter_sys=True)
+                    except SystemExit:
+                        pass
+        
+        output = buf.getvalue()
+        self.assertNotIn("Next: build your first partition", output)
+
 
 if __name__ == "__main__":
     unittest.main()

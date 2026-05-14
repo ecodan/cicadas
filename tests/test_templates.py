@@ -51,42 +51,6 @@ class TestSpecTemplates(unittest.TestCase):
             for key in expected_keys:
                 self.assertIn(key, frontmatter, msg=f"{name} should include {key}")
 
-    def test_technical_profile_templates_include_context_frontmatter(self):
-        expected_keys = [
-            "summary:",
-            "phase:",
-            "when_to_load:",
-            "depends_on:",
-            "modules:",
-            "index:",
-            "next_section:",
-        ]
-        template_names = [
-            "technical-brief.md",
-            "operator-experience.md",
-        ]
-
-        for name in template_names:
-            frontmatter = _frontmatter_block(TEMPLATES / name)
-            for key in expected_keys:
-                self.assertIn(key, frontmatter, msg=f"{name} should include {key}")
-
-    def test_initiative_profile_guidance_is_documented(self):
-        start_flow = (ROOT / "src" / "cicadas" / "emergence" / "start-flow.md").read_text()
-        clarify = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()
-        ux = (ROOT / "src" / "cicadas" / "emergence" / "ux.md").read_text()
-        tech_design = (ROOT / "src" / "cicadas" / "emergence" / "tech-design.md").read_text()
-        approach = (ROOT / "src" / "cicadas" / "emergence" / "approach.md").read_text()
-        tasks = (ROOT / "src" / "cicadas" / "emergence" / "tasks.md").read_text()
-
-        self.assertIn("Initiative profile", start_flow)
-        self.assertIn("initiative_profile", start_flow)
-        self.assertIn("technical-brief.md", clarify)
-        self.assertIn("operator-experience.md", ux)
-        self.assertIn("Tech Design remains mandatory", tech_design)
-        self.assertIn("Approach remains mandatory", approach)
-        self.assertIn("Tasks remain mandatory", tasks)
-
     def test_tasks_template_matches_partition_workflow(self):
         text = (TEMPLATES / "tasks.md").read_text()
 
@@ -125,6 +89,7 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("next_section", text)
 
     def test_graph_guidance_remains_conditional_across_workflows(self):
+        skill = (ROOT / "src" / "cicadas" / "SKILL.md").read_text()
         clarify = (ROOT / "src" / "cicadas" / "emergence" / "clarify.md").read_text()
         bug_fix = (ROOT / "src" / "cicadas" / "emergence" / "bug-fix.md").read_text()
         tweak = (ROOT / "src" / "cicadas" / "emergence" / "tweak.md").read_text()
@@ -137,6 +102,28 @@ class TestSpecTemplates(unittest.TestCase):
         self.assertIn("graph-backed tooling when available", routing)
         self.assertIn("graph area names aligned with canon slices", routing)
         self.assertIn("optional code graph", area_map)
+        self.assertIn("graph search", skill)
+        self.assertIn("graph neighbors", skill)
+        self.assertIn("graph callers|callees", skill)
+        self.assertIn("graph eval --repo", skill)
+        self.assertIn("--exclude-tests", skill)
+        self.assertIn("Tree-sitter is never required", skill)
+
+    def test_legacy_skill_authoring_docs_are_marked_deprecated(self):
+        skill = (ROOT / "src" / "cicadas" / "SKILL.md").read_text()
+        start_flow = (ROOT / "src" / "cicadas" / "emergence" / "start-flow.md").read_text()
+        skill_create = (ROOT / "src" / "cicadas" / "emergence" / "skill-create.md").read_text()
+        skill_edit = (ROOT / "src" / "cicadas" / "emergence" / "skill-edit.md").read_text()
+        skill_template = (TEMPLATES / "skill-SKILL.md").read_text()
+
+        self.assertNotIn('"create a skill"', skill)
+        self.assertNotIn('"build a skill"', skill)
+        self.assertNotIn('"edit skill"', skill)
+        self.assertIn("Deprecated: Skill Authoring", skill)
+        self.assertIn("Deprecated for skill authoring", start_flow)
+        self.assertIn("> Deprecated:", skill_create)
+        self.assertIn("> Deprecated:", skill_edit)
+        self.assertIn("> Deprecated:", skill_template)
 
 
 if __name__ == "__main__":

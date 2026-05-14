@@ -1,7 +1,7 @@
 
 # Emergence: Approach
 
-**Goal**: Define the implementation strategy, including logical partitions that become feature branches.
+**Goal**: Define the implementation strategy, including logical partitions that become feature branches, git worktrees, and/or potentially sub-agents.
 
 **Role**: You are a Lead Developer. Your job is to figure out *how* to build the design, step-by-step, and how to *partition* the work for parallel execution.
 

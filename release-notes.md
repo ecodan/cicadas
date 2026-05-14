@@ -1,6 +1,25 @@
 # Release Notes
 
-## Unreleased
+## Version 0.9.0
+
+### Added
+
+- **Interactive tutorial**: `cicadas init` now prompts first-time users to run a 7-step interactive tutorial. The tutorial walks through the full Cicadas workflow with mock output, concept explanations, and agent prompts at each step. Run any time via 💬 *"Run the Cicadas tutorial"* or `python src/cicadas/scripts/cicadas.py tutorial`. Supports `--tutorial` (auto-run) and `--no-tutorial` (skip prompt) flags on `init`.
+- **Next-step hints**: Every lifecycle command (kickoff, branch, archive, update_index, open_pr, init) now prints a 💬 next-step hint after its main output. `cicadas status` infers and prints a hint from registry state (no `.cicadas/` → init; no initiatives → start; no branches → implement; no lifecycle → complete partition).
+- **Hint subsystem**: `utils.py` provides `hints_enabled(args, config)` and `print_hint(lines, args, config)` (66-char cyan box, auto-suppressed when not a TTY). Disable globally via `hints: false` in `.cicadas/config.json`, or per-command with `--no-hints`.
+
+### Changed
+
+- **README workflow section**: Rewrote the Getting Started workflow as a 7-step narrative using 💬 agent prompts. No raw CLI commands exposed to users. Added Quick Reference cheatsheet table.
+- **HOW-TO.md**: Added Interactive Tutorial section (how to run, step overview) and Hint Toggling section (global config, per-command flag, CI auto-suppression).
+
+## Version 0.8.2
+
+### Deprecated
+
+- **Skill builder removal**: Removed the built-in skill-builder triggers from `src/cicadas/SKILL.md` and marked the legacy skill-authoring docs as deprecated.
+
+## Version 0.8.1
 
 ### Added
 
@@ -17,10 +36,9 @@
 - **Graph edge preservation**: Streaming Python and Java graph extraction now preserves linked-test edges through staged writes and keeps Java test node IDs consistent.
 - **Regression coverage**: Added focused tests for the above edge cases, including concurrent token appends, path traversal rejection, graph streaming edge preservation, deterministic temp git defaults, and out-of-repo module context rejection.
 
-## Version 0.8.1
+### Changed
 
-### Fixed
-
+- **UXD mock-up contract**: Screen-based UX drafts now require at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/` before UX approval. The `ux.md` template includes a dedicated mock-up section, screenshot previews remain optional, and operator-only flows still use `operator-experience.md`.
 - **Scan exclusions**: `scan_repository` now skips directories containing a `SKILL.md` file (SDD installs and agent skill bundles at arbitrary paths), root-level hidden/underscore dirs whose names contain a known SDD tool substring (`bmad`, `cicadas`, `gsd`, `openspec`), and any paths listed in the new `scan_exclude_paths` key in `.cicadas/config.json`. This prevents SDD state/output directories like `_bmad-output/` and vendored SDD installs from inflating `meaningful_file_count`, `estimated_loc`, and slice candidates.
 
 ## Version 0.8.0
