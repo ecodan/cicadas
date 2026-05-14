@@ -18,9 +18,15 @@ def init_cicadas(root: Path) -> None:
     (cicadas / "drafts").mkdir(exist_ok=True)
     (cicadas / "archive").mkdir(exist_ok=True)
 
-    save_json(cicadas / "registry.json", {"schema_version": "2.0", "initiatives": {}, "branches": {}})
-    save_json(cicadas / "index.json", {"schema_version": "2.0", "entries": []})
-    save_json(
+    _save_default_json_if_missing(
+        cicadas / "registry.json",
+        {"schema_version": "2.0", "initiatives": {}, "branches": {}},
+    )
+    _save_default_json_if_missing(
+        cicadas / "index.json",
+        {"schema_version": "2.0", "entries": []},
+    )
+    _save_default_json_if_missing(
         cicadas / "config.json",
         {
             "project_name": root.name,
@@ -35,6 +41,12 @@ def init_cicadas(root: Path) -> None:
     print(f"Initialized Cicadas in {cicadas}")
 
     _install_hooks(root)
+
+
+def _save_default_json_if_missing(path: Path, data: dict) -> None:
+    if path.exists():
+        return
+    save_json(path, data)
 
 
 def _install_hooks(root: Path) -> None:

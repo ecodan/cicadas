@@ -41,6 +41,27 @@ class TestPrune(CicadasTest):
         branches = subprocess.check_output(["git", "branch"], cwd=self.root).decode()
         self.assertNotIn(name, branches)
 
+    def test_prune_registered_lightweight_branch_uses_initiative_active_dir(self):
+        self.init_git()
+        init_name = "my-bug"
+        branch_name = "fix/my-bug"
+        subprocess.run(["git", "checkout", "-b", branch_name], cwd=self.root, check=True)
+        with open(self.cicadas_dir / "registry.json") as f:
+            registry = json.load(f)
+        registry["initiatives"][init_name] = {"intent": "bug"}
+        registry["branches"][branch_name] = {"modules": [], "initiative": init_name}
+        with open(self.cicadas_dir / "registry.json", "w") as f:
+            json.dump(registry, f)
+
+        active_dir = self.cicadas_dir / "active" / init_name
+        active_dir.mkdir(parents=True)
+        (active_dir / "buglet.md").write_text("todo")
+
+        prune.prune(branch_name, "branch")
+
+        self.assertFalse(active_dir.exists())
+        self.assertTrue((self.cicadas_dir / "drafts" / init_name / "buglet.md").exists())
+
     def test_prune_initiative(self):
         self.init_git()
         name = "init-to-prune"

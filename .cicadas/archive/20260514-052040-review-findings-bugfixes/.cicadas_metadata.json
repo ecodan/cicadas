@@ -1,0 +1,30 @@
+{
+  "name": "review-findings-bugfixes",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Fix code review findings 1-7",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-05-14T05:01:04.946303+00:00"
+  },
+  "timestamp": "20260514-052040",
+  "associated_branches": {
+    "fix/review-findings-bugfixes": {
+      "intent": "Implement fixes for review findings 1-7",
+      "modules": [
+        "src/cicadas/scripts/tokens.py",
+        "src/cicadas/scripts/prune.py",
+        "src/cicadas/scripts/utils.py",
+        "src/cicadas/scripts/synthesize.py",
+        "src/cicadas/scripts/graph_extract/java.py",
+        "src/cicadas/scripts/archive.py",
+        "tests",
+        "src/cicadas/scripts/init.py",
+        "src/cicadas/scripts/graph_extract/python.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-05-14T05:01:50.688027+00:00",
+      "initiative": "review-findings-bugfixes"
+    }
+  }
+}

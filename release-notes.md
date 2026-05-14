@@ -7,6 +7,16 @@
 - **Initiative profiles**: The standard start flow now records `product`, `technical`, or `mixed` initiative profiles. Technical initiatives can use a new Technical Brief template and optional Operator Experience template while Tech Design, Approach, and Tasks remain mandatory for cross-module work.
 - **Template coverage**: `tests/test_templates.py` now verifies the technical-profile templates share the compact front matter contract and that profile-aware guidance stays documented.
 
+### Fixed
+
+- **Review finding fixes**: Addressed the code review findings for initialization safety, deterministic git-backed tests, code graph extraction, token log concurrency, active spec path naming, safe synthesis apply behavior, and module context path containment.
+- **Init preservation**: Re-running `init` now preserves existing `.cicadas` JSON state instead of overwriting project registry, index, config, or active work.
+- **Synthesis path safety**: `synthesize --apply` now rejects canon update paths that resolve outside `.cicadas/canon/`.
+- **Token log concurrency**: `tokens.py` now serializes append operations with a lock and atomic replacement so concurrent writers do not lose entries or corrupt `tokens.json`.
+- **Lightweight active specs**: Archive, prune, and synthesis helpers now resolve active directories consistently for lightweight `fix/`, `tweak/`, and `skill/` branches, while preserving fallback compatibility for legacy names.
+- **Graph edge preservation**: Streaming Python and Java graph extraction now preserves linked-test edges through staged writes and keeps Java test node IDs consistent.
+- **Regression coverage**: Added focused tests for the above edge cases, including concurrent token appends, path traversal rejection, graph streaming edge preservation, deterministic temp git defaults, and out-of-repo module context rejection.
+
 ## Version 0.8.1
 
 ### Fixed

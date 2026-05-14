@@ -162,6 +162,7 @@ def _extract_java_graph_structural(
     edges: list[GraphEdge] = []
     discovered: list[_JavaSymbol] = []
     calls_by_symbol: dict[str, list[str]] = defaultdict(list)
+    test_nodes_by_symbol: dict[str, str] = {}
 
     java_file_entries = [entry for entry in file_entries if entry.get("language") == "java" and entry.get("path")]
     total_java_files = len(java_file_entries)
@@ -243,7 +244,7 @@ def _extract_java_graph_structural(
                     GraphNode(
                         node_id=test_id,
                         kind="test",
-                        name=symbol_name,
+                        name=f"{symbol_name}()",
                         language="java",
                         path=rel_path,
                         area=area_name,
@@ -251,6 +252,7 @@ def _extract_java_graph_structural(
                         metadata={"source_symbol": symbol_id, "simple_name": method_name, "extraction_source": "structural"},
                     )
                 )
+                test_nodes_by_symbol[symbol_id] = test_id
                 file_edges.append(GraphEdge(edge_id=_edge_id("declares", symbol_id, test_id), kind="declares", src_id=symbol_id, dst_id=test_id, build_id=build_id))
 
             method_body = _method_body(source, method_match.start())
@@ -291,15 +293,9 @@ def _extract_java_graph_structural(
 
     by_simple_name: dict[str, list[_JavaSymbol]] = defaultdict(list)
     symbols_by_id: dict[str, _JavaSymbol] = {}
-    test_nodes_by_symbol: dict[str, str] = {}
     for symbol in discovered:
         by_simple_name[symbol.simple_name].append(symbol)
         symbols_by_id[symbol.node.node_id] = symbol
-    for node in nodes:
-        if node.kind == "test":
-            source_symbol = node.metadata.get("source_symbol")
-            if source_symbol:
-                test_nodes_by_symbol[source_symbol] = node.node_id
 
     relation_sources_processed = 0
     relation_sources_total = len(calls_by_symbol)
@@ -665,7 +661,7 @@ def _parse_semantic_output(
             file_id = _node_id("file", rel_path)
             edge_batch.append(GraphEdge(edge_id=_edge_id("declares", file_id, symbol_id), kind="declares", src_id=file_id, dst_id=symbol_id, build_id=build_id))
             if is_test_symbol:
-                test_id = _node_id("test", f"{rel_path}:{name}")
+                test_id = _node_id("test", f"{rel_path}:{normalized_name}")
                 node_batch.append(
                     GraphNode(
                         node_id=test_id,

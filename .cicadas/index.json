@@ -94,6 +94,16 @@
       "summary": "Add initiative profiles with Technical Brief and Operator Experience guidance, templates, tests, and docs.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-05-14T05:20:44.529625+00:00",
+      "branch": "fix/review-findings-bugfixes",
+      "summary": "Fix review findings 1-7: init preservation, safe synthesis apply, deterministic git tests, graph linked-test streaming, token log locking, active-dir naming, and module path containment.",
+      "decisions": "",
+      "modules": [
+        "src/cicadas/scripts",
+        "tests"
+      ]
     }
   ]
 }

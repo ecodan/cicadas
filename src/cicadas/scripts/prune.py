@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from utils import WorktreeDirtyError, get_default_branch, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
+from utils import WorktreeDirtyError, active_dir_name_for_branch, get_default_branch, get_project_root, get_registry_dir, load_json, remove_worktree, save_json
 
 
 def prune(name, type_, force=False):
@@ -34,8 +34,13 @@ def prune(name, type_, force=False):
                 sys.exit(1)
 
         # Restore active specs to drafts
-        active = cicadas / "active" / name
-        drafts = cicadas / "drafts" / name
+        active_name = active_dir_name_for_branch(name, registry["branches"][name].get("initiative"))
+        active = cicadas / "active" / active_name
+        drafts = cicadas / "drafts" / active_name
+        legacy_active = cicadas / "active" / name
+        if not active.exists() and legacy_active.exists():
+            active = legacy_active
+            drafts = cicadas / "drafts" / name
         if active.exists():
             shutil.move(str(active), str(drafts))
             print(f"[OK]   Restored specs to drafts/{name}")

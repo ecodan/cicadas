@@ -151,6 +151,7 @@ def extract_python_graph(
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
     calls_by_symbol: dict[str, list[str]] = {}
+    test_nodes_by_symbol: dict[str, str] = {}
     python_file_entries = [entry for entry in file_entries if entry.get("language") == "python" and entry.get("path")]
     total_python_files = len(python_file_entries)
 
@@ -190,6 +191,10 @@ def extract_python_graph(
         discovered.extend(collector.symbols)
         node_batch = [item.node for item in collector.symbols]
         node_batch.extend(collector.test_nodes)
+        for test_node in collector.test_nodes:
+            source_symbol = test_node.metadata.get("source_symbol")
+            if source_symbol:
+                test_nodes_by_symbol[source_symbol] = test_node.node_id
         edge_batch = list(collector.declare_edges)
         if emit is not None and (node_batch or edge_batch):
             emit(node_batch, edge_batch)
@@ -213,15 +218,9 @@ def extract_python_graph(
 
     by_simple_name: dict[str, list[_DiscoveredSymbol]] = defaultdict(list)
     by_qualified_name: dict[str, _DiscoveredSymbol] = {}
-    test_nodes_by_symbol: dict[str, str] = {}
     for item in discovered:
         by_simple_name[item.simple_name].append(item)
         by_qualified_name[item.node.name] = item
-    for node in nodes:
-        if node.kind == "test":
-            source_symbol = node.metadata.get("source_symbol")
-            if source_symbol:
-                test_nodes_by_symbol[source_symbol] = node.node_id
 
     for item in discovered:
         edge_batch: list[GraphEdge] = []

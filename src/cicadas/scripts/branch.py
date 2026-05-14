@@ -10,12 +10,13 @@ from pathlib import Path
 from tokens import append_entry
 from utils import (
     WorktreeDirtyError,
+    active_dir_name_for_branch,
     create_worktree,
     emit,
     get_default_branch,
-    load_config,
     get_project_root,
     get_registry_dir,
+    load_config,
     load_json,
     parse_partitions_dag,
     save_json,
@@ -197,12 +198,7 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
     emit(initiative or name, "branch.created", {"branch": name, "intent": intent, "modules": list(my_mods)})
 
     # Active dir is keyed by initiative name, not branch name.
-    if initiative:
-        active_name = initiative
-    elif "/" in name:
-        active_name = name.split("/", 1)[1]
-    else:
-        active_name = name
+    active_name = active_dir_name_for_branch(name, initiative)
     (cicadas / "active" / active_name).mkdir(parents=True, exist_ok=True)
 
     # Write implementation/branch-start token boundary entry

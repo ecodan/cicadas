@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import init
 from base import CicadasTest
-from utils import load_json
+from utils import load_json, save_json
 
 
 class TestInit(CicadasTest):
@@ -36,6 +36,69 @@ class TestInit(CicadasTest):
 
         config = load_json(cicadas_dir / "config.json")
         self.assertEqual(config["project_name"], "new_project")
+
+    def test_init_cicadas_preserves_existing_json_on_rerun(self):
+        new_root = self.root / "existing_project"
+        new_root.mkdir()
+
+        init.init_cicadas(new_root)
+
+        cicadas_dir = new_root / ".cicadas"
+        registry_data = {
+            "schema_version": "2.0",
+            "initiatives": {"keep-me": {"branch": "initiative/keep-me"}},
+            "branches": {"feat/keep-me": {"initiative": "keep-me"}},
+        }
+        index_data = {
+            "schema_version": "2.0",
+            "entries": [{"id": "existing-entry", "type": "manual"}],
+        }
+        config_data = {
+            "project_name": "custom-name",
+            "auto_worktrees": {
+                "initiatives": True,
+                "lightweight": True,
+                "parallel_features": False,
+            },
+            "extra": "preserved",
+        }
+        save_json(cicadas_dir / "registry.json", registry_data)
+        save_json(cicadas_dir / "index.json", index_data)
+        save_json(cicadas_dir / "config.json", config_data)
+
+        init.init_cicadas(new_root)
+
+        self.assertEqual(load_json(cicadas_dir / "registry.json"), registry_data)
+        self.assertEqual(load_json(cicadas_dir / "index.json"), index_data)
+        self.assertEqual(load_json(cicadas_dir / "config.json"), config_data)
+
+    def test_init_cicadas_creates_missing_json_on_rerun(self):
+        new_root = self.root / "partial_project"
+        new_root.mkdir()
+
+        init.init_cicadas(new_root)
+        cicadas_dir = new_root / ".cicadas"
+        registry_path = cicadas_dir / "registry.json"
+        index_path = cicadas_dir / "index.json"
+        config_path = cicadas_dir / "config.json"
+        registry_path.unlink()
+        index_path.unlink()
+        config_path.unlink()
+
+        init.init_cicadas(new_root)
+
+        registry = load_json(registry_path)
+        self.assertEqual(registry["schema_version"], "2.0")
+        self.assertEqual(registry["initiatives"], {})
+        self.assertEqual(registry["branches"], {})
+
+        index = load_json(index_path)
+        self.assertEqual(index["schema_version"], "2.0")
+        self.assertEqual(index["entries"], [])
+
+        config = load_json(config_path)
+        self.assertEqual(config["project_name"], "partial_project")
+        self.assertFalse(config["auto_worktrees"]["initiatives"])
 
     def test_install_hooks_with_git_dir(self):
         """Hook installation loop runs when .git/hooks/ exists."""

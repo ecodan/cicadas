@@ -96,6 +96,15 @@ def load_config() -> dict:
     return load_json(get_registry_dir() / "config.json")
 
 
+def active_dir_name_for_branch(branch_name: str, initiative: str | None = None) -> str:
+    """Return the active spec directory name for a branch or initiative key."""
+    if initiative:
+        return initiative
+    if "/" in branch_name:
+        return branch_name.split("/", 1)[1]
+    return branch_name
+
+
 REPO_METADATA_FILENAME = "repo.json"
 REPO_TREE_FILENAME = "repo-tree.jsonl"
 REPO_CONTEXT_FILENAME = "repo-context.md"
@@ -781,6 +790,7 @@ def generate_repo_context(repo_metadata: dict, repo_tree: list[dict] | None = No
 def collect_code_context(root: Path, modules: list[str], repo_tree: list[dict] | None = None) -> dict[str, str]:
     code_context: dict[str, str] = {}
     matched_any = False
+    root = root.resolve()
     normalized_modules = [module.strip() for module in modules if module.strip()]
     for mod in normalized_modules:
         mod_path = root / "src" / mod.replace(".", "/")
@@ -788,10 +798,18 @@ def collect_code_context(root: Path, modules: list[str], repo_tree: list[dict] |
             mod_path = root / mod.replace(".", "/")
 
         if mod_path.exists():
+            resolved_mod_path = mod_path.resolve()
+            try:
+                resolved_mod_path.relative_to(root)
+            except ValueError:
+                continue
             matched_any = True
-            for py_file in mod_path.glob("**/*.py"):
-                rel_path = py_file.relative_to(root)
-                code_context[str(rel_path)] = py_file.read_text()
+            for py_file in resolved_mod_path.glob("**/*.py"):
+                try:
+                    rel_path = py_file.resolve().relative_to(root)
+                    code_context[str(rel_path)] = py_file.read_text()
+                except (OSError, ValueError):
+                    continue
 
     if matched_any or not repo_tree:
         return code_context
@@ -805,8 +823,16 @@ def collect_code_context(root: Path, modules: list[str], repo_tree: list[dict] |
     ]
     for rel_str in high_signal_files[:25]:
         path = root / rel_str
-        if path.exists():
-            code_context[rel_str] = path.read_text()
+        try:
+            resolved_path = path.resolve()
+            resolved_path.relative_to(root)
+        except ValueError:
+            continue
+        if resolved_path.exists():
+            try:
+                code_context[rel_str] = resolved_path.read_text()
+            except OSError:
+                continue
     return code_context
 
 

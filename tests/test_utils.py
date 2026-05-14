@@ -124,6 +124,26 @@ class TestUtils(CicadasTest):
         self.assertEqual(scope["neighbor_slices"], ["accounts"])
         self.assertIn("slices/accounts/boundaries.md", scope["canon_doc_scope"])
 
+    def test_active_dir_name_for_branch_prefers_initiative(self):
+        self.assertEqual(utils.active_dir_name_for_branch("fix/my-bug", "tracked-init"), "tracked-init")
+        self.assertEqual(utils.active_dir_name_for_branch("fix/my-bug"), "my-bug")
+        self.assertEqual(utils.active_dir_name_for_branch("standalone"), "standalone")
+
+    def test_collect_code_context_rejects_out_of_repo_module_paths(self):
+        outside = self.root.parent / f"{self.root.name}-outside"
+        outside.mkdir()
+        try:
+            (outside / "leak.py").write_text("SECRET = True\n")
+
+            context = utils.collect_code_context(self.root, ["../" + outside.name])
+
+            self.assertEqual(context, {})
+        finally:
+            if outside.exists():
+                for child in outside.iterdir():
+                    child.unlink()
+                outside.rmdir()
+
 
 class TestGetRegistryRoot(CicadasTest):
     def test_primary_worktree_returns_self(self):
