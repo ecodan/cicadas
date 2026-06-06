@@ -86,7 +86,7 @@ After installing, run the interactive tutorial to see the full Cicadas workflow 
 
 Or, if you initialized Cicadas yourself and skipped the prompt:
 
-> 💬 **Tell your agent:** *"cicadas init --tutorial"*
+> 💬 **Tell your agent:** *"cicadas tutorial"*
 
 The tutorial walks you through all 7 steps with mock output so you know exactly what to expect before touching real code.
 
@@ -103,6 +103,19 @@ Tell your agent what you want to build. Cicadas creates a draft folder and begin
 > 💬 **Tell your agent:** *"Start an initiative called \<name\>"*
 
 The agent runs a brief start flow (confirms the name, asks whether the feature uses LLMs, sets up your PR preference) and then moves into spec drafting.
+
+#### What type of initiative?
+
+Not all work needs the full spec suite. Choose the path that matches the scope of the change:
+
+| Type | When to use | Specs required | Prompt                                      |
+| :--- | :--- | :--- |:--------------------------------------------|
+| **Full Initiative** | A meaningful new feature, significant refactor, or cross-cutting change | Full suite: PRD → UX → Tech → Approach → Tasks | *"Start an initiative called \<name\>"*     |
+| **Tech Initiative** | A technical change with no user-facing UX (e.g. infra, migration, performance) | PRD → Tech → Approach → Tasks (UX skipped) | *"Start a tech initiative called \<name\>"* |
+| **Tweak** | A small improvement, < ~100 lines | Single compact tweaklet doc | *"Start a tweak called \<name\>"*           |
+| **Bug** | An isolated defect fix | Single compact buglet doc | *"Start a bug fix called \<name\>"*         |
+
+Tweaks and bugs bypass the full Emergence phase — the agent drafts a single lightweight doc and moves straight to implementation. They also fork directly from `main` rather than creating a dedicated initiative branch.
 
 ### Step 2 — Define specs (agent-guided)
 
@@ -203,22 +216,14 @@ The **Cicadas** toolset manages the `.cicadas/` directory:
     │       └── events.jsonl    # Append-only event log (lifecycle + agent events)
     ├── drafts/                 # Staging area for new initiatives
     ├── archive/                # Expired specs (historical record)
-    ├── graph/                  # Optional local code graph artifacts + usage log
-    │   ├── codegraph.sqlite
-    │   ├── metadata.json       # Build freshness, coverage, symbol counts, seeded areas
-    │   ├── area-plan.json      # Deterministic routing areas chosen for this repo/build
-    │   ├── progress.json       # Current build snapshot with elapsed time and ETA
-    │   ├── progress-log.jsonl  # Append-only build progress history
-    │   ├── spool/              # Streamed JSONL nodes/edges written during build
-    │   └── tools/              # Extractor artifacts such as Java semantic batch logs
     └── registry.json           # Active initiatives & branch registry
 ```
 
 ### Additional Resources
 
-For the full methodology specification, see:
+For the full practitioner reference (all commands, flags, brownfield/bootstrap flows, and advanced configuration), see:
 
-📘 **[Cicadas Method Specification](docs/cicadas-method-general.md)**
+📘 **[Cicadas User Guide](docs/cicadas-user-manual.md)**
 
 For a comparison of the Cicadas Method to other approaches, see:
 
