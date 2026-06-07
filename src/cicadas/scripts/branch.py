@@ -7,6 +7,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+import tracing
 from tokens import append_entry
 from utils import (
     WorktreeDirtyError,
@@ -94,120 +95,131 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
     default_branch = get_default_branch()
     policy = worktree_policy(load_config())
 
-    if name in registry.get("branches", {}):
-        print(f"[ERR]  Branch {name} already registered.")
-        return
+    tracer = tracing.init_tracer(load_config())
+    parent_ctx = tracing.parent_context_for_initiative(initiative) if initiative else None
 
-    # Check for module overlaps
-    my_mods = {m.strip() for m in modules.split(",") if m.strip()}
-    conflicts = []
-    for b_name, b_info in registry.get("branches", {}).items():
-        overlap = my_mods.intersection(set(b_info.get("modules", [])))
-        if overlap:
-            conflicts.append(f"{b_name} (Overlaps: {', '.join(overlap)})")
+    with tracer.start_as_current_span("cicadas.branch.create", context=parent_ctx) as span:
+        span.set_attribute("cicadas.branch", name)
+        if initiative:
+            span.set_attribute("cicadas.initiative", initiative)
+        span.set_attribute("cicadas.modules", modules)
 
-    # Determine parent branch
-    if from_branch:
-        parent = from_branch
-    elif name.startswith("fix/") or name.startswith("tweak/") or name.startswith("skill/"):
-        parent = default_branch
-    elif initiative:
-        parent = f"initiative/{initiative}"
-    else:
-        parent = None
-    parent_ref = _resolve_parent_ref(root, parent)
+        if name in registry.get("branches", {}):
+            print(f"[ERR]  Branch {name} already registered.")
+            return
 
-    # --- Worktree logic: decide path before creating git branch ---
-    use_worktree = False
-    worktree_target = None
-    wt_path_str = None
-    if force_worktree:
-        use_worktree = True
-        worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
-    elif not no_worktree:
-        is_lightweight = name.startswith(("fix/", "tweak/", "skill/"))
-        if is_lightweight:
-            if policy["lightweight"]:
-                use_worktree = True
-                worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
+        # Check for module overlaps
+        my_mods = {m.strip() for m in modules.split(",") if m.strip()}
+        conflicts = []
+        for b_name, b_info in registry.get("branches", {}).items():
+            overlap = my_mods.intersection(set(b_info.get("modules", [])))
+            if overlap:
+                conflicts.append(f"{b_name} (Overlaps: {', '.join(overlap)})")
+
+        # Determine parent branch
+        if from_branch:
+            parent = from_branch
+        elif name.startswith("fix/") or name.startswith("tweak/") or name.startswith("skill/"):
+            parent = default_branch
         elif initiative:
-            approach_path = cicadas / "active" / initiative / "approach.md"
-            partitions = parse_partitions_dag(approach_path)
-            partition = next((p for p in partitions if p["name"] == name), None)
-
-            if partition is None and partitions:
-                print(f"[WARN] Partition '{name}' not found in approach.md partitions block — treating as sequential")
-            elif partition and partition.get("depends_on") == [] and policy["parallel_features"]:
-                use_worktree = True
-                worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
-
-    if use_worktree:
-        # For parallel partitions: create branch WITHOUT switching (stay on parent)
-        # so we can immediately add a worktree pointing at it.
-        branch_cmd = ["git", "branch", name]
-        if parent_ref:
-            branch_cmd.append(parent_ref)
-        subprocess.run(branch_cmd, check=True, cwd=root)
-        try:
-            subprocess.run(["git", "push", "-u", "origin", name], check=True, cwd=root)
-            print(f"[INFO] Pushed {name} to remote.")
-        except subprocess.CalledProcessError:
-            print(f"[WARN] Could not push {name} to remote. Push manually: git push -u origin {name}")
-        # Create worktree
-        try:
-            created = create_worktree(root, name, worktree_target)
-            wt_path_str = str(created)
-            print(f"[OK]   Worktree created: {created}")
-            emit(initiative or name, "worktree.created", {"branch": name, "worktree_path": wt_path_str})
-            _write_context_md(created, cicadas, list(my_mods), initiative)
-            print(f"[INFO] context.md written to worktree root (canon summary + module snapshots + tasks)")
-            print(f"[INFO] Open this worktree in your editor or agent: {created}")
-        except subprocess.CalledProcessError as e:
-            print(f"[ERR]  git worktree add failed: {e}")
-            sys.exit(1)
-    else:
-        # Sequential (or unregistered) partition: standard checkout -b
-        checkout_cmd = ["git", "checkout", "-b", name]
-        if parent_ref:
-            checkout_cmd.append(parent_ref)
-        subprocess.run(checkout_cmd, check=True, cwd=root)
-        try:
-            subprocess.run(["git", "push", "-u", "origin", name], check=True, cwd=root)
-            print(f"[INFO] Pushed {name} to remote.")
-        except subprocess.CalledProcessError:
-            print(f"[WARN] Could not push {name} to remote. Push manually: git push -u origin {name}")
-        _write_context_md(root, cicadas, list(my_mods), initiative)
-        print(f"[INFO] context.md written to project root (canon summary + module snapshots + tasks)")
-
-    # Register
-    branch_info = {
-        "intent": intent,
-        "modules": list(my_mods),
-        "owner": owner,
-        "created_at": datetime.now(UTC).isoformat(),
-    }
-    if wt_path_str:
-        branch_info["worktree_path"] = wt_path_str
-    if initiative:
-        if initiative not in registry.get("initiatives", {}):
-            print(f"[WARN] Initiative {initiative} not found.")
+            parent = f"initiative/{initiative}"
         else:
-            branch_info["initiative"] = initiative
+            parent = None
+        parent_ref = _resolve_parent_ref(root, parent)
 
-    registry.setdefault("branches", {})[name] = branch_info
-    save_json(get_registry_dir() / "registry.json", registry)
-    emit(initiative or name, "branch.created", {"branch": name, "intent": intent, "modules": list(my_mods)})
+        # --- Worktree logic: decide path before creating git branch ---
+        use_worktree = False
+        worktree_target = None
+        wt_path_str = None
+        if force_worktree:
+            use_worktree = True
+            worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
+        elif not no_worktree:
+            is_lightweight = name.startswith(("fix/", "tweak/", "skill/"))
+            if is_lightweight:
+                if policy["lightweight"]:
+                    use_worktree = True
+                    worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
+            elif initiative:
+                approach_path = cicadas / "active" / initiative / "approach.md"
+                partitions = parse_partitions_dag(approach_path)
+                partition = next((p for p in partitions if p["name"] == name), None)
 
-    # Active dir is keyed by initiative name, not branch name.
-    active_name = active_dir_name_for_branch(name, initiative)
-    (cicadas / "active" / active_name).mkdir(parents=True, exist_ok=True)
+                if partition is None and partitions:
+                    print(f"[WARN] Partition '{name}' not found in approach.md partitions block — treating as sequential")
+                elif partition and partition.get("depends_on") == [] and policy["parallel_features"]:
+                    use_worktree = True
+                    worktree_target = Path(worktree_dir_override) if worktree_dir_override else worktree_path(root, name)
 
-    # Write implementation/branch-start token boundary entry
-    append_entry(cicadas / "active" / active_name / "tokens.json", initiative=active_name, phase="implementation", subphase=name, source="unavailable")
+        if use_worktree:
+            # For parallel partitions: create branch WITHOUT switching (stay on parent)
+            # so we can immediately add a worktree pointing at it.
+            branch_cmd = ["git", "branch", name]
+            if parent_ref:
+                branch_cmd.append(parent_ref)
+            subprocess.run(branch_cmd, check=True, cwd=root)
+            try:
+                subprocess.run(["git", "push", "-u", "origin", name], check=True, cwd=root)
+                print(f"[INFO] Pushed {name} to remote.")
+            except subprocess.CalledProcessError:
+                print(f"[WARN] Could not push {name} to remote. Push manually: git push -u origin {name}")
+            # Create worktree
+            try:
+                created = create_worktree(root, name, worktree_target)
+                wt_path_str = str(created)
+                print(f"[OK]   Worktree created: {created}")
+                emit(initiative or name, "worktree.created", {"branch": name, "worktree_path": wt_path_str})
+                _write_context_md(created, cicadas, list(my_mods), initiative)
+                print(f"[INFO] context.md written to worktree root (canon summary + module snapshots + tasks)")
+                print(f"[INFO] Open this worktree in your editor or agent: {created}")
+            except subprocess.CalledProcessError as e:
+                print(f"[ERR]  git worktree add failed: {e}")
+                sys.exit(1)
+        else:
+            # Sequential (or unregistered) partition: standard checkout -b
+            checkout_cmd = ["git", "checkout", "-b", name]
+            if parent_ref:
+                checkout_cmd.append(parent_ref)
+            subprocess.run(checkout_cmd, check=True, cwd=root)
+            try:
+                subprocess.run(["git", "push", "-u", "origin", name], check=True, cwd=root)
+                print(f"[INFO] Pushed {name} to remote.")
+            except subprocess.CalledProcessError:
+                print(f"[WARN] Could not push {name} to remote. Push manually: git push -u origin {name}")
+            _write_context_md(root, cicadas, list(my_mods), initiative)
+            print(f"[INFO] context.md written to project root (canon summary + module snapshots + tasks)")
 
-    print(f"[OK]   Branch registered: {name}")
-    if conflicts:
-        print(f"[WARN] Module overlaps detected: {'; '.join(conflicts)}")
+        # Register
+        branch_info = {
+            "intent": intent,
+            "modules": list(my_mods),
+            "owner": owner,
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        if wt_path_str:
+            branch_info["worktree_path"] = wt_path_str
+        if initiative:
+            if initiative not in registry.get("initiatives", {}):
+                print(f"[WARN] Initiative {initiative} not found.")
+            else:
+                branch_info["initiative"] = initiative
+
+        registry.setdefault("branches", {})[name] = branch_info
+        save_json(get_registry_dir() / "registry.json", registry)
+        emit(initiative or name, "branch.created", {"branch": name, "intent": intent, "modules": list(my_mods)})
+
+        # Active dir is keyed by initiative name, not branch name.
+        active_name = active_dir_name_for_branch(name, initiative)
+        (cicadas / "active" / active_name).mkdir(parents=True, exist_ok=True)
+
+        # Write implementation/branch-start token boundary entry
+        append_entry(cicadas / "active" / active_name / "tokens.json", initiative=active_name, phase="implementation", subphase=name, source="unavailable")
+
+        print(f"[OK]   Branch registered: {name}")
+        if conflicts:
+            print(f"[WARN] Module overlaps detected: {'; '.join(conflicts)}")
+
+    tracing.flush()
 
 
 if __name__ == "__main__":

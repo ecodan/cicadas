@@ -11,7 +11,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from utils import get_registry_root
+import tracing
+from utils import get_registry_root, load_config
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] <%(filename)s:%(lineno)s> %(message)s"
 logging.basicConfig(format=LOG_FORMAT, level=logging.WARNING)
@@ -28,6 +29,21 @@ def _current_branch() -> str:
         ).decode().strip()
     except Exception:
         return ""
+
+
+def _emit_otel_span(initiative: str, event_type: str, data: dict) -> None:
+    try:
+        tracer = tracing.init_tracer(load_config())
+        parent_ctx = tracing.parent_context_for_initiative(initiative)
+        with tracer.start_as_current_span(f"cicadas.{event_type}", context=parent_ctx) as span:
+            span.set_attribute("cicadas.initiative", initiative)
+            span.set_attribute("cicadas.event.type", event_type)
+            for key, value in data.items():
+                if isinstance(value, (str, int, float, bool)):
+                    span.set_attribute(f"cicadas.event.{key}", value)
+        tracing.flush()
+    except Exception:
+        pass
 
 
 def emit_event(initiative: str, event_type: str, data: dict) -> None:
@@ -53,6 +69,8 @@ def emit_event(initiative: str, event_type: str, data: dict) -> None:
             f.flush()
         finally:
             fcntl.flock(f, fcntl.LOCK_UN)
+
+    _emit_otel_span(initiative, event_type, data)
 
 
 def main() -> int:
