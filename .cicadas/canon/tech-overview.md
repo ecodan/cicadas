@@ -25,6 +25,7 @@ Cicadas is a filesystem-based state machine that orchestrates development via Gi
 - **Front Matter Refresh During Clarify and Reflect** — `emergence/clarify.md` now refreshes approved front matter fields instead of the removed `steps_completed` metadata, and Reflect guidance treats front matter as part of the live spec contract that must stay current as implementation changes the plan.
 - **Event Log** — Each initiative carries an append-only `events.jsonl` at `.cicadas/active/{initiative}/events.jsonl` (moves to archive with specs). `emit_event.py` is the sole write path; uses `fcntl.flock` for concurrent-write safety. `get_events.py` is the sole read interface; exits 0 + empty output if the file is absent (design invariant: consumers never read `events.jsonl` directly, ensuring future storage refactors don't break callers). All lifecycle scripts emit typed events automatically via `utils.emit()` (non-fatal; failure never crashes a script). Implementation agents emit `task.complete` and `partition.complete` per Rules 9–10 in `implementation.md`.
 - **Machine-Testable Partition Specs** — `approach.md` template includes **Artifact Type**, **How to Run**, and **Acceptance Criteria** subsections per partition block. `emergence/approach.md` Step 4b guides automated generation of these subsections by artifact type (unit tests, integration tests, visual output, CLI output, etc.). Together these fields provide enough information for an evaluator agent to verify partition completion without reading the full spec.
+- **Opt-In OpenTelemetry Tracing** — `tracing.py` encapsulates all OTel SDK interaction behind a `_NullTracer`/`_NullSpan` null-object fallback (Null Object Pattern), so every instrumented call site writes `with tracer.start_as_current_span(...) as span:` unconditionally regardless of whether the SDK is installed or tracing is enabled (`config.json["tracing"]["enabled"]`, default `false`). The OTel packages (`opentelemetry-api`, `opentelemetry-sdk`, `opentelemetry-exporter-otlp-proto-http`) are an optional `tracing` dependency group in `pyproject.toml`, lazily imported only inside `init_tracer()` so the module stays importable when the SDK is absent. `SimpleSpanProcessor` (not `BatchSpanProcessor`) exports synchronously on span end — appropriate for short-lived CLI subprocesses — with `force_flush(5000)` as a safety net via `tracing.flush()`. Because each `cicadas` command runs as its own subprocess, OTel context cannot propagate in-band; cross-process trace continuity is achieved by persisting the kickoff span's `{trace_id, span_id}` hex pair into `registry.json["initiatives"][name]["trace_context"]` (`store_trace_context`/`get_trace_context`), which subsequent commands read back via `parent_context_for_initiative()` to reconstruct a `NonRecordingSpan` parent context. All tracing code is wrapped in `try/except Exception` so a broken backend, missing SDK, or corrupt `trace_context` never affects CLI exit codes, JSONL writes, or — critically — causes a command to execute more than once (the `cicadas.command.{name}` wrapper in `command_registry._handle_script_command` keeps `_run_script` outside any exception path that could re-trigger it).
 
 ---
 
@@ -78,21 +79,22 @@ bash install.sh --update
 ## CLI Orchestration
 
 The system uses a set of Python scripts in `src/cicadas/scripts/`:
-- `init.py`: Initializes `.cicadas/` directory on fresh install (idempotent; called by `install.sh`).
-- `kickoff.py`: Promotes drafts (including `lifecycle.json` when present) and registers initiatives.
-- `branch.py`: Creates and registers feature/fix/tweak branches. Writes `context.md` (canon summary + scoped module snapshots + approach.md + tasks.md) to the branch's working directory on creation for all branch types.
+- `init.py`: Initializes `.cicadas/` directory on fresh install (idempotent; called by `install.sh`); seeds `config.json` with a `tracing` stub (`enabled: false`, `endpoint`, `service_name`, `headers`).
+- `tracing.py`: Optional OpenTelemetry tracing facade — `init_tracer()`, `flush()`, `get_trace_context()`/`store_trace_context()`/`parent_context_for_initiative()` (cross-process trace continuity via `registry.json`), `span_context_hex()`; returns `_NullTracer`/`_NullSpan` when disabled or the SDK is absent so call sites are unconditional.
+- `kickoff.py`: Promotes drafts (including `lifecycle.json` when present) and registers initiatives. Emits the root `cicadas.initiative.kickoff` span and persists its `trace_context` into `registry.json` so all subsequent per-process spans for the initiative share one trace.
+- `branch.py`: Creates and registers feature/fix/tweak branches. Writes `context.md` (canon summary + scoped module snapshots + approach.md + tasks.md) to the branch's working directory on creation for all branch types. Emits a `cicadas.branch.create` span linked to the initiative's stored trace context.
 - `status.py`: Reports global project state; when `lifecycle.json` exists for an initiative, reports Merged (branch pairs) and Next (suggested step) via git-based merge detection.
 - `create_lifecycle.py`: Creates `lifecycle.json` in drafts or active with PR boundaries and default steps.
 - `open_pr.py`: Opens a PR from current branch (tries `gh` → `glab` → Bitbucket URL → fallback); host-agnostic. Pre-flight checks `review.md` verdict: blocks on `BLOCK`, warns on `PASS WITH NOTES`.
 - `review.py`: Reads `.cicadas/active/{initiative}/review.md`, parses the verdict (`PASS`, `PASS WITH NOTES`, `BLOCK`), and exits with 0 (safe to merge), 1 (BLOCK), or 2 (no review.md found). Imported by `open_pr.py`.
 - `update_index.py`: Logs changes to the ledger.
-- `archive.py`: Concludes work, deregisters branches, and expires specs (includes `lifecycle.json` when present).
+- `archive.py`: Concludes work, deregisters branches, and expires specs (includes `lifecycle.json` when present). Emits `cicadas.initiative.archive` or `cicadas.branch.archive` spans linked to the initiative's trace context.
 - `abort.py`: Context-aware rollback for any branch type.
 - `signal.py`: Broadcasts breaking changes across peer branches.
 - `tokens.py`: Append-only token usage log API (`init_log`, `append_entry`, `load_log`); called by `kickoff.py` and `branch.py` at phase boundaries.
 - `history.py`: Generates HTML timeline of completed initiatives; includes per-initiative token summary when `tokens.json` is present.
 - `check.py`: Validates for module conflicts across active branches.
-- `emit_event.py`: Appends a typed event to `.cicadas/active/{initiative}/events.jsonl` with `fcntl.flock` concurrent-write safety. Called by lifecycle scripts via `utils.emit()` and directly by agents.
+- `emit_event.py`: Appends a typed event to `.cicadas/active/{initiative}/events.jsonl` with `fcntl.flock` concurrent-write safety. Called by lifecycle scripts via `utils.emit()` and directly by agents. Also emits a `cicadas.{event.type}` OTel span (non-fatal, `try/except`-wrapped) carrying `cicadas.event.*` attributes for each scalar payload field.
 - `get_events.py`: Reads and filters `events.jsonl`; exits 0 + empty output if file absent. Supports `--type` prefix filter, `--since` ISO timestamp, and `--last N` tail.
 - `tests/test_templates.py`: Verifies the shared front matter contract in the five core templates, the branch-start cue in `templates/canon-summary.md`, and Clarify's use of the current front matter contract.
 
@@ -107,6 +109,7 @@ The system uses a set of Python scripts in `src/cicadas/scripts/`:
 - **Significance Check**: Lightweight paths must be evaluated for Canon updates before archiving.
 - **Relative Symlinks**: Agent integrations use relative symlinks for portability across machines with different mount paths.
 - **Non-Interactive Pipe Support**: Installer detects `curl | bash` context (`[ -t 0 ]`) and skips interactive prompts, printing manual setup guidance instead.
+- **Tracing Is Always Non-Fatal**: Any code that touches `tracing.*` (init, span attributes, flush, context persistence) must be wrapped in `try/except Exception` and must never gate, retry, or duplicate the underlying operation. Lifecycle scripts call `tracing.init_tracer(load_config())` once per invocation, wrap their body in `with tracer.start_as_current_span(...) as span:`, and call `tracing.flush()` only on success paths (early-return/validation checks happen before the span is opened).
 
 ---
 

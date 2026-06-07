@@ -47,6 +47,7 @@ Standard development processes often lead to "documentation rot" or "unplanned w
 | **Compact Context Contract** | Core initiative specs now include machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved context from the spec files themselves instead of re-reading full drafting threads. | Shipped |
 | **Context Reset Workflow** | Cicadas now documents Branch Reset, Phase Reset, and Partition Reset rules that re-anchor agents on `canon/summary.md`, spec front matter, and indexed sections first. Hosts may clear or compact context opportunistically, but file-backed state remains authoritative. | Shipped |
 | **Template Contract Verification** | `tests/test_templates.py` verifies the front matter contract, Clarify's front matter refresh guidance, and the branch-start routing cue in `canon-summary.md`. | Shipped |
+| **Opt-In Distributed Tracing** | OpenTelemetry instrumentation across the lifecycle CLI (kickoff, branch, archive, emit-event, every `cicadas` subcommand) produces a single linked trace per initiative, exported via OTLP HTTP to any compatible backend (Jaeger, Phoenix, Arize, etc.). Disabled by default; enabled via `tracing.enabled` in `.cicadas/config.json`. Requires no runtime dependency when off — falls back to a no-op tracer when the SDK is absent or tracing is disabled. | Shipped |
 
 ## Out of Scope (Intentional)
 

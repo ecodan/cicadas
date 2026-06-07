@@ -11,7 +11,7 @@ Cicadas is a spec-driven development orchestrator for human-AI teams that treats
 
 - Filesystem state machine: all state lives in `.cicadas/` (registry.json, active/, archive/, canon/); no database or server.
 - Logic/state separation: the Skill (`src/cicadas/`) is portable and installable; the state (`.cicadas/`) stays in the project.
-- Scripts are pure Python stdlib — no external dependencies at runtime; only `git` and Python 3.11+ required.
+- Scripts are pure Python stdlib — no required external dependencies at runtime; only `git` and Python 3.11+ required. Optional `tracing` extras group (`opentelemetry-api/sdk/exporter-otlp-proto-http`) adds opt-in OTel distributed tracing (off by default; null-object fallback when absent or disabled).
 - Agent operations (Reflect, Code Review, Synthesis) are LLM tasks defined in `emergence/` markdown prompts, not scripts. Clarify supports intake via Q&A, doc, or Loom. Start flow includes Building on AI? (yes/no) and eval status; stored in emergence-config.json. Initiatives: optional eval spec (eval-spec.md + template); Approach asks eval placement. Tweaks/bugs: optional eval/benchmark reminder. Cicadas does not run evals.
 - Context injection: `branch.py` writes `context.md` at branch creation time (canon summary + scoped module snapshots + specs); gitignored.
 - Hint subsystem: `utils.py` provides `hints_enabled(args, config)` (priority: `--no-hints` flag → `config['hints'] == False` → not TTY → True) and `print_hint(lines, args, config)` (66-char cyan box). Every lifecycle script (kickoff, branch, archive, update_index, open_pr, init) prints a next-step hint after its main output. `status.py` infers and prints a hint from registry state. Hints auto-suppress in non-TTY environments (CI/pipes).
@@ -38,6 +38,7 @@ scripts/utils.py: shared utilities (root detection, git helpers, JSON I/O, workt
 scripts/tutorial.py: interactive 7-step tutorial; invoked by `cicadas tutorial` or `init.py --tutorial`; each step prints banner + concept + agent prompt + explanatory text + checkmark + pause; completion screen shows Quick Reference cheatsheet
 scripts/emit_event.py: append typed event to events.jsonl with fcntl.flock; CLI: --initiative, --type, --data
 scripts/get_events.py: read/filter events.jsonl; CLI: --initiative, --type, --since, --last; exits 0+empty if absent
+scripts/tracing.py: optional OTel tracing facade (init_tracer, flush, get/store_trace_context, parent_context_for_initiative, span_context_hex); _NullTracer/_NullSpan fallback when disabled or SDK absent; persists {trace_id, span_id} in registry.json for cross-process trace continuity (each cicadas command is its own subprocess)
 emergence/: markdown prompts for Clarify, UX, Tech, Approach (incl. Step 4b: Artifact Type, How to Run, AC generation per partition), Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec (Building on AI), Code Review; start-flow includes Building on AI? and eval status
 emergence/clarify.md: refreshes approved front matter fields as sections are completed; no longer relies on `steps_completed`
 templates/approach.md: partition blocks include Artifact Type, How to Run, and Acceptance Criteria subsections
@@ -52,6 +53,7 @@ tests/test_templates.py: regression checks for the front matter contract and com
 - Refresh front matter during Reflect when the meaning of a spec changes.
 - Code Review (writes review.md) after Reflect on feat branches; open_pr.py enforces BLOCK.
 - Hints are on by default; disable globally via `hints: false` in `.cicadas/config.json`, or per-command via `--no-hints` flag.
+- Tracing is opt-in via `tracing.enabled: true` in `.cicadas/config.json`; all `tracing.*` calls must be wrapped in `try/except Exception` and must never duplicate or gate the wrapped operation — only `_run_script`-style work runs; tracing failures are swallowed.
 - Tests use real temp filesystems + real git repos (no mocks for I/O); base class in `tests/base.py`.
 - PYTHONPATH=src/cicadas/scripts:tests for all test runs; system python3 (not .venv) for tests.
 - Ruff for lint/format; pre-commit hooks enforced.

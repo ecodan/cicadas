@@ -1,0 +1,39 @@
+{
+  "name": "otel-instrumentation",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Add opt-in OpenTelemetry distributed tracing to the Cicadas CLI so each initiative produces a single linked trace from kickoff through archive, exported via OTLP HTTP to any configurable backend.",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-06-07T02:00:50.279566+00:00"
+  },
+  "timestamp": "20260607-033615",
+  "associated_branches": {
+    "feat/tracing-core": {
+      "intent": "Create the core tracing.py module with OTel null-object fallback, add the optional tracing dependency group to pyproject.toml, and add the tracing config stub to init.py's generated config.json template.",
+      "modules": [
+        "tests/test_tracing.py",
+        "src/cicadas/scripts/tracing.py",
+        "src/cicadas/scripts/init.py",
+        "pyproject.toml"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-06-07T02:04:17.196087+00:00",
+      "worktree_path": "/Users/dan/dev/code/ai/cicadas-feat-tracing-core",
+      "initiative": "otel-instrumentation"
+    },
+    "feat/tracing-instrumentation": {
+      "intent": "Instrument kickoff, branch, archive, emit_event, and command_registry with OTel spans linked via persisted trace_context, plus LLM call spans and graceful fallback when the SDK is absent",
+      "modules": [
+        "src/cicadas/scripts/command_registry.py",
+        "src/cicadas/scripts/kickoff.py",
+        "src/cicadas/scripts/branch.py",
+        "src/cicadas/scripts/emit_event.py",
+        "src/cicadas/scripts/archive.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-06-07T02:24:30.543462+00:00",
+      "initiative": "otel-instrumentation"
+    }
+  }
+}
