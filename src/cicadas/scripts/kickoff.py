@@ -18,14 +18,14 @@ def kickoff(name, intent, owner="unknown", force_worktree=False):
     policy = worktree_policy(load_config())
     tracer = tracing.init_tracer(load_config())
 
+    if name in registry.get("initiatives", {}):
+        print(f"[ERR]  Initiative {name} already exists.")
+        return
+
     with tracer.start_as_current_span("cicadas.initiative.kickoff") as span:
         span.set_attribute("cicadas.initiative", name)
         span.set_attribute("cicadas.intent", intent)
         span.set_attribute("cicadas.owner", owner)
-
-        if name in registry.get("initiatives", {}):
-            print(f"[ERR]  Initiative {name} already exists.")
-            return
 
         active_dir = cicadas / "active" / name
         active_dir.mkdir(parents=True, exist_ok=True)
