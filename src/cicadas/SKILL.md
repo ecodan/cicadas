@@ -62,6 +62,7 @@ project-root/
 │   │   ├── tasks.md                  # Active spec template
 │   │   ├── buglet.md                 # Lightweight bug spec template
 │   │   ├── tweaklet.md               # Lightweight tweak spec template
+│   │   ├── handoff.md                # Context-handoff artifact for directive reset checkpoints
 │   │   └── skill-SKILL.md            # Agent Skill SKILL.md scaffold template
 │   └── emergence/                    # Instruction modules for spec authoring
 │       ├── EMERGENCE.md              # Emergence phase overview
@@ -214,6 +215,32 @@ Context resets are workflow boundaries, not magic memory deletion. A skill canno
 3. Treat other partitions as out of scope unless compatibility, sequencing, or ambiguity requires expansion.
 4. Escalate to broader spec loading only when the compact partition context is insufficient.
 
+### Directive Handoff Checkpoints
+
+The Reset rules above are conditional ("if the host supports it, ask…") because a skill cannot force a host to clear or compact. But at four specific workflow boundaries the work that follows is **execution-driven** — structured, derivable from approved artifacts, and not dependent on continuous Builder dialogue — so Cicadas treats the reset as a **directive checkpoint** rather than an optional ask. (Note: an agent has no tool to self-trigger a host-level `/clear`/`/compact`; the only fully agent-controlled equivalent is delegating to a fresh subagent with an isolated context.)
+
+**The four execution-driven boundaries**:
+
+| Boundary | Why it's execution-driven |
+|---|---|
+| After drafting & approving Approach + Tasks | Structured/derivable once PRD/UX/Tech are approved — no Builder sparring required to execute it |
+| After Kickoff | Mechanical, script-driven; light context either way |
+| After each partition (feature branch) completion | Natural isolation boundary already (separate `feat/` branch / optional worktree) |
+| After Initiative completion | Canon synthesis is heavy lifting a subagent can absorb; final commit/review stays with the Builder per the Agent Autonomy Boundaries table |
+
+> **PRD/UX/Tech-design is intentionally excluded.** That phase is the Builder-sparring loop the Emergence Hard Stop Rule protects (one spec at a time, approval between each). Adding a directive checkpoint there would either interrupt the dialogue with reset prompts or hand drafting to a subagent and flatten the sparring into one-shot generation. It keeps the conditional **Phase Reset** guidance above, untouched.
+
+**At each of the four boundaries, the agent MUST**:
+1. Refresh front matter on the affected specs per the relevant Reset rule above (Phase/Partition Reset steps for front matter refresh still apply).
+2. Write a `handoff.md` (see template below) capturing what just completed and what comes next.
+3. Then fork on host capability:
+   - **Host supports spawning isolated subagents** → delegate the next chunk of work to a fresh subagent, passing the `handoff.md` contents as its self-contained briefing, so the orchestrator's own context stays flat across the boundary (no human pause required — enables long autonomous runs). Before accepting the subagent's output, run the **Code Review** operation as a gate: evaluate the subagent's draft/diff/synthesis against the relevant specs (task completeness, conformance, security/correctness/quality scan, tiered Blocking/Advisory findings) and surface results before proceeding or handing back to the Builder. This compensates for the lost continuous human dialogue during delegated execution.
+   - **Host lacks subagent support** → write the handoff, explicitly recommend the Builder run `/clear` (or the host's equivalent reset), state the exact reload list from the handoff, then resume from it per the Resume rule below.
+
+**`handoff.md` template** (`{cicadas-dir}/templates/handoff.md`): a compact, agent-authored artifact with front matter (`boundary`: one of `approach-tasks | kickoff | partition-complete | initiative-complete`, `initiative`) and sections **Just completed**, **Approved/authoritative state** (pointers to files + headings, not prose copies), **Next action**, **Reload list**, and **Carry forward** (open decisions, deviations, signals to recheck).
+
+**Storage convention**: `.cicadas/active/{initiative}/handoff.md` for in-initiative boundaries (`approach-tasks`, `partition-complete`); `.cicadas/handoff.md` for boundaries that span initiative lifecycles (`kickoff`, `initiative-complete`), since `active/{name}/` may not yet exist (pre-kickoff) or may already be archived (post-completion).
+
 ### Kickoff (Initiative Start)
 **Trigger**: Drafts reviewed and approved.
 ```
@@ -287,11 +314,12 @@ git push origin --delete initiative/{name}
 
 If picking up a session already in progress (new conversation, resumed context):
 
-1. Run `python {cicadas-dir}/scripts/cicadas.py status` to get current state.
-2. Read `.cicadas/active/{initiative}/tasks.md` to find the first unchecked task.
-3. Check for any unread signals in the status output.
-4. Verify you are on the correct registered branch (`git branch --show-current` and cross-check against `registry.json`) before proceeding.
-5. Apply the relevant reset rule before continuing: Branch Reset for a branch resume, or Phase Reset if resuming a spec-writing step.
+1. **Resume from handoff first**: check for `.cicadas/active/{initiative}/handoff.md` and `.cicadas/handoff.md`. If either exists, read it as the authoritative pointer to current state, consume its **Reload list** before opening anything else, then delete or archive the file so it can't linger as stale state someone trusts later. This applies whether the resume is a Builder picking the conversation back up after `/clear` or a freshly spawned subagent starting from the handoff as its prompt.
+2. Run `python {cicadas-dir}/scripts/cicadas.py status` to get current state.
+3. Read `.cicadas/active/{initiative}/tasks.md` to find the first unchecked task.
+4. Check for any unread signals in the status output.
+5. Verify you are on the correct registered branch (`git branch --show-current` and cross-check against `registry.json`) before proceeding.
+6. If no handoff was present, apply the relevant reset rule before continuing: Branch Reset for a branch resume, or Phase Reset if resuming a spec-writing step.
 
 ### Check Status & Signals
 ```
@@ -573,6 +601,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 Use templates in `{cicadas-dir}/templates/` directory:
 - `product-overview.md`, `ux-overview.md`, `tech-overview.md`, `module-snapshot.md`: Canon templates
 - `prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`: Active spec templates
+- `handoff.md`: Compact context-handoff artifact written at directive reset checkpoints (see Directive Handoff Checkpoints)
 - `lifecycle-default.json`, `lifecycle-schema.md`: Per-initiative lifecycle (PR boundaries + steps)
 - `synthesis-prompt.md`: System prompt for canon synthesis
 
