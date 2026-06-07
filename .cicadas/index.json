@@ -143,6 +143,13 @@
         "src/cicadas/scripts",
         "tests"
       ]
+    },
+    {
+      "timestamp": "2026-06-07T02:21:02.314337+00:00",
+      "branch": "feat/tracing-core",
+      "summary": "Created tracing.py core module (NullTracer/NullSpan, init_tracer, trace_context persistence, flush, span helpers) with 23 passing unit tests; added opentelemetry tracing optional-dependency group to pyproject.toml and disabled-by-default tracing config stub to init.py template.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
