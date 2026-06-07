@@ -409,9 +409,27 @@ class TestStatusLifecycleMerge(CicadasTest):
     def test_is_merged_into_true_after_merge(self):
         import subprocess
         subprocess.run(["git", "checkout", "-b", "feat/merged"], cwd=self.root, check=True, capture_output=True)
+        # Diverge from master with a real commit before merging back, so this is a
+        # genuine "did work, then merged" scenario rather than a no-op merge of
+        # identical tips (which is the never-diverged false-positive case).
+        (self.root / "merged.txt").write_text("merged content")
+        subprocess.run(["git", "add", "merged.txt"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "commit", "-m", "feat commit"], cwd=self.root, check=True, capture_output=True)
         subprocess.run(["git", "checkout", "master"], cwd=self.root, capture_output=True)
         subprocess.run(["git", "merge", "feat/merged", "--no-ff", "-m", "merge"], cwd=self.root, check=True, capture_output=True)
         self.assertTrue(status._is_merged_into(self.root, "feat/merged", "master"))
+
+    def test_is_merged_into_false_when_branch_never_diverged(self):
+        """A brand-new branch identical to its target must NOT be reported as merged.
+
+        git merge-base --is-ancestor returns true trivially when source and target
+        tips are identical (zero commits in either direction) — _is_merged_into must
+        not treat that as "merged".
+        """
+        import subprocess
+        subprocess.run(["git", "checkout", "-b", "feat/never-diverged"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", "master"], cwd=self.root, capture_output=True)
+        self.assertFalse(status._is_merged_into(self.root, "feat/never-diverged", "master"))
 
     def test_is_merged_into_false_before_merge(self):
         import subprocess
