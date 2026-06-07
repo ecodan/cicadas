@@ -95,6 +95,10 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
     default_branch = get_default_branch()
     policy = worktree_policy(load_config())
 
+    if name in registry.get("branches", {}):
+        print(f"[ERR]  Branch {name} already registered.")
+        return
+
     tracer = tracing.init_tracer(load_config())
     parent_ctx = tracing.parent_context_for_initiative(initiative) if initiative else None
 
@@ -103,10 +107,6 @@ def create_branch(name, intent, modules, initiative=None, from_branch=None, owne
         if initiative:
             span.set_attribute("cicadas.initiative", initiative)
         span.set_attribute("cicadas.modules", modules)
-
-        if name in registry.get("branches", {}):
-            print(f"[ERR]  Branch {name} already registered.")
-            return
 
         # Check for module overlaps
         my_mods = {m.strip() for m in modules.split(",") if m.strip()}
