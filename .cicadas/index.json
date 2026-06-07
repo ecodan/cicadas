@@ -178,6 +178,13 @@
       "summary": "Fixed false-positive 'Merged' status reporting in status.py: _is_merged_into() now requires source/target tips to differ (in addition to ancestor-reachability), so brand-new branches that haven't diverged from their target are no longer reported as merged.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-06-07T15:13:31.444210+00:00",
+      "branch": "tweak/context-handoff",
+      "summary": "Added directive context-handoff checkpoints at 4 execution-driven boundaries, a reusable handoff.md template, and a resume-from-handoff rule to SKILL.md",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
