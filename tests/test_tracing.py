@@ -1,11 +1,27 @@
 # Copyright 2026 Cicadas Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+import argparse
 import json
+import sys
+from unittest.mock import patch
 
 import tracing
 from base import CicadasTest
-from utils import load_json
+from utils import load_json, save_json
+
+_BLOCKED_OTEL_MODULES = {
+    "opentelemetry": None,
+    "opentelemetry.exporter": None,
+    "opentelemetry.exporter.otlp": None,
+    "opentelemetry.exporter.otlp.proto": None,
+    "opentelemetry.exporter.otlp.proto.http": None,
+    "opentelemetry.exporter.otlp.proto.http.trace_exporter": None,
+    "opentelemetry.sdk": None,
+    "opentelemetry.sdk.resources": None,
+    "opentelemetry.sdk.trace": None,
+    "opentelemetry.sdk.trace.export": None,
+}
 
 
 class TestNullSpan(CicadasTest):
@@ -155,3 +171,37 @@ class TestSpanContextHex(CicadasTest):
 
     def test_returns_none_for_span_without_get_span_context(self):
         self.assertIsNone(tracing.span_context_hex(object()))
+
+
+class TestImportErrorFallback(CicadasTest):
+    """Verify graceful fallback when the opentelemetry SDK is not installed."""
+
+    def setUp(self):
+        super().setUp()
+        tracing._PROVIDER = None
+        tracing._TRACER = None
+
+    def tearDown(self):
+        tracing._PROVIDER = None
+        tracing._TRACER = None
+        super().tearDown()
+
+    def test_init_tracer_falls_back_to_null_tracer_when_sdk_absent(self):
+        config = {"tracing": {"enabled": True, "endpoint": "http://localhost:4318/v1/traces"}}
+        with patch.dict(sys.modules, _BLOCKED_OTEL_MODULES):
+            tracer = tracing.init_tracer(config)
+        self.assertIsInstance(tracer, tracing._NullTracer)
+
+    def test_status_command_exits_cleanly_when_sdk_absent(self):
+        import command_registry
+
+        self.init_git()
+        save_json(self.cicadas_dir / "config.json", {"tracing": {"enabled": True, "endpoint": "http://localhost:4318/v1/traces"}})
+
+        spec = next(s for s in command_registry.SCRIPT_COMMANDS if s.name == "status")
+        args = argparse.Namespace(script_args=[], show_help=False)
+
+        with patch.dict(sys.modules, _BLOCKED_OTEL_MODULES):
+            exit_code = command_registry._handle_script_command(spec, args)
+
+        self.assertEqual(exit_code, 0)
