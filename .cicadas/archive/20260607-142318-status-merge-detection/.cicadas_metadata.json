@@ -1,0 +1,22 @@
+{
+  "name": "status-merge-detection",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Fix false-positive 'Merged' status reporting for branches that have never diverged from their target",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-06-07T14:18:34.636243+00:00"
+  },
+  "timestamp": "20260607-142318",
+  "associated_branches": {
+    "fix/status-merge-detection": {
+      "intent": "Fix _is_merged_into() false positive for branches that never diverged from their target",
+      "modules": [
+        "src/cicadas/scripts/status.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-06-07T14:19:01.893144+00:00",
+      "initiative": "status-merge-detection"
+    }
+  }
+}

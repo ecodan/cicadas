@@ -171,6 +171,13 @@
       "summary": "Completed otel-instrumentation initiative: added opt-in OpenTelemetry distributed tracing across the Cicadas CLI (tracing.py null-object facade, instrumented kickoff/branch/archive/emit-event/command_registry, OTLP HTTP export, cross-process trace continuity via registry.json, and a post-review fix preventing potential double-execution of state-mutating commands). Synthesized canon (product-overview, tech-overview, summary) and archived specs.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-06-07T14:23:24.438735+00:00",
+      "branch": "fix/status-merge-detection",
+      "summary": "Fixed false-positive 'Merged' status reporting in status.py: _is_merged_into() now requires source/target tips to differ (in addition to ancestor-reachability), so brand-new branches that haven't diverged from their target are no longer reported as merged.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }

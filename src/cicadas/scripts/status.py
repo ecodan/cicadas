@@ -32,8 +32,23 @@ def _recent_events(initiative: str, n: int = 5) -> list[dict]:
 
 
 def _is_merged_into(root: Path, source_ref: str, target_ref: str) -> bool:
-    """Return True if source is merged into target (source's tip is ancestor of target's tip)."""
+    """Return True if source is merged into target (source's tip is ancestor of target's tip).
+
+    A source whose tip is identical to the target's tip has trivially never diverged —
+    `merge-base --is-ancestor` reports that as an ancestor, which would otherwise produce
+    a false positive for branches that were just created and have done no work yet. Require
+    the tips to differ so "merged" only fires once the source has actually diverged and that
+    divergence has landed in the target.
+    """
     try:
+        source_sha = subprocess.run(
+            ["git", "rev-parse", source_ref], cwd=root, check=True, capture_output=True, text=True
+        ).stdout.strip()
+        target_sha = subprocess.run(
+            ["git", "rev-parse", target_ref], cwd=root, check=True, capture_output=True, text=True
+        ).stdout.strip()
+        if source_sha == target_sha:
+            return False
         subprocess.run(
             ["git", "merge-base", "--is-ancestor", source_ref, target_ref],
             cwd=root,
