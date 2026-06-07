@@ -1,0 +1,20 @@
+{
+  "name": "context-handoff",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Add directive context-reset checkpoints at execution-driven workflow boundaries plus a reusable handoff artifact and resume rule to cut per-session token costs",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-06-07T15:07:30.086454+00:00"
+  },
+  "timestamp": "20260607-151331",
+  "associated_branches": {
+    "tweak/context-handoff": {
+      "intent": "Add directive context-reset checkpoints and a handoff/resume mechanism",
+      "modules": [],
+      "owner": "unknown",
+      "created_at": "2026-06-07T15:08:26.050933+00:00",
+      "initiative": "context-handoff"
+    }
+  }
+}
