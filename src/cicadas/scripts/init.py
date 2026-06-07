@@ -63,6 +63,12 @@ def init_cicadas(root: Path) -> None:
                 "lightweight": False,
                 "parallel_features": True,
             },
+            "tracing": {
+                "enabled": False,
+                "endpoint": "http://localhost:4318/v1/traces",
+                "service_name": "cicadas",
+                "headers": {},
+            },
         },
     )
 
