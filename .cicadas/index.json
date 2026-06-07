@@ -157,6 +157,13 @@
       "summary": "Instrumented kickoff, branch, archive, emit_event, and command_registry with named OTel spans linked via persisted trace_context; added LLM call span emission to _handle_tokens and _detect_initiative for command-level initiative resolution. Confirmed all 429 tests pass with tracing disabled and the CLI exits cleanly when opentelemetry is absent.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-06-07T03:18:22.639469+00:00",
+      "branch": "feat/tracing-instrumentation",
+      "summary": "Post-review fix: prevented potential double-execution of state-mutating commands in command_registry._handle_script_command when a tracing/span exception occurred after the script ran, and ensured tracing.flush() always runs on success paths in kickoff/branch.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
