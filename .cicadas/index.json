@@ -150,6 +150,13 @@
       "summary": "Created tracing.py core module (NullTracer/NullSpan, init_tracer, trace_context persistence, flush, span helpers) with 23 passing unit tests; added opentelemetry tracing optional-dependency group to pyproject.toml and disabled-by-default tracing config stub to init.py template.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-06-07T02:39:56.434788+00:00",
+      "branch": "feat/tracing-instrumentation",
+      "summary": "Instrumented kickoff, branch, archive, emit_event, and command_registry with named OTel spans linked via persisted trace_context; added LLM call span emission to _handle_tokens and _detect_initiative for command-level initiative resolution. Confirmed all 429 tests pass with tracing disabled and the CLI exits cleanly when opentelemetry is absent.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
