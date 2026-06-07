@@ -94,6 +94,19 @@
       "created_at": "2026-06-07T02:04:17.196087+00:00",
       "worktree_path": "/Users/dan/dev/code/ai/cicadas-feat-tracing-core",
       "initiative": "otel-instrumentation"
+    },
+    "feat/tracing-instrumentation": {
+      "intent": "Instrument kickoff, branch, archive, emit_event, and command_registry with OTel spans linked via persisted trace_context, plus LLM call spans and graceful fallback when the SDK is absent",
+      "modules": [
+        "src/cicadas/scripts/command_registry.py",
+        "src/cicadas/scripts/kickoff.py",
+        "src/cicadas/scripts/branch.py",
+        "src/cicadas/scripts/emit_event.py",
+        "src/cicadas/scripts/archive.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-06-07T02:24:30.543462+00:00",
+      "initiative": "otel-instrumentation"
     }
   }
 }
