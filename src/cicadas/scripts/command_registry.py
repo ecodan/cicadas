@@ -117,20 +117,42 @@ def _handle_script_command(spec: CommandSpec, args: argparse.Namespace) -> int:
         _print_manual_help(spec)
         return 1
 
+    initiative = _detect_initiative(spec.name, forwarded_args)
     try:
-        initiative = _detect_initiative(spec.name, forwarded_args)
         tracer = tracing.init_tracer(load_config())
         parent_ctx = tracing.parent_context_for_initiative(initiative) if initiative else None
-        with tracer.start_as_current_span(f"cicadas.command.{spec.name}", context=parent_ctx) as span:
-            span.set_attribute("cicadas.command", spec.name)
-            if initiative:
-                span.set_attribute("cicadas.initiative", initiative)
-            exit_code = _run_script(spec.script_name, forwarded_args)
-            span.set_attribute("cicadas.exit_code", exit_code)
-        tracing.flush()
-        return exit_code
     except Exception:
-        return _run_script(spec.script_name, forwarded_args)
+        tracer, parent_ctx = tracing._NullTracer(), None
+
+    # `exit_code` doubles as a "did _run_script already execute?" marker so that
+    # a tracing failure (including from the span's __exit__) can never trigger
+    # a second invocation of the underlying command.
+    exit_code = None
+    try:
+        with tracer.start_as_current_span(f"cicadas.command.{spec.name}", context=parent_ctx) as span:
+            try:
+                span.set_attribute("cicadas.command", spec.name)
+                if initiative:
+                    span.set_attribute("cicadas.initiative", initiative)
+            except Exception:
+                pass
+
+            exit_code = _run_script(spec.script_name, forwarded_args)
+
+            try:
+                span.set_attribute("cicadas.exit_code", exit_code)
+            except Exception:
+                pass
+    except Exception:
+        if exit_code is None:
+            exit_code = _run_script(spec.script_name, forwarded_args)
+
+    try:
+        tracing.flush()
+    except Exception:
+        pass
+
+    return exit_code
 
 
 def _tokens_parser() -> argparse.ArgumentParser:

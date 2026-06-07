@@ -205,3 +205,38 @@ class TestImportErrorFallback(CicadasTest):
             exit_code = command_registry._handle_script_command(spec, args)
 
         self.assertEqual(exit_code, 0)
+
+
+class TestCommandSpanFailureDoesNotDoubleExecute(CicadasTest):
+    """A tracing failure after the script runs must not re-run the underlying command."""
+
+    def setUp(self):
+        super().setUp()
+        tracing._PROVIDER = None
+        tracing._TRACER = None
+
+    def tearDown(self):
+        tracing._PROVIDER = None
+        tracing._TRACER = None
+        super().tearDown()
+
+    def test_run_script_invoked_exactly_once_when_span_exit_raises(self):
+        import command_registry
+
+        class _BoomSpan(tracing._NullSpan):
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                raise RuntimeError("exporter exploded")
+
+        class _BoomTracer(tracing._NullTracer):
+            def start_as_current_span(self, name, context=None, **kwargs):
+                return _BoomSpan()
+
+        spec = next(s for s in command_registry.SCRIPT_COMMANDS if s.name == "status")
+        args = argparse.Namespace(script_args=[], show_help=False)
+
+        with patch.object(command_registry.tracing, "init_tracer", return_value=_BoomTracer()), \
+                patch.object(command_registry, "_run_script", return_value=0) as mock_run_script:
+            exit_code = command_registry._handle_script_command(spec, args)
+
+        self.assertEqual(mock_run_script.call_count, 1)
+        self.assertEqual(exit_code, 0)
