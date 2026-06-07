@@ -36,6 +36,10 @@ class TestInit(CicadasTest):
 
         config = load_json(cicadas_dir / "config.json")
         self.assertEqual(config["project_name"], "new_project")
+        self.assertEqual(config["tracing"]["enabled"], False)
+        self.assertEqual(config["tracing"]["endpoint"], "http://localhost:4318/v1/traces")
+        self.assertEqual(config["tracing"]["service_name"], "cicadas")
+        self.assertEqual(config["tracing"]["headers"], {})
 
     def test_init_cicadas_preserves_existing_json_on_rerun(self):
         new_root = self.root / "existing_project"

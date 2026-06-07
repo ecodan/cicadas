@@ -32,10 +32,10 @@ next_section: "## Partition: feat/tracing-core"
 - [x] Create `src/cicadas/scripts/tracing.py` with `_NullSpan` (no-op context manager with `set_attribute`, `record_exception`, `set_status`, `__enter__`, `__exit__`), `_NullTracer` (returns `_NullSpan` from `start_as_current_span` and `start_span`), and module-level `_PROVIDER = None`, `_TRACER = None` cache <!-- id: 1 -->
 - [x] Implement `init_tracer(config: dict)` in `tracing.py`: read `config.get("tracing", {})`, return cached `_TRACER` if already set, return `_NullTracer` if `enabled` is falsy; otherwise lazy-import OTel SDK, build `Resource`, `TracerProvider` with `SimpleSpanProcessor` + `OTLPSpanExporter(endpoint=..., headers=...)`, cache in `_PROVIDER`/`_TRACER`, return tracer; catch all import/runtime errors and return `_NullTracer` <!-- id: 2 -->
 - [x] Implement `flush()`, `get_trace_context(initiative)`, `store_trace_context(initiative, trace_id_hex, span_id_hex)`, `parent_context_for_initiative(initiative)`, `span_context_hex(span)` in `tracing.py` per tech-design interface spec; all exceptions in `store_trace_context` and `parent_context_for_initiative` must be swallowed <!-- id: 3 -->
-- [ ] Add `[project.optional-dependencies]` `tracing` group to `pyproject.toml` with `opentelemetry-api>=1.20`, `opentelemetry-sdk>=1.20`, `opentelemetry-exporter-otlp-proto-http>=1.20` <!-- id: 4 -->
-- [ ] Update `init.py` config.json template to include `"tracing": {"enabled": false, "endpoint": "http://localhost:4318/v1/traces", "service_name": "cicadas", "headers": {}}` <!-- id: 5 -->
+- [x] Add `[project.optional-dependencies]` `tracing` group to `pyproject.toml` with `opentelemetry-api>=1.20`, `opentelemetry-sdk>=1.20`, `opentelemetry-exporter-otlp-proto-http>=1.20` <!-- id: 4 -->
+- [x] Update `init.py` config.json template to include `"tracing": {"enabled": false, "endpoint": "http://localhost:4318/v1/traces", "service_name": "cicadas", "headers": {}}` <!-- id: 5 -->
 - [x] Create `tests/test_tracing.py`: test `_NullTracer`/`_NullSpan` no-op behavior; test `init_tracer` returns `_NullTracer` when disabled or tracing key absent; test `_NullTracer.start_as_current_span` is a valid context manager; test `flush()` no-ops when no provider; test `store_trace_context` is non-fatal with bad initiative name; test `span_context_hex(_NullSpan())` returns `None` <!-- id: 6 -->
-- [ ] Run full test suite (`PYTHONPATH=src/cicadas/scripts:tests python3 -m unittest discover -s tests/`) and confirm all existing tests still pass <!-- id: 7 -->
+- [x] Run full test suite (`PYTHONPATH=src/cicadas/scripts:tests python3 -m unittest discover -s tests/`) and confirm all existing tests still pass <!-- id: 7 -->
 
 ## Partition: feat/tracing-instrumentation
 
