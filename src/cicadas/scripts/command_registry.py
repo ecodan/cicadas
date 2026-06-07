@@ -10,10 +10,14 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import tracing
 from tokens import VALID_SOURCES, append_entry, init_log, load_log
+from utils import load_config
 
 
 SCRIPTS_DIR = Path(__file__).resolve().parent
+
+POSITIONAL_COMMANDS = {"kickoff", "branch", "archive", "prune", "unarchive", "register-existing"}
 
 
 @dataclass(frozen=True)
@@ -79,6 +83,19 @@ def _run_script(script_name: str, script_args: list[str]) -> int:
     return completed.returncode
 
 
+def _detect_initiative(command_name: str, forwarded_args: list[str]) -> str | None:
+    for i, arg in enumerate(forwarded_args):
+        if arg == "--initiative" and i + 1 < len(forwarded_args):
+            return forwarded_args[i + 1]
+        if arg.startswith("--initiative="):
+            return arg.split("=", 1)[1]
+    if command_name in POSITIONAL_COMMANDS:
+        for arg in forwarded_args:
+            if not arg.startswith("-"):
+                return arg
+    return None
+
+
 def _print_manual_help(spec: CommandSpec) -> None:
     usage = spec.usage or FALLBACK_USAGE.get(spec.name) or f"usage: cicadas.py {spec.name}"
     print(usage)
@@ -99,7 +116,43 @@ def _handle_script_command(spec: CommandSpec, args: argparse.Namespace) -> int:
     if spec.script_name is None:
         _print_manual_help(spec)
         return 1
-    return _run_script(spec.script_name, forwarded_args)
+
+    initiative = _detect_initiative(spec.name, forwarded_args)
+    try:
+        tracer = tracing.init_tracer(load_config())
+        parent_ctx = tracing.parent_context_for_initiative(initiative) if initiative else None
+    except Exception:
+        tracer, parent_ctx = tracing._NullTracer(), None
+
+    # `exit_code` doubles as a "did _run_script already execute?" marker so that
+    # a tracing failure (including from the span's __exit__) can never trigger
+    # a second invocation of the underlying command.
+    exit_code = None
+    try:
+        with tracer.start_as_current_span(f"cicadas.command.{spec.name}", context=parent_ctx) as span:
+            try:
+                span.set_attribute("cicadas.command", spec.name)
+                if initiative:
+                    span.set_attribute("cicadas.initiative", initiative)
+            except Exception:
+                pass
+
+            exit_code = _run_script(spec.script_name, forwarded_args)
+
+            try:
+                span.set_attribute("cicadas.exit_code", exit_code)
+            except Exception:
+                pass
+    except Exception:
+        if exit_code is None:
+            exit_code = _run_script(spec.script_name, forwarded_args)
+
+    try:
+        tracing.flush()
+    except Exception:
+        pass
+
+    return exit_code
 
 
 def _tokens_parser() -> argparse.ArgumentParser:
@@ -166,6 +219,26 @@ def _handle_tokens(args: argparse.Namespace) -> int:
         notes=tokens_args.notes,
     )
     print(f"[OK]  appended entry to {path}")
+
+    if tokens_args.input_tokens or tokens_args.output_tokens:
+        try:
+            tracer = tracing.init_tracer(load_config())
+            parent_ctx = tracing.parent_context_for_initiative(tokens_args.initiative)
+            with tracer.start_as_current_span("cicadas.llm.call", context=parent_ctx) as span:
+                span.set_attribute("cicadas.initiative", tokens_args.initiative)
+                span.set_attribute("llm.phase", tokens_args.phase)
+                if tokens_args.model:
+                    span.set_attribute("llm.model", tokens_args.model)
+                if tokens_args.input_tokens is not None:
+                    span.set_attribute("llm.input_tokens", tokens_args.input_tokens)
+                if tokens_args.output_tokens is not None:
+                    span.set_attribute("llm.output_tokens", tokens_args.output_tokens)
+                if tokens_args.cached_tokens is not None:
+                    span.set_attribute("llm.cached_tokens", tokens_args.cached_tokens)
+            tracing.flush()
+        except Exception:
+            pass
+
     return 0
 
 
