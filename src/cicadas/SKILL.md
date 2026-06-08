@@ -2,7 +2,7 @@
 name: cicadas
 description: Use when the user says "kickoff", "start feature", "complete initiative", "check status", "signal", "prune", "bootstrap", "reflect", or any other Cicadas lifecycle command. Orchestrates the Cicadas spec-driven development methodology.
 argument-hint: "[command] [name]"
-allowed-tools: Bash, Read, Write, Edit, Glob, Grep
+allowed-tools: Bash, Read, Write, Edit, Glob, Grep, Agent, Task
 ---
 
 # Cicadas: Orchestrator
@@ -233,9 +233,9 @@ The Reset rules above are conditional ("if the host supports it, ask…") becaus
 **At each of the four boundaries, the agent MUST**:
 1. Refresh front matter on the affected specs per the relevant Reset rule above (Phase/Partition Reset steps for front matter refresh still apply).
 2. Write a `handoff.md` (see template below) capturing what just completed and what comes next.
-3. Then fork on host capability:
-   - **Host supports spawning isolated subagents** → delegate the next chunk of work to a fresh subagent, passing the `handoff.md` contents as its self-contained briefing, so the orchestrator's own context stays flat across the boundary (no human pause required — enables long autonomous runs). Before accepting the subagent's output, run the **Code Review** operation as a gate: evaluate the subagent's draft/diff/synthesis against the relevant specs (task completeness, conformance, security/correctness/quality scan, tiered Blocking/Advisory findings) and surface results before proceeding or handing back to the Builder. This compensates for the lost continuous human dialogue during delegated execution.
-   - **Host lacks subagent support** → write the handoff, explicitly recommend the Builder run `/clear` (or the host's equivalent reset), state the exact reload list from the handoff, then resume from it per the Resume rule below.
+3. **Check subagent capability** (once per session — cache the result, do not re-probe at every checkpoint): inspect your available tool set for `Agent`/`Task` directly. This is a runtime check, not an assumption — listing the tool in `allowed-tools` does not guarantee the host has actually granted it for this session (permissions are project- and session-scoped and can be denied at runtime).
+   - **If present** → delegate the next chunk of work to a fresh subagent, passing the `handoff.md` contents as its self-contained briefing, so the orchestrator's own context stays flat across the boundary (no human pause required — enables long autonomous runs). Before accepting the subagent's output, run the **Code Review** operation as a gate: evaluate the subagent's draft/diff/synthesis against the relevant specs (task completeness, conformance, security/correctness/quality scan, tiered Blocking/Advisory findings) and surface results before proceeding or handing back to the Builder. This compensates for the lost continuous human dialogue during delegated execution.
+   - **If absent** → before falling back, surface a one-time callout to the Builder: *"Subagent delegation (`Agent`/`Task`) isn't available in this session, so Cicadas will use the more token-expensive single-thread + `/clear` pattern for the rest of this initiative. To enable the cheaper path, add `Agent`/`Task` to this project's tool permissions and start a fresh session."* Then write the handoff, explicitly recommend the Builder run `/clear` (or the host's equivalent reset), state the exact reload list from the handoff, then resume from it per the Resume rule below.
 
 **`handoff.md` template** (`{cicadas-dir}/templates/handoff.md`): a compact, agent-authored artifact with front matter (`boundary`: one of `approach-tasks | kickoff | partition-complete | initiative-complete`, `initiative`) and sections **Just completed**, **Approved/authoritative state** (pointers to files + headings, not prose copies), **Next action**, **Reload list**, and **Carry forward** (open decisions, deviations, signals to recheck).
 
