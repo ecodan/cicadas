@@ -46,7 +46,7 @@ Traditional Spec-Driven Development (SDD) works well on the first pass but degra
 | **Activation** | **Kickoff** | Promoting drafts to active status, registering the initiative, and creating the initiative branch. |
 | **Outer Integration** | **Initiative Branch** | A long-lived git branch (`initiative/{name}`) that integrates all feature branches. Pure code — never touches canon. Merges to `main` once at initiative completion. |
 | **Inner Integration** | **Feature Branch** | A registered git branch for a partition of the initiative. Forks from and merges back to the initiative branch. |
-| **Lightweight Change** | **Fix / Tweak Branch** | A registered branch for a single issue/enhancement. Forks directly from main/master. |
+| **Lightweight Change** | **Fix / Tweak Branch** | A registered branch for a single issue/enhancement. Forks directly from the default branch (`main` by default). |
 | **Work Branch** | **Task Branch** | An ephemeral, private git branch for a single task. Unregistered. Merges to feature branch via PR. |
 | **Change Ledger** | **Index** | Append-only history of all completed work (`.cicadas/index.json`). |
 | **Expired Specs** | **Archive** | Completed active specs, preserved for archaeology (`.cicadas/archive/`).

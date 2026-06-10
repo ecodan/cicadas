@@ -59,13 +59,13 @@ class CicadasTest(unittest.TestCase):
                 pass
         shutil.rmtree(self.test_dir)
 
-    def init_git(self):
+    def init_git(self, initial_branch="main"):
         """Initialize a git repo in the test directory."""
-        subprocess.run(["git", "init", "--initial-branch=master"], check=True, capture_output=True)
+        subprocess.run(["git", "init", f"--initial-branch={initial_branch}"], check=True, capture_output=True)
         # Configure local git user for commits
         subprocess.run(["git", "config", "user.email", "test@example.com"], check=True)
         subprocess.run(["git", "config", "user.name", "Test User"], check=True)
-        # Create an initial commit on master
+        # Create an initial commit on the default branch
         (self.root / "README.md").write_text("# Test Project")
         subprocess.run(["git", "add", "."], check=True)
         subprocess.run(["git", "commit", "-m", "Initial commit"], check=True)

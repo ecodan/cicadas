@@ -12,6 +12,7 @@
 
 - **README workflow section**: Rewrote the Getting Started workflow as a 7-step narrative using 💬 agent prompts. No raw CLI commands exposed to users. Added Quick Reference cheatsheet table.
 - **HOW-TO.md**: Added Interactive Tutorial section (how to run, step overview) and Hint Toggling section (global config, per-command flag, CI auto-suppression).
+- **Default branch convention**: Greenfield Cicadas repositories and test fixtures now default to `main`, while existing `master` repositories and remote HEAD configuration remain supported.
 
 ## Version 0.8.2
 

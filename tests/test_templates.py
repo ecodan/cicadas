@@ -56,7 +56,7 @@ class TestSpecTemplates(unittest.TestCase):
 
         self.assertIn("## Partition: feat/{branch-name-1}", text)
         self.assertIn("## Initiative Boundary", text)
-        self.assertIn("Open PR: initiative/{initiative-name} -> master", text)
+        self.assertIn("Open PR: initiative/{initiative-name} -> main", text)
         self.assertNotIn(
             "Open PR: feat/{branch-name-1} -> initiative/{initiative-name}",
             text,

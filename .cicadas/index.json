@@ -185,6 +185,13 @@
       "summary": "Added directive context-handoff checkpoints at 4 execution-driven boundaries, a reusable handoff.md template, and a resume-from-handoff rule to SKILL.md",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-06-10T13:34:31.334662+00:00",
+      "branch": "tweak/default-main-branch",
+      "summary": "Default greenfield branch detection and test fixtures to main while preserving existing master repositories.",
+      "decisions": "",
+      "modules": []
     }
   ]
 }

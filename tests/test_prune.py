@@ -37,7 +37,7 @@ class TestPrune(CicadasTest):
             registry = json.load(f)
         self.assertNotIn(name, registry["branches"])
 
-        # Verify git branch deleted (might fail if checkout fails, but here we are on master)
+        # Verify git branch deleted (might fail if checkout fails, but here we are on the default branch)
         branches = subprocess.check_output(["git", "branch"], cwd=self.root).decode()
         self.assertNotIn(name, branches)
 
