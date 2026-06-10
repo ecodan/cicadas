@@ -32,6 +32,14 @@ class TestUtils(CicadasTest):
         expected = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.root).decode().strip()
         self.assertEqual(utils.get_default_branch(), expected)
 
+    def test_get_default_branch_falls_back_to_main_for_greenfield_repo(self):
+        subprocess.run(["git", "init"], cwd=self.root, check=True, capture_output=True)
+        self.assertEqual(utils.get_default_branch(), "main")
+
+    def test_get_default_branch_preserves_existing_master_repo(self):
+        self.init_git(initial_branch="master")
+        self.assertEqual(utils.get_default_branch(), "master")
+
     def test_worktree_policy_defaults(self):
         self.assertEqual(
             utils.worktree_policy({}),
@@ -153,7 +161,7 @@ class TestGetRegistryRoot(CicadasTest):
     def test_linked_worktree_returns_primary(self):
         self.init_git()
         subprocess.run(["git", "checkout", "-b", "feat/rr-branch"], cwd=self.root, check=True, capture_output=True)
-        subprocess.run(["git", "checkout", "master"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", utils.get_default_branch()], cwd=self.root, check=True, capture_output=True)
         wt_dir = self.root.parent / f"{self.root.name}-feat-rr-branch"
         subprocess.run(["git", "worktree", "add", str(wt_dir), "feat/rr-branch"], cwd=self.root, check=True, capture_output=True)
         try:
@@ -258,7 +266,7 @@ class TestCreateWorktree(CicadasTest):
         self.init_git()
         # Create a test branch to attach the worktree to
         subprocess.run(["git", "checkout", "-b", "feat/test-branch"], cwd=self.root, check=True, capture_output=True)
-        subprocess.run(["git", "checkout", "master"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", utils.get_default_branch()], cwd=self.root, check=True, capture_output=True)
         self.wt_dir = self.root.parent / f"{self.root.name}-feat-test-branch"
 
     def tearDown(self):
@@ -288,7 +296,7 @@ class TestRemoveWorktree(CicadasTest):
         super().setUp()
         self.init_git()
         subprocess.run(["git", "checkout", "-b", "feat/rm-branch"], cwd=self.root, check=True, capture_output=True)
-        subprocess.run(["git", "checkout", "master"], cwd=self.root, check=True, capture_output=True)
+        subprocess.run(["git", "checkout", utils.get_default_branch()], cwd=self.root, check=True, capture_output=True)
         self.wt_dir = self.root.parent / f"{self.root.name}-feat-rm-branch"
         utils.create_worktree(self.root, "feat/rm-branch", self.wt_dir)
 

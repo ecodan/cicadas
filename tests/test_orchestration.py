@@ -22,6 +22,8 @@ class TestOrchestration(CicadasTest):
     def setUp(self):
         super().setUp()
         self.init_git()
+        import utils
+        self.default_branch = utils.get_default_branch()
 
     def test_end_to_end_kickoff_branch_archive_index(self):
         """Full lifecycle: kickoff → register branch → archive branch → log to index."""
@@ -42,7 +44,7 @@ class TestOrchestration(CicadasTest):
         self.assertIn(init_name, reg["initiatives"])
         self.assertTrue((self.cicadas_dir / "active" / init_name / "prd.md").exists())
 
-        # 2. Register a feature branch (initiative branch is in a worktree; create feat from master)
+        # 2. Register a feature branch.
         subprocess.run(["git", "checkout", "-b", feat_name], cwd=self.root, check=True, capture_output=True)
         with open(self.cicadas_dir / "registry.json", "r+") as f:
             reg = json.load(f)
@@ -54,7 +56,7 @@ class TestOrchestration(CicadasTest):
         (self.cicadas_dir / "active" / feat_name / "tasks.md").write_text("- [x] task1\n")
 
         # 3. Archive the feature branch
-        subprocess.run(["git", "checkout", "master"], cwd=self.root, capture_output=True)
+        subprocess.run(["git", "checkout", self.default_branch], cwd=self.root, capture_output=True)
         archive_mod.archive(feat_name, type_="branch")
 
         with open(self.cicadas_dir / "registry.json") as f:

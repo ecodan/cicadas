@@ -67,8 +67,13 @@ def get_default_branch():
             subprocess.check_call(["git", "show-ref", "--verify", "--quiet", "refs/heads/main"], cwd=root)
             return "main"
         except Exception:
-            # Fallback 2: return 'master'
-            return "master"
+            # Fallback 2: preserve existing legacy repositories.
+            try:
+                subprocess.check_call(["git", "show-ref", "--verify", "--quiet", "refs/heads/master"], cwd=root)
+                return "master"
+            except Exception:
+                # Fallback 3: greenfield repositories default to 'main'.
+                return "main"
 
 
 def load_json(path):

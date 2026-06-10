@@ -38,4 +38,4 @@ next_section: "## Partition: feat/{branch-name-1}"
 
 ## Initiative Boundary
 
-- [ ] Open PR: initiative/{initiative-name} -> master and await merge approval before continuing <!-- id: 100 -->
+- [ ] Open PR: initiative/{initiative-name} -> main and await merge approval before continuing <!-- id: 100 -->

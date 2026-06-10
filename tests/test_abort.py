@@ -252,7 +252,7 @@ class TestAbort(CicadasTest):
     # ------------------------------------------------------------------
 
     def test_main_on_default_branch_exits_clean(self):
-        """On master/main, nothing to abort — exit 0."""
+        """On the default branch, nothing to abort — exit 0."""
         with self.assertRaises(SystemExit) as cm:
             abort.main()
         self.assertEqual(cm.exception.code, 0)

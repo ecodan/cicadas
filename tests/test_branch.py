@@ -17,8 +17,6 @@ class TestBranch(CicadasTest):
     def setUp(self):
         super().setUp()
         self.init_git()
-        # Mocking and real git operations are mixed here.
-        # utils.get_default_branch() will return 'master' or 'main' depending on git init.
         from utils import get_default_branch
 
         self.default_branch = get_default_branch()

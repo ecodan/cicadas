@@ -108,11 +108,11 @@ Cicadas is a **spec-driven development methodology toolset** for human-AI teams.
 
 | Prefix | Forks From | Registered | Purpose |
 |--------|-----------|------------|---------|
-| `initiative/` | `master` | Yes | Integration branch for a full initiative |
+| `initiative/` | default branch (`main` by default) | Yes | Integration branch for a full initiative |
 | `feat/` | `initiative/` | Yes | One partition of an initiative |
-| `fix/` | `master` | Yes | Lightweight bug fix |
-| `tweak/` | `master` | Yes | Lightweight enhancement (<100 LOC) |
-| `skill/` | `master` | Yes | Agent Skill authoring |
+| `fix/` | default branch (`main` by default) | Yes | Lightweight bug fix |
+| `tweak/` | default branch (`main` by default) | Yes | Lightweight enhancement (<100 LOC) |
+| `skill/` | default branch (`main` by default) | Yes | Agent Skill authoring |
 | `task/` | `feat/` | No | Ephemeral; never registered |
 
 Parallel `feat/` partitions still default to linked worktrees. `fix/`, `tweak/`, and `skill/` branches now stay in the current workspace unless config or `--worktree` opts into a linked worktree.
@@ -124,14 +124,14 @@ Parallel `feat/` partitions still default to linked worktrees. `fix/`, `tweak/`,
 3. **Feature Branches** — `branch.py` creates `feat/{name}`, declares module scope to detect overlaps.
 4. **Inner Loop** — Task branches → Reflect (update active specs to match code) → PR to feature branch (if lifecycle has PR at tasks).
    Reflect now includes refreshing front matter metadata on the affected specs so compact context entrypoints remain current.
-5. **Complete Initiative** — Update Canon on `master`, Archive specs (move to `archive/` and deregister), and then merge initiative → `master` (open PR if lifecycle has PR at initiatives).
+5. **Complete Initiative** — Merge the initiative into the default branch (`main` by default), then update Canon there and archive specs (move to `archive/` and deregister).
    `normal-repo` uses broad synthesis; `large-repo` and `mega-repo` use targeted reconcile over touched slices plus selective global doc refresh.
 6. **Lifecycle** — Per-initiative `lifecycle.json` (drafts/active) sets PR boundaries and steps; `cicadas.py status` reports Merged/Next (git-based).
 
 ### Key Invariants (Guardrails)
 
 - **Never manually edit `registry.json`** — always use the scripts.
-- **Never write to `.cicadas/canon/` on any branch** — Canon is only updated on `master` at initiative completion.
+- **Never write to `.cicadas/canon/` on any branch** — Canon is only updated on the default branch (`main` by default) at initiative completion.
 - **No code without a reviewed `tasks.md`** — agents must stop after Emergence and wait for Builder approval.
 - **Reflect before every PR** — active specs must match code before merging any task branch.
 - **Prefer file-backed context resets** — at branch starts and spec/partition boundaries, reload from `canon/summary.md`, spec front matter, and indexed sections before trusting prior conversation. If the host supports context clearing or compaction, use it opportunistically, but do not rely on it for correctness.

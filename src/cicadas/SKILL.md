@@ -40,7 +40,7 @@ project-root/
 │   │   ├── kickoff.py                # Promote drafts → active, register initiative
 │   │   ├── branch.py                 # Register a feature branch
 │   │   ├── status.py                 # Show initiatives, branches, signals
-│   │   ├── check.py                  # Check for conflicts & master updates
+│   │   ├── check.py                  # Check for conflicts & default branch updates
 │   │   ├── signalboard.py            # Broadcast a change to peer branches
 │   │   ├── archive.py                # Move active specs → archive, deregister
 │   │   ├── update_index.py           # Append to change ledger
@@ -109,7 +109,7 @@ project-root/
 3. **Feature Branches**: For each partition defined in `approach.md`, start a registered feature branch.
 4. **Task Branches**: For each task, create ephemeral unregistered task branches off the feature branch.
 5. **Complete Feature**: Merge feature branch into initiative branch. No synthesis yet.
-6. **Complete Initiative**: Merge initiative branch to `master`, synthesize canon on `master`, archive specs.
+6. **Complete Initiative**: Merge initiative branch to `main` (the configured default branch), synthesize canon there, archive specs.
 
 ### Inner Loop — Daily Coding
 
@@ -549,7 +549,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 - **"Implement task {X}"** → Creates task branch, implements, Reflects, opens PR with findings.
 - **"Signal {message}"** → Runs `python {cicadas-dir}/scripts/cicadas.py signal ...`. Broadcasts change to initiative.
 - **"Complete feature {name}"** → Runs `python {cicadas-dir}/scripts/cicadas.py update-index ...`. Merges feature branch into initiative branch.
-- **"Complete initiative {name}"** → Merges initiative to `master`, synthesizes canon, archives specs, commits.
+- **"Complete initiative {name}"** → Merges initiative to `main` (the configured default branch), synthesizes canon, archives specs, commits.
 - **"Code review"** or **"Review feature"** → Runs Code Review in Full mode on current `feat/` branch.
 - **"Review fix"** or **"Review tweak"** → Runs Code Review in Lightweight mode on current `fix/` or `tweak/` branch.
 - **"Check status"** → Runs `python {cicadas-dir}/scripts/cicadas.py status` and `python {cicadas-dir}/scripts/cicadas.py check`. Surfaces state, conflicts, signals.
