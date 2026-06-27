@@ -25,15 +25,14 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
         *"What is the slug for this skill? 1. {their-name}, 2. Other (enter the name)"*
         Slugs become the directory name (`skill-{slug}`) and the `name` field in `SKILL.md`.
     0c. **Create draft folder**: Ensure `.cicadas/drafts/skill-{slug}/` exists (create it if needed).
-    0d. **LLMs and Evals?**: Ask *"Is this skill powered by LLMs and may require ML evals to ensure quality? (yes / no)"*. Write `building_on_ai` to `.cicadas/drafts/skill-{slug}/emergence-config.json` (merge with existing keys). Building-on-AI evals for skills are Post-MVP; skip the eval-status follow-up.
-    0e. **Publish destination**: Detect common agent skill directories in the project root (in order: check `config.json skill_publish_dir` key → `.agents/skills/` → `.claude/skills/` → `src/` → `skills/`). Ask:
+    0d. **Publish destination**: Detect common agent skill directories in the project root (in order: check `config.json skill_publish_dir` key → `.agents/skills/` → `.claude/skills/` → `src/` → `skills/`). Ask:
         *"Where should the finished skill be published when the branch is merged?*
         *  1. {detected-path}/{slug}   ← detected*
         *  2. .claude/skills/{slug}*
         *  3. Enter a custom path*
         *  4. Don't publish (I'll install manually)"*
         Write the chosen base path to `emergence-config.json` as `publish_dir` (null if option 4). Example: `"publish_dir": ".agents/skills"`.
-    0f. **PR preference**: Ask *"Do you want to open a PR when publishing this skill to master? (yes / no)"*, then run `create_lifecycle.py`:
+    0e. **PR preference**: Ask *"Do you want to open a PR when publishing this skill to master? (yes / no)"*, then run `create_lifecycle.py`:
         - **Yes** (default): `python {cicadas-dir}/scripts/cicadas.py create-lifecycle skill-{slug} --no-pr-features`
         - **No**: `python {cicadas-dir}/scripts/cicadas.py create-lifecycle skill-{slug} --no-pr-initiatives --no-pr-features`
 

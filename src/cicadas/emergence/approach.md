@@ -32,12 +32,7 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
     - `mixed`: the approved clarify artifact (`prd.md` or `technical-brief.md`) and the approved experience artifact (`ux.md`, `operator-experience.md`, or explicit skip note)
 
     Approach remains mandatory for technical initiatives with architectural or cross-module impact.
-3.  **LLMs and Evals — Eval spec offer and placement** (initiatives only): Read `emergence-config.json` from `.cicadas/drafts/{initiative}/` or `.cicadas/active/{initiative}/`. If `building_on_ai` is true and `eval_status` is `"will_do"`:
-    - **Eval spec offer**: If `eval-spec.md` does not yet exist in drafts or active for this initiative, ask: *"Would you like help creating the eval spec now? I'll walk you through the template using the LLMOps Experimentation playbook (define success, dataset, rubrics, harness, experiment, wrap-up). (yes / no)"* If yes, run the **[Eval Spec](./eval-spec.md)** instruction module, then continue with the placement question below. If no or if eval-spec.md already exists, skip to the placement question.
-    - **Eval placement**: Ask the Builder: *"Do you want to insert the (manual) eval step before starting the build, or run evals in parallel with the build? (before / parallel)"*.
-    - If the user chooses **parallel**, show: *"Heads up: if evals run in parallel, their results may materially affect requirements and design. We suggest waiting for eval results before locking the build plan. You can still proceed now if you prefer."*
-    - Write `eval_placement: "before_build"` or `eval_placement: "parallel"` to `emergence-config.json` (merge with existing keys). When you draft `approach.md` in step 5, add an explicit **Eval** step in the Strategy or Sequencing section: if before_build, e.g. *"Run evals per eval spec before implementation; proceed when gates are met."*; if parallel, e.g. *"Evals run in parallel; be prepared to update requirements/design if results change."* If `building_on_ai` is false or `eval_status` is not `"will_do"`, skip this step and do not add an Eval step to the approach.
-4.  **Plan**:
+3.  **Plan**:
     -   **Define Partitions**: Identify logical partitions of work. Each partition becomes a **Feature Branch**. For each partition, declare:
         - A name (e.g., `feat/data-and-auth`, `feat/frontend-shell`)
         - The modules it touches (e.g., `db`, `auth`, `frontend/core`)
@@ -85,8 +80,8 @@ FOLLOW THIS PROCESS EXACTLY. DO NOT SKIP STEPS UNLESS INSTRUCTED.
 
         Flag any criterion that cannot be made machine-verifiable with `<!-- NEEDS MANUAL REVIEW -->` so the Builder can revise before execution. Do NOT omit the criterion — losing the intent is worse than flagging it.
 
-5.  **Draft**: Create `.cicadas/drafts/{initiative}/approach.md` (or update `.cicadas/active/{initiative}/approach.md` if post-kickoff). Include the Eval step from step 3 when applicable.
-6.  **Refine**:
+4.  **Draft**: Create `.cicadas/drafts/{initiative}/approach.md` (or update `.cicadas/active/{initiative}/approach.md` if post-kickoff).
+5.  **Refine**:
     - **If pace is `"doc"` or `"section"`**: STOP and present the complete approach for Builder review.
     - **If pace is `"all"`**: Continue directly to the next module (Tasks) without stopping.
 
