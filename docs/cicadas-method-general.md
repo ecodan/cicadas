@@ -113,7 +113,7 @@ project-root/
     │       ├── approach.md           # MUST define partitions → feature branches
     │       ├── tasks.md
     │       ├── lifecycle.json        # PR boundaries and step list
-    │       ├── emergence-config.json # Review cadence; initiative profile; Building on AI? and eval status
+    │       ├── emergence-config.json # Review cadence; initiative profile
     │       └── tokens.json           # Token usage log
     ├── active/                       # Live specs for in-flight work
     │   └── {initiative-name}/
@@ -159,7 +159,7 @@ Progressive spec authoring using subagents or manual drafting:
 
 **Critical**: `approach.md` MUST define logical partitions (e.g., "Auth Module", "Frontend Shell", "Data Layer"). These partitions become **Feature Branches**.
 
-**Profile, Pace & Limits**: At the start of Clarify, the Builder chooses an initiative profile (`product` / `technical` / `mixed`) and a review cadence (`section` / `doc` / `all`) stored in `emergence-config.json`. Product initiatives use full PRD and UX artifacts. Technical initiatives use `technical-brief.md` and skip UX only when there is no meaningful human-facing or agent-facing surface; otherwise they use `operator-experience.md`. Mixed initiatives choose the appropriate artifact per surface. For screen-based UX work, the completed `ux.md` must reference at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/` before approval; screenshot previews are optional. The standard start flow also records **Building on AI?** (yes/no) and, if yes, eval status (already have / will do); initiatives with "will do" may add an eval spec and placement in Approach. A `tokens.json` log actively captures LLM usage during drafting and updates throughout the initiative.
+**Profile, Pace & Limits**: At the start of Clarify, the Builder chooses an initiative profile (`product` / `technical` / `mixed`) and a review cadence (`section` / `doc` / `all`) stored in `emergence-config.json`. Product initiatives use full PRD and UX artifacts. Technical initiatives use `technical-brief.md` and skip UX only when there is no meaningful human-facing or agent-facing surface; otherwise they use `operator-experience.md`. Mixed initiatives choose the appropriate artifact per surface. For screen-based UX work, the completed `ux.md` must reference at least one editable HTML/CSS mock-up under `.cicadas/drafts/{initiative}/mockups/` before approval; screenshot previews are optional. A `tokens.json` log actively captures LLM usage during drafting and updates throughout the initiative.
 
 **Compact Context Contract**: The five core initiative specs (`prd.md`, `ux.md`, `tech-design.md`, `approach.md`, `tasks.md`) now carry machine-readable front matter with:
 
@@ -499,7 +499,6 @@ Issues identified through dry-run exercises (greenfield, brownfield, and paralle
 
 | # | Issue | Severity | Mitigation |
 |---|-------|----------|------------|
-| X1 | **Signals are intra-initiative only**: No formal mechanism for cross-initiative notifications. Builder A's Recipe changes can't directly signal Builder B's separate initiative. | Medium | Add a global signal board in `registry.json`, or allow signals to target specific initiatives. |
 | X2 | **Stale canon at Emergence for concurrent initiatives**: Builder B drafts specs against current `main` canon, but another initiative may be modifying the same modules. Specs are drafted against outdated context. | Medium | During Emergence, the Agent should read not just canon but also the active specs of in-flight initiatives — surfacing planned changes to shared modules. |
 | X3 | **Active specs are initiative-scoped**: At synthesis time, the LLM reads only its own initiative's specs. If Initiative B merges before Initiative A, B's synthesis won't have A's key decisions (since A hasn't synthesized yet). | Low | Synthesis prompt should read active specs from *all* in-flight initiatives, not just its own. |
 
@@ -526,15 +525,6 @@ Issues identified through dry-run exercises (greenfield, brownfield, and paralle
 | P1 | **Overhead for solo builders**: Full ceremony (registrations, intent checks, Reflect, PRs) is significant for one person. | Low | Document a "light mode": fewer partitions, combined steps, optional PRs for solo. |
 | P2 | **No explicit test phase**: The method doesn't prescribe where testing fits in the lifecycle. | Low | Tasks should include acceptance criteria. Task branches aren't merge-ready until tests pass. Document as convention. |
 | P3 | **Module boundary crossings on brownfield**: Existing code has implicit ownership. Modifications to shared components outside a feature's declared modules need special attention. | Low | Reflect already flags these. Formalize as a "boundary crossing" annotation in PRs. |
-
-### Future Direction: Full WIP Awareness
-
-> [!IMPORTANT]
-> The most significant gap across all scenarios is that Cicadas operates within a single initiative's context. In future versions, the Agent should be aware of **all work in progress across all initiatives** — reading other initiatives' active specs during Emergence, signaling across initiative boundaries, and incorporating cross-initiative context during synthesis.
->
-> This would address issues X1, X2, X3, and S2 simultaneously. The registry already contains the required information; the Agent simply needs to be instructed to use it holistically.
->
-> For now, the method works — Reflect catches post-rebase drift, the registry surfaces overlap at branch registration, and serial synthesis on `main` prevents canon merge conflicts. The coordination gaps are manageable with developer communication.
 
 ---
 
