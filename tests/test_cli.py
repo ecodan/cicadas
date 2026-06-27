@@ -30,7 +30,6 @@ class TestCicadasCli(CicadasTest):
         self.assertIn("kickoff", result.stdout)
         self.assertIn("create-lifecycle", result.stdout)
         self.assertIn("graph", result.stdout)
-        self.assertIn("tokens", result.stdout)
         self.assertNotIn("create_lifecycle", result.stdout)
         self.assertNotIn("open_pr", result.stdout)
 
@@ -67,43 +66,6 @@ class TestCicadasCli(CicadasTest):
         self.assertTrue(lifecycle_path.exists())
         payload = json.loads(lifecycle_path.read_text())
         self.assertFalse(payload["pr_boundaries"]["features"])
-
-    def test_tokens_init_show_and_append(self):
-        log_path = self.root / "tokens.json"
-
-        init_result = self._run_cli("tokens", "init", str(log_path))
-        self.assertEqual(init_result.returncode, 0)
-        self.assertTrue(log_path.exists())
-
-        append_result = self._run_cli(
-            "tokens",
-            "append",
-            str(log_path),
-            "--initiative",
-            "demo",
-            "--phase",
-            "implementation",
-            "--source",
-            "estimated",
-            "--input-tokens",
-            "12",
-        )
-        self.assertEqual(append_result.returncode, 0)
-
-        show_result = self._run_cli("tokens", "show", str(log_path))
-        self.assertEqual(show_result.returncode, 0)
-        payload = json.loads(show_result.stdout)
-        self.assertEqual(len(payload["entries"]), 1)
-        self.assertEqual(payload["entries"][0]["initiative"], "demo")
-
-    def test_tokens_show_full_returns_error_on_invalid_json(self):
-        log_path = self.root / "broken-tokens.json"
-        log_path.write_text("{not-json")
-
-        result = self._run_cli("tokens", "show", str(log_path), "--full")
-
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("Error reading tokens file", result.stderr)
 
     def test_update_index_forwards_option_style_args_via_cli(self):
         result = self._run_cli(

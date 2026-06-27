@@ -95,17 +95,6 @@ class TestKickoff(CicadasTest):
         self.assertTrue((active / "lifecycle.json").exists())
         self.assertFalse(draft_dir.exists())
 
-    def test_kickoff_creates_tokens_json(self):
-        """kickoff initializes tokens.json in the active directory."""
-        name = "token-init"
-        self.init_git()
-        kickoff.kickoff(name, "token test")
-
-        tokens_path = self.cicadas_dir / "active" / name / "tokens.json"
-        self.assertTrue(tokens_path.exists())
-        data = json.loads(tokens_path.read_text())
-        self.assertIn("entries", data)
-
     def test_kickoff_creates_worktree(self):
         """kickoff creates a linked worktree when explicitly requested and stays on the original branch."""
         self.init_git()

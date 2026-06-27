@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from tokens import load_log
 from utils import get_project_root, load_json
 
 
@@ -52,50 +51,6 @@ def count_tasks(folder: Path) -> tuple[int, int]:
     return 0, 0
 
 
-def load_token_summary(folder: Path) -> dict | None:
-    """
-    Read tokens.json from an archive folder and compute per-phase totals.
-    Returns dict with total_input, total_output, total_cached, by_phase.
-    Returns None if file absent, corrupt, or all counts are null.
-    """
-    entries = load_log(folder / "tokens.json")
-    if not entries:
-        return None
-
-    total_input = 0
-    total_output = 0
-    total_cached = 0
-    has_counts = False
-    by_phase: dict[str, dict] = {}
-
-    for e in entries:
-        phase = e.get("phase", "unknown")
-        if phase not in by_phase:
-            by_phase[phase] = {"input": 0, "output": 0, "cached": 0}
-        if e.get("input_tokens") is not None:
-            total_input += e["input_tokens"]
-            by_phase[phase]["input"] += e["input_tokens"]
-            has_counts = True
-        if e.get("output_tokens") is not None:
-            total_output += e["output_tokens"]
-            by_phase[phase]["output"] += e["output_tokens"]
-            has_counts = True
-        if e.get("cached_tokens") is not None:
-            total_cached += e["cached_tokens"]
-            by_phase[phase]["cached"] += e["cached_tokens"]
-            has_counts = True
-
-    if not has_counts:
-        return None
-
-    return {
-        "total_input": total_input,
-        "total_output": total_output,
-        "total_cached": total_cached,
-        "by_phase": by_phase,
-    }
-
-
 def parse_archive_entry(folder: Path, index_by_branch: dict) -> dict:
     # folder name: {timestamp}-{name}
     parts = folder.name.split("-", 1)
@@ -112,7 +67,6 @@ def parse_archive_entry(folder: Path, index_by_branch: dict) -> dict:
     summary = extract_summary(folder)
     total_tasks, done_tasks = count_tasks(folder)
     ledger_summary = index_by_branch.get(name, {}).get("summary", "")
-    token_summary = load_token_summary(folder)
 
     return {
         "name": name,
@@ -122,7 +76,6 @@ def parse_archive_entry(folder: Path, index_by_branch: dict) -> dict:
         "ledger_summary": ledger_summary,
         "total_tasks": total_tasks,
         "done_tasks": done_tasks,
-        "token_summary": token_summary,
     }
 
 
@@ -138,21 +91,6 @@ def render_html(entries: list[dict]) -> str:
         ledger = f"<p class='ledger'><em>{e['ledger_summary']}</em></p>" if e["ledger_summary"] else ""
         summary_text = e["summary"].replace("\n\n", "</p><p>").replace("\n", " ")
         summary_block = f"<p>{summary_text}</p>" if summary_text else ""
-        ts = e.get("token_summary")
-        if ts:
-            phase_rows = "".join(
-                f"<tr><td>{phase}</td><td>{v['input']:,}</td><td>{v['output']:,}</td><td>{v['cached']:,}</td></tr>"
-                for phase, v in ts["by_phase"].items()
-            )
-            token_block = (
-                f"<div class='tokens'>"
-                f"<strong>Tokens</strong> — "
-                f"in: {ts['total_input']:,} &nbsp; out: {ts['total_output']:,} &nbsp; cached: {ts['total_cached']:,}"
-                f"<table class='token-table'><tr><th>Phase</th><th>Input</th><th>Output</th><th>Cached</th></tr>"
-                f"{phase_rows}</table></div>"
-            )
-        else:
-            token_block = ""
 
         cards.append(f"""
         <div class="entry">
@@ -166,7 +104,6 @@ def render_html(entries: list[dict]) -> str:
             {task_line}
             {summary_block}
             {ledger}
-            {token_block}
           </div>
         </div>""")
 
@@ -197,10 +134,6 @@ def render_html(entries: list[dict]) -> str:
   .tasks {{ font-size: 0.8rem; color: #64748b; margin-bottom: 0.5rem; }}
   p {{ font-size: 0.88rem; color: #475569; line-height: 1.55; margin-bottom: 0.4rem; }}
   .ledger {{ color: #64748b !important; border-top: 1px solid #f1f5f9; padding-top: 0.4rem; margin-top: 0.4rem; }}
-  .tokens {{ font-size: 0.8rem; color: #475569; border-top: 1px solid #f1f5f9; padding-top: 0.4rem; margin-top: 0.4rem; }}
-  .token-table {{ width: 100%; border-collapse: collapse; margin-top: 0.35rem; font-size: 0.78rem; }}
-  .token-table th {{ text-align: left; color: #94a3b8; font-weight: 500; padding: 2px 6px 2px 0; }}
-  .token-table td {{ padding: 1px 6px 1px 0; color: #64748b; }}
 </style>
 </head>
 <body>
