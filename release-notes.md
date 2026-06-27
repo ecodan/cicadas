@@ -1,5 +1,18 @@
 # Release Notes
 
+## v1.0.0
+
+**Breaking changes:**
+- Removed `get_registry_root()` from `utils.py`. This function attempted to route registry I/O to the primary worktree in linked-worktree setups but was unreliable. All registry I/O now goes through `get_registry_dir()` which returns `get_project_root() / ".cicadas"` directly. Callers that imported `get_registry_root` must switch to `get_registry_dir`.
+- `emit_event.py` and `get_events.py` now use `get_registry_dir()` for the events path (no behavior change for single-worktree users).
+
+**Removals:**
+- Removed the LLMs-and-evals question chain from the standard start flow. The "Will this be powered by LLMs?" step, `eval_status`/`building_on_ai` writes, eval-spec creation offer, and eval placement question have all been removed from `start-flow.md`, `clarify.md`, `tweak.md`, `bug-fix.md`, `approach.md`, `skill-create.md`, and `SKILL.md`.
+- Deleted `src/cicadas/emergence/eval-spec.md` and `src/cicadas/templates/eval-spec.md`.
+
+**Other:**
+- Updated `agents.md`, `docs/cicadas-method-general.md`, and `SKILL.md` to remove references to the removed features.
+
 ## Version 0.9.0
 
 ### Added

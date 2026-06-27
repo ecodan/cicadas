@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import tracing
-from utils import get_registry_root, load_config
+from utils import get_registry_dir, load_config
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] <%(filename)s:%(lineno)s> %(message)s"
 logging.basicConfig(format=LOG_FORMAT, level=logging.WARNING)
@@ -50,7 +50,7 @@ def emit_event(initiative: str, event_type: str, data: dict) -> None:
     if not INITIATIVE_RE.match(initiative):
         raise ValueError(f"Invalid initiative name: {initiative!r}. Must match [a-z0-9][a-z0-9-]*")
 
-    events_path: Path = get_registry_root() / ".cicadas" / "active" / initiative / "events.jsonl"
+    events_path: Path = get_registry_dir() / "active" / initiative / "events.jsonl"
     events_path.parent.mkdir(parents=True, exist_ok=True)
 
     event: dict = {

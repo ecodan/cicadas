@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from utils import get_registry_root
+from utils import get_registry_dir
 
 LOG_FORMAT = "%(asctime)s [%(levelname)s] <%(filename)s:%(lineno)s> %(message)s"
 logging.basicConfig(format=LOG_FORMAT, level=logging.WARNING)
@@ -43,7 +43,7 @@ def get_events(
     Returns:
         List of event dicts sorted by timestamp ascending.
     """
-    events_path: Path = get_registry_root() / ".cicadas" / "active" / initiative / "events.jsonl"
+    events_path: Path = get_registry_dir() / "active" / initiative / "events.jsonl"
 
     if not events_path.exists():
         return []

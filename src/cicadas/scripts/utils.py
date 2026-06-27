@@ -19,39 +19,8 @@ def get_project_root():
     return curr
 
 
-def get_registry_root() -> Path:
-    """Return the primary worktree root for registry I/O.
-
-    In a linked worktree, .git is a file (not a directory) that points to the
-    real gitdir at {main_repo}/.git/worktrees/{name}.  Navigate up to the main
-    worktree so that registry.json and index.json are always read/written from
-    the authoritative copy on the default branch.
-
-    Falls back to get_project_root() when detection fails.
-    """
-    root = get_project_root()
-    git_path = root / ".git"
-
-    if git_path.is_dir():
-        return root  # already the primary worktree
-
-    if git_path.is_file():
-        try:
-            content = git_path.read_text().strip()
-            if content.startswith("gitdir:"):
-                gitdir = Path(content.split(":", 1)[1].strip())
-                # Standard layout: {main}/.git/worktrees/{name}
-                if gitdir.parent.name == "worktrees":
-                    return gitdir.parent.parent.parent  # main repo root
-        except Exception:
-            pass
-
-    return root
-
-
 def get_registry_dir() -> Path:
-    """Return the .cicadas directory in the primary worktree."""
-    return get_registry_root() / ".cicadas"
+    return get_project_root() / ".cicadas"
 
 
 def get_default_branch():
