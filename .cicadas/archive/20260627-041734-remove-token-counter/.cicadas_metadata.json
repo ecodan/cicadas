@@ -1,0 +1,26 @@
+{
+  "name": "remove-token-counter",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Remove non-functional token counter system (tokens.py and all call sites)",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-06-27T04:12:09.262972+00:00"
+  },
+  "timestamp": "20260627-041734",
+  "associated_branches": {
+    "tweak/remove-token-counter": {
+      "intent": "Remove tokens.py and all call sites",
+      "modules": [
+        "branch.py",
+        "kickoff.py",
+        "tokens.py",
+        "command_registry.py",
+        "history.py"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-06-27T04:12:16.634554+00:00",
+      "initiative": "remove-token-counter"
+    }
+  }
+}

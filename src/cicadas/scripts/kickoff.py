@@ -7,7 +7,6 @@ import subprocess
 from datetime import UTC, datetime
 
 import tracing
-from tokens import append_entry
 from utils import create_worktree, emit, get_project_root, get_registry_dir, load_config, load_json, parse_partitions_dag, print_hint, save_json, worktree_path, worktree_policy
 
 
@@ -53,9 +52,6 @@ def kickoff(name, intent, owner="unknown", force_worktree=False):
         ctx = tracing.span_context_hex(span)
         if ctx:
             tracing.store_trace_context(name, *ctx)
-
-        # Write lifecycle/kickoff token boundary entry
-        append_entry(active_dir / "tokens.json", initiative=name, phase="lifecycle", subphase="kickoff", source="unavailable")
 
         # Detect parallel partitions and run pre-execution conflict check
         approach_path = active_dir / "approach.md"

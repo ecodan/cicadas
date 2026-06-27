@@ -118,49 +118,6 @@ class TestCountTasks(unittest.TestCase):
         self.assertEqual(done, 1)
 
 
-class TestLoadTokenSummary(unittest.TestCase):
-    def setUp(self):
-        import tempfile
-        self.test_dir = tempfile.mkdtemp()
-        self.folder = Path(self.test_dir)
-
-    def tearDown(self):
-        import shutil
-        shutil.rmtree(self.test_dir)
-
-    def test_returns_none_when_file_missing(self):
-        self.assertIsNone(history.load_token_summary(self.folder))
-
-    def test_returns_none_when_all_counts_null(self):
-        (self.folder / "tokens.json").write_text(
-            json.dumps({"entries": [{"phase": "kickoff", "input_tokens": None, "output_tokens": None, "cached_tokens": None}]})
-        )
-        self.assertIsNone(history.load_token_summary(self.folder))
-
-    def test_aggregates_by_phase(self):
-        (self.folder / "tokens.json").write_text(json.dumps({"entries": [
-            {"phase": "kickoff", "input_tokens": 100, "output_tokens": 50, "cached_tokens": 10},
-            {"phase": "kickoff", "input_tokens": 200, "output_tokens": 80, "cached_tokens": 0},
-            {"phase": "branch", "input_tokens": 50, "output_tokens": 20, "cached_tokens": 5},
-        ]}))
-        result = history.load_token_summary(self.folder)
-        self.assertIsNotNone(result)
-        self.assertEqual(result["total_input"], 350)
-        self.assertEqual(result["total_output"], 150)
-        self.assertEqual(result["total_cached"], 15)
-        self.assertEqual(result["by_phase"]["kickoff"]["input"], 300)
-        self.assertEqual(result["by_phase"]["branch"]["output"], 20)
-
-    def test_partial_nulls_counted_correctly(self):
-        (self.folder / "tokens.json").write_text(json.dumps({"entries": [
-            {"phase": "p1", "input_tokens": 100, "output_tokens": None, "cached_tokens": None},
-        ]}))
-        result = history.load_token_summary(self.folder)
-        self.assertIsNotNone(result)
-        self.assertEqual(result["total_input"], 100)
-        self.assertEqual(result["total_output"], 0)
-
-
 class TestRenderHtml(unittest.TestCase):
     def test_empty_entries_shows_fallback_message(self):
         html = history.render_html([])
@@ -170,7 +127,7 @@ class TestRenderHtml(unittest.TestCase):
     def test_entry_renders_name_and_date(self):
         entries = [{"name": "my-init", "kind": "initiative", "date": "Jan 01, 2026",
                     "summary": "Test summary", "ledger_summary": "", "total_tasks": 2,
-                    "done_tasks": 1, "token_summary": None}]
+                    "done_tasks": 1}]
         html = history.render_html(entries)
         self.assertIn("my-init", html)
         self.assertIn("Jan 01, 2026", html)
@@ -180,19 +137,15 @@ class TestRenderHtml(unittest.TestCase):
     def test_fix_kind_renders_bug_fix_badge(self):
         entries = [{"name": "fix-foo", "kind": "fix", "date": "Jan 01, 2026",
                     "summary": "", "ledger_summary": "", "total_tasks": 0,
-                    "done_tasks": 0, "token_summary": None}]
+                    "done_tasks": 0}]
         html = history.render_html(entries)
         self.assertIn("Bug Fix", html)
 
-    def test_token_summary_rendered_when_present(self):
-        ts = {"total_input": 1000, "total_output": 500, "total_cached": 200,
-              "by_phase": {"kickoff": {"input": 1000, "output": 500, "cached": 200}}}
+    def test_ledger_summary_rendered(self):
         entries = [{"name": "init", "kind": "initiative", "date": "Jan 01, 2026",
                     "summary": "", "ledger_summary": "ledger note", "total_tasks": 0,
-                    "done_tasks": 0, "token_summary": ts}]
+                    "done_tasks": 0}]
         html = history.render_html(entries)
-        self.assertIn("1,000", html)
-        self.assertIn("kickoff", html)
         self.assertIn("ledger note", html)
 
 

@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import tracing
-from tokens import VALID_SOURCES, append_entry, init_log, load_log
 from utils import load_config
 
 
@@ -56,16 +55,6 @@ SCRIPT_COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec("unarchive", "Restore an archived initiative or branch", "unarchive.py"),
     CommandSpec("tutorial", "Run the interactive Cicadas tutorial", "tutorial.py", supports_script_help=False),
 )
-
-TOKENS_USAGE = """usage: cicadas.py tokens {init,show,append} ...
-
-Manage tokens.json files used for Cicadas token accounting.
-
-subcommands:
-  init    Create a tokens.json file if it does not exist
-  show    Print the current entries or full JSON payload
-  append  Append a validated token entry
-"""
 
 FALLBACK_USAGE: dict[str, str] = {
     "init": "usage: cicadas.py init",
@@ -155,95 +144,8 @@ def _handle_script_command(spec: CommandSpec, args: argparse.Namespace) -> int:
     return exit_code
 
 
-def _tokens_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="cicadas.py tokens", description="Manage Cicadas tokens.json files")
-    subparsers = parser.add_subparsers(dest="tokens_command", required=True)
-
-    init_parser = subparsers.add_parser("init", help="Create an empty tokens.json file if missing")
-    init_parser.add_argument("path", help="Path to the tokens.json file")
-
-    show_parser = subparsers.add_parser("show", help="Print a tokens.json file")
-    show_parser.add_argument("path", help="Path to the tokens.json file")
-    show_parser.add_argument("--full", action="store_true", help="Print the full JSON payload instead of just entries")
-
-    append_parser = subparsers.add_parser("append", help="Append a token entry to a tokens.json file")
-    append_parser.add_argument("path", help="Path to the tokens.json file")
-    append_parser.add_argument("--initiative", required=True, help="Initiative name")
-    append_parser.add_argument("--phase", required=True, help="Lifecycle or implementation phase name")
-    append_parser.add_argument("--source", required=True, choices=sorted(VALID_SOURCES), help="Token source classification")
-    append_parser.add_argument("--subphase", default=None, help="Optional subphase name")
-    append_parser.add_argument("--input-tokens", type=int, default=None, help="Input token count")
-    append_parser.add_argument("--output-tokens", type=int, default=None, help="Output token count")
-    append_parser.add_argument("--cached-tokens", type=int, default=None, help="Cached token count")
-    append_parser.add_argument("--model", default=None, help="Model identifier")
-    append_parser.add_argument("--notes", default=None, help="Optional note")
-
-    return parser
-
-
-def _handle_tokens(args: argparse.Namespace) -> int:
-    if getattr(args, "show_help", False):
-        print(TOKENS_USAGE)
-        return 0
-
-    parser = _tokens_parser()
-    tokens_args = parser.parse_args(list(args.script_args or []))
-    path = Path(tokens_args.path)
-
-    if tokens_args.tokens_command == "init":
-        init_log(path)
-        print(f"[OK]  initialized {path}")
-        return 0
-
-    if tokens_args.tokens_command == "show":
-        payload = {"entries": load_log(path)}
-        if tokens_args.full and path.exists():
-            try:
-                payload = json.loads(path.read_text())
-            except json.JSONDecodeError as exc:
-                print(f"Error reading tokens file: {exc}", file=sys.stderr)
-                return 1
-        print(json.dumps(payload, indent=2))
-        return 0
-
-    append_entry(
-        path,
-        initiative=tokens_args.initiative,
-        phase=tokens_args.phase,
-        source=tokens_args.source,
-        subphase=tokens_args.subphase,
-        input_tokens=tokens_args.input_tokens,
-        output_tokens=tokens_args.output_tokens,
-        cached_tokens=tokens_args.cached_tokens,
-        model=tokens_args.model,
-        notes=tokens_args.notes,
-    )
-    print(f"[OK]  appended entry to {path}")
-
-    if tokens_args.input_tokens or tokens_args.output_tokens:
-        try:
-            tracer = tracing.init_tracer(load_config())
-            parent_ctx = tracing.parent_context_for_initiative(tokens_args.initiative)
-            with tracer.start_as_current_span("cicadas.llm.call", context=parent_ctx) as span:
-                span.set_attribute("cicadas.initiative", tokens_args.initiative)
-                span.set_attribute("llm.phase", tokens_args.phase)
-                if tokens_args.model:
-                    span.set_attribute("llm.model", tokens_args.model)
-                if tokens_args.input_tokens is not None:
-                    span.set_attribute("llm.input_tokens", tokens_args.input_tokens)
-                if tokens_args.output_tokens is not None:
-                    span.set_attribute("llm.output_tokens", tokens_args.output_tokens)
-                if tokens_args.cached_tokens is not None:
-                    span.set_attribute("llm.cached_tokens", tokens_args.cached_tokens)
-            tracing.flush()
-        except Exception:
-            pass
-
-    return 0
-
-
 def command_specs() -> tuple[CommandSpec, ...]:
-    return SCRIPT_COMMANDS + (CommandSpec("tokens", "Manage Cicadas token logs", supports_script_help=False),)
+    return SCRIPT_COMMANDS
 
 
 def alias_map() -> dict[str, str]:
@@ -268,5 +170,4 @@ def register_subcommands(subparsers: argparse._SubParsersAction[argparse.Argumen
         parser = subparsers.add_parser(spec.name, add_help=False, help=spec.help, description=spec.help)
         _configure_forwarding_parser(parser, handler=_handle_script_command, spec=spec)
 
-    tokens_parser = subparsers.add_parser("tokens", add_help=False, help="Manage Cicadas token logs", description="Manage Cicadas token logs")
-    _configure_forwarding_parser(tokens_parser, handler=_handle_tokens)
+

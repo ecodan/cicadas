@@ -192,6 +192,13 @@
       "summary": "Default greenfield branch detection and test fixtures to main while preserving existing master repositories.",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-06-27T04:17:35.068467+00:00",
+      "branch": "tweak/remove-token-counter",
+      "summary": "Removed non-functional token counter system (tokens.py, CLI subcommand, history rendering, all tests)",
+      "decisions": "",
+      "modules": []
     }
   ]
 }
