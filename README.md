@@ -1,5 +1,5 @@
 # Cicadas 
-**Version 0.8**
+**Version 1.0.0**
 
 **Sustainable, Spec-Driven Development (SDD) for human-AI teams.**
 
@@ -102,7 +102,7 @@ Tell your agent what you want to build. Cicadas creates a draft folder and begin
 
 > 💬 **Tell your agent:** *"Start an initiative called \<name\>"*
 
-The agent runs a brief start flow (confirms the name, asks whether the feature uses LLMs, sets up your PR preference) and then moves into spec drafting.
+The agent runs a brief start flow (confirms the name, sets up your PR preference) and then moves into spec drafting.
 
 #### What type of initiative?
 
