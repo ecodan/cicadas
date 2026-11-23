@@ -1,0 +1,23 @@
+{
+  "name": "remove-eval-leftovers",
+  "type": "initiative",
+  "registry_entry": {
+    "intent": "Remove stale references to the removed LLMs-and-evals / Building on AI concept from docs, test fixture and stray config",
+    "owner": "unknown",
+    "signals": [],
+    "created_at": "2026-11-23T01:31:03.117545+00:00"
+  },
+  "timestamp": "20261123-013353",
+  "associated_branches": {
+    "tweak/remove-eval-leftovers": {
+      "intent": "Remove stale eval/Building on AI references",
+      "modules": [
+        "docs",
+        "tests"
+      ],
+      "owner": "unknown",
+      "created_at": "2026-11-23T01:31:12.100383+00:00",
+      "initiative": "remove-eval-leftovers"
+    }
+  }
+}

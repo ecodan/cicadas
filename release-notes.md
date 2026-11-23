@@ -9,6 +9,7 @@
 **Removals:**
 - Removed the LLMs-and-evals question chain from the standard start flow. The "Will this be powered by LLMs?" step, `eval_status`/`building_on_ai` writes, eval-spec creation offer, and eval placement question have all been removed from `start-flow.md`, `clarify.md`, `tweak.md`, `bug-fix.md`, `approach.md`, `skill-create.md`, and `SKILL.md`.
 - Deleted `src/cicadas/emergence/eval-spec.md` and `src/cicadas/templates/eval-spec.md`.
+- Removed leftover eval / "Building on AI" references from `src/cicadas/README.md`, `docs/cicadas-user-manual.md`, and stale `building_on_ai` config keys in a test fixture and the bundled `test-coverage-review` skill config. Existing installs that still prompt for this need `install.sh --update` to pick up the v1.0.0 removal.
 
 **Other:**
 - Updated `agents.md`, `docs/cicadas-method-general.md`, and `SKILL.md` to remove references to the removed features.
