@@ -199,6 +199,13 @@
       "summary": "Removed non-functional token counter system (tokens.py, CLI subcommand, history rendering, all tests)",
       "decisions": "",
       "modules": []
+    },
+    {
+      "timestamp": "2026-11-23T01:33:53.379012+00:00",
+      "branch": "tweak/remove-eval-leftovers",
+      "summary": "Removed stale eval / Building on AI references from README, user manual, test fixture and bundled skill config; canon refresh deferred to master",
+      "decisions": "",
+      "modules": []
     }
   ]
 }

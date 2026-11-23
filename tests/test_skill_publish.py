@@ -21,7 +21,7 @@ def _make_valid_skill(cicadas: Path, slug: str) -> Path:
     (d / "SKILL.md").write_text(
         f"---\nname: {slug}\ndescription: A valid description.\n---\n\n# Body\n"
     )
-    config = {"building_on_ai": False, "publish_dir": None}
+    config = {"publish_dir": None}
     (d / "emergence-config.json").write_text(json.dumps(config))
     return d
 
