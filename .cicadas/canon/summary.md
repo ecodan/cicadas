@@ -12,7 +12,7 @@ Cicadas is a spec-driven development orchestrator for human-AI teams that treats
 - Filesystem state machine: all state lives in `.cicadas/` (registry.json, active/, archive/, canon/); no database or server.
 - Logic/state separation: the Skill (`src/cicadas/`) is portable and installable; the state (`.cicadas/`) stays in the project.
 - Scripts are pure Python stdlib — no required external dependencies at runtime; only `git` and Python 3.11+ required. Optional `tracing` extras group (`opentelemetry-api/sdk/exporter-otlp-proto-http`) adds opt-in OTel distributed tracing (off by default; null-object fallback when absent or disabled).
-- Agent operations (Reflect, Code Review, Synthesis) are LLM tasks defined in `emergence/` markdown prompts, not scripts. Clarify supports intake via Q&A, doc, or Loom. Start flow includes Building on AI? (yes/no) and eval status; stored in emergence-config.json. Initiatives: optional eval spec (eval-spec.md + template); Approach asks eval placement. Tweaks/bugs: optional eval/benchmark reminder. Cicadas does not run evals.
+- Agent operations (Reflect, Code Review, Synthesis) are LLM tasks defined in `emergence/` markdown prompts, not scripts. Clarify supports intake via Q&A, doc, or Loom.
 - Context injection: `branch.py` writes `context.md` at branch creation time (canon summary + scoped module snapshots + specs); gitignored.
 - Hint subsystem: `utils.py` provides `hints_enabled(args, config)` (priority: `--no-hints` flag → `config['hints'] == False` → not TTY → True) and `print_hint(lines, args, config)` (66-char cyan box). Every lifecycle script (kickoff, branch, archive, update_index, open_pr, init) prints a next-step hint after its main output. `status.py` infers and prints a hint from registry state. Hints auto-suppress in non-TTY environments (CI/pipes).
 - Compact context contract: core initiative specs now carry machine-readable front matter (`summary`, `modules`, `depends_on`, `index`) so agents can reload approved context from the specs themselves.
@@ -39,10 +39,10 @@ scripts/tutorial.py: interactive 7-step tutorial; invoked by `cicadas tutorial` 
 scripts/emit_event.py: append typed event to events.jsonl with fcntl.flock; CLI: --initiative, --type, --data
 scripts/get_events.py: read/filter events.jsonl; CLI: --initiative, --type, --since, --last; exits 0+empty if absent
 scripts/tracing.py: optional OTel tracing facade (init_tracer, flush, get/store_trace_context, parent_context_for_initiative, span_context_hex); _NullTracer/_NullSpan fallback when disabled or SDK absent; persists {trace_id, span_id} in registry.json for cross-process trace continuity (each cicadas command is its own subprocess)
-emergence/: markdown prompts for Clarify, UX, Tech, Approach (incl. Step 4b: Artifact Type, How to Run, AC generation per partition), Tasks, Bootstrap, Bug-fix, Tweak, Eval Spec (Building on AI), Code Review; start-flow includes Building on AI? and eval status
+emergence/: markdown prompts for Clarify, UX, Tech, Approach (incl. Step 4b: Artifact Type, How to Run, AC generation per partition), Tasks, Bootstrap, Bug-fix, Tweak, Code Review; start-flow runs name, draft folder, requirements source/pace (initiatives), then PR preference
 emergence/clarify.md: refreshes approved front matter fields as sections are completed; no longer relies on `steps_completed`
 templates/approach.md: partition blocks include Artifact Type, How to Run, and Acceptance Criteria subsections
-templates/: spec templates (prd, ux, tech-design, approach, tasks, buglet, tweaklet, eval-spec, review), canon templates, synthesis prompt; core initiative templates share the front matter contract
+templates/: spec templates (prd, ux, tech-design, approach, tasks, buglet, tweaklet, review), canon templates, synthesis prompt; core initiative templates share the front matter contract
 tests/test_templates.py: regression checks for the front matter contract and compact context routing hints
 
 ## Conventions
