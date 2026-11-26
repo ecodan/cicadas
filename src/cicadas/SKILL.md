@@ -43,6 +43,7 @@ project-root/
 │   │   ├── check.py                  # Check for conflicts & default branch updates
 │   │   ├── signalboard.py            # Broadcast a change to peer branches
 │   │   ├── archive.py                # Move active specs → archive, deregister
+│   │   ├── cleanup_worktree.py       # Safely remove merged worktrees / local branches
 │   │   ├── update_index.py           # Append to change ledger
 │   │   ├── prune.py                  # Rollback branch or initiative → restore to drafts
 │   │   ├── abort.py                  # Context-aware escape hatch from current branch
@@ -271,6 +272,8 @@ python {cicadas-dir}/scripts/cicadas.py kickoff {initiative-name} --intent "desc
 2. **Open PR** (if lifecycle has PR at features): Push branch, then open a Pull Request to `initiative/{name}` (use host CLI e.g. `gh pr create` or open in GitHub/GitLab/Bitbucket UI). Merge the PR when approved.
 3. **Or merge directly**: `git checkout initiative/{name} && git merge {branch-name}` and `git push origin initiative/{name}` if not using PRs at this boundary.
 
+4. **Clean up the worktree**: `python {cicadas-dir}/scripts/cicadas.py cleanup-worktree {branch-name}` (dry-run), then re-run with `--yes`. It removes the feature's linked worktree and `git branch -d`s the local branch, but only if the branch is merged into `initiative/{name}`, has no unpushed commits, and the worktree has no uncommitted changes (`context.md` and `.DS_Store` are ignored). Anything else is skipped with the reason.
+
 **Key**: No synthesis, no archiving at this step. Active specs stay active — they are the living document for the rest of the initiative, continuously updated by Reflect.
 
 ### Complete an Initiative
@@ -302,11 +305,16 @@ git commit -m "chore(cicadas): synthesize canon and archive {initiative-name}"
 git push origin main
 ```
 
-**Step 4 — Branch cleanup**: Offer to delete the initiative branch locally and on remote (if not already deleted by a PR merge):
+`archive --type initiative` also removes each registered feature worktree via the same safety checks (merged, pushed, clean; never `--force` unless you pass it) and prints the `cleanup-worktree` command for the feature branches. Add `--delete-branches` to `git branch -d` the merged feature branches in the same step.
+
+**Step 4 — Branch cleanup**: Offer to delete the initiative branch locally and on remote (if not already deleted by a PR merge). Locally, prefer `cleanup-worktree --initiative {name} --yes` (removes any leftover feature/initiative worktrees and runs `git branch -d`); the remote branch is never touched by Cicadas:
 ```
-git branch -d initiative/{name}
+python {cicadas-dir}/scripts/cicadas.py cleanup-worktree --initiative {name}        # dry-run
+python {cicadas-dir}/scripts/cicadas.py cleanup-worktree --initiative {name} --yes
 git push origin --delete initiative/{name}
 ```
+
+**Worktree hygiene**: each worktree is a full checkout (often hundreds of MB with venvs/node_modules), so remove it as soon as its branch is merged. Never `rm -rf` a worktree directory by hand; that leaves a dangling `.git/worktrees/*` entry (fix with `git worktree prune`, or `cleanup-worktree` with no arguments, which lists and prunes orphaned entries). Cleanup never uses `git branch -D` or `git worktree remove --force`. `status` lists stale worktrees (merged branch still checked out, or missing directory).
 
 ### Resuming Mid-Initiative
 
@@ -446,6 +454,7 @@ Outputs JSONL to stdout. Returns exit 0 with empty output if `events.jsonl` does
 | `branch.created` | `branch.py` | `branch`, `intent`, `modules` |
 | `worktree.created` | `branch.py` | `branch`, `worktree_path` |
 | `specs.archived` | `archive.py` | `archive_name`, `type` |
+| `worktree.removed` | `cleanup_worktree.py` | `branch`, `worktree_path` |
 | `pr.opened` | `open_pr.py` | `base`, `head` |
 | `pr.blocked` | `open_pr.py` | `reason`, `branch` |
 
@@ -573,6 +582,7 @@ The Builder interacts via natural-language commands. The Agent handles all scrip
 | **Check** | `python {cicadas-dir}/scripts/cicadas.py check` | Check for conflicts & updates |
 | **Signal** | `python {cicadas-dir}/scripts/cicadas.py signal "{message}"` | Broadcast to initiative |
 | **Archive** | `python {cicadas-dir}/scripts/cicadas.py archive {name} --type {branch\|initiative}` | Expire active specs |
+| **Cleanup worktree** | `python {cicadas-dir}/scripts/cicadas.py cleanup-worktree [{branch}...] [--initiative {name}] [--yes] [--keep-branch]` | Remove merged worktrees and local branches (dry-run unless `--yes`; no args = list/prune stale) |
 | **Log** | `python {cicadas-dir}/scripts/cicadas.py update-index --branch {name} --summary "..."` | Record history |
 | **Prune** | `python {cicadas-dir}/scripts/cicadas.py prune {name} --type {branch\|initiative}` | Rollback & restore to drafts |
 | **Abort** | `python {cicadas-dir}/scripts/cicadas.py abort` | Context-aware escape hatch from current branch |

@@ -6,6 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from cleanup_worktree import find_stale
 from utils import get_default_branch, get_project_root, get_registry_dir, load_json, hints_enabled, print_hint, load_config
 
 
@@ -265,6 +266,17 @@ def show_status(args: argparse.Namespace | None = None) -> None:
                 except subprocess.CalledProcessError:
                     head = ""
                 print(f"  {name}  →  {wt}  {state}  {head}")
+
+    # Stale worktrees: merged branch still has a worktree, or orphaned/prunable entries
+    try:
+        stale = find_stale(root, registry, get_default_branch())
+    except Exception:
+        stale = []
+    if stale:
+        print(f"\nStale worktrees ({len(stale)}):")
+        for kind, path, detail in stale:
+            print(f"  [{kind}] {path}  ({detail})")
+        print("  Clean up: cicadas.py cleanup-worktree <branch> --yes   (orphans: git worktree prune)")
 
     # Lifecycle and merge status (git-based, local refs only; run 'git fetch' first for remote state)
     try:

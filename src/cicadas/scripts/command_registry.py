@@ -37,6 +37,7 @@ SCRIPT_COMMANDS: tuple[CommandSpec, ...] = (
     CommandSpec("check", "Check for conflicts and branch updates", "check.py", supports_script_help=False),
     CommandSpec("signal", "Broadcast a signal to the current initiative", "signalboard.py", aliases=("signalboard",)),
     CommandSpec("archive", "Expire active specs and deregister work", "archive.py"),
+    CommandSpec("cleanup-worktree", "Safely remove merged worktrees and local branches (dry-run unless --yes)", "cleanup_worktree.py", aliases=("cleanup_worktree",)),
     CommandSpec("update-index", "Append a summary entry to the change ledger", "update_index.py", aliases=("update_index",)),
     CommandSpec("prune", "Rollback and restore specs to drafts", "prune.py"),
     CommandSpec("abort", "Context-aware escape hatch from the current branch", "abort.py"),

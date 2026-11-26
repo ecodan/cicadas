@@ -58,7 +58,6 @@ bash install.sh --update
 ```
 - or - 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ecodan/cicadas/master/install.sh | bash -s -- --update
 ```
 
 **Supported agents:**

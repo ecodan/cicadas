@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import tracing
+from cleanup_worktree import cleanup_branches
 from utils import (
     WorktreeDirtyError,
     active_dir_name_for_branch,
@@ -22,7 +23,7 @@ from utils import (
 )
 
 
-def archive(name, type_="branch", force=False):
+def archive(name, type_="branch", force=False, delete_branches=False):
     root = get_project_root()
     cicadas = root / ".cicadas"
     registry = load_json(get_registry_dir() / "registry.json")
@@ -117,14 +118,20 @@ def archive(name, type_="branch", force=False):
             orphaned = [b for b, info in registry.get("branches", {}).items() if info.get("initiative") == name]
             for b in orphaned:
                 wt = registry["branches"][b].get("worktree_path")
-                if wt:
+                if wt and force:
                     try:
                         remove_worktree(root, Path(wt), force=force)
                         print(f"[OK]   Worktree removed: {wt}")
                     except (WorktreeDirtyError, Exception) as e:
                         print(f"[WARN] Could not remove worktree for {b}: {e}")
+                elif wt:
+                    # Safe path: only removes if merged, pushed and clean (never --force, never branch -D)
+                    cleanup_branches([b], yes=True, keep_branch=not delete_branches)
                 del registry["branches"][b]
                 print(f"[OK]   Deregistered associated branch: {b}")
+            if orphaned and not delete_branches:
+                print(f"[INFO] Delete merged local feature branches (and any leftover worktrees) with: "
+                      f"cicadas.py cleanup-worktree {' '.join(orphaned)} --yes")
 
         save_json(get_registry_dir() / "registry.json", registry)
         print(f"[OK]   Deregistered {type_}: {name}")
@@ -137,9 +144,10 @@ if __name__ == "__main__":
     parser.add_argument("name")
     parser.add_argument("--type", default="branch", choices=["branch", "initiative"], help="Type to archive: branch or initiative")
     parser.add_argument("--force", action="store_true", help="Force worktree removal even if dirty")
+    parser.add_argument("--delete-branches", action="store_true", help="With --type initiative: also 'git branch -d' merged feature branches")
     parser.add_argument("--no-hints", action="store_true", help="Suppress next-step hints")
     args = parser.parse_args()
-    archive(args.name, args.type, force=args.force)
+    archive(args.name, args.type, force=args.force, delete_branches=args.delete_branches)
     try:
         config = load_config()
     except Exception:
